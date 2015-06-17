@@ -39,7 +39,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'rest_framework',
     'loader',
-    'helloworld'
+    'apps.helloworld'
 )
 
 MIDDLEWARE_CLASSES = (
