@@ -2,15 +2,20 @@ from django.db import models
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-class App(models.Model):
+class LocalOrRemoteResource(models.Model):
+    root = models.CharField(max_length=255,
+            verbose_name="URL/URLconf")
+
+    class Meta:
+        abstract=True
+
+class App(LocalOrRemoteResource):
     # Title of the application
     title = models.CharField(max_length=255)
     # Link to the application icon
     icon = models.URLField(null=True, blank=True)
     # Whether the app is hosted on the same domain or not
     local = models.BooleanField(default=True)
-    # URL or urlconf where app can be found
-    location = models.CharField(max_length=255)
     # The users of this application
     users = models.ManyToManyField(settings.AUTH_USER_MODEL,
             related_name="apps")
@@ -20,7 +25,7 @@ class App(models.Model):
         return reverse('app_routing', args=(self.pk,))
 
     def __unicode__(self):
-        return unicode(self.title)
+        return self.title
 
     def __repr__(self):
-        return "App(%s)" % (str(self),)
+        return "App(%s)" % (self,)
