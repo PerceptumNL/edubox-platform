@@ -10,7 +10,8 @@ urlpatterns = [
     url(r'^index/?', include(index.urls)),
     url(r'^index/api-auth/', include('rest_framework.urls',
         namespace='rest_framework')),
-    url(r'^router/apps/(?P<app_id>\d+)', app_routing, name='app_routing'),
-    url(r'^router/services/(?P<app_id>\d+)', service_routing,
+    url(r'^router/apps/(?P<app_id>\d+)(?P<path>/.*)$', app_routing,
+        name='app_routing'),
+    url(r'^router/services/(?P<app_id>\d+)(?P<path>/.*)$', service_routing,
         name='service_routing')
 ]
