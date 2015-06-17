@@ -18,5 +18,6 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^app/helloworld/', include('helloworld.urls')),
     url(r'^', include('loader.urls'))
 ]
