@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 class App(models.Model):
     # Title of the application
@@ -13,6 +14,10 @@ class App(models.Model):
     # The users of this application
     users = models.ManyToManyField(settings.AUTH_USER_MODEL,
             related_name="apps")
+
+    @property
+    def load_url(self):
+        return reverse('app_routing', args=(self.pk,))
 
     def __unicode__(self):
         return unicode(self.title)
