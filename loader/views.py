@@ -7,7 +7,7 @@ from rest_framework import serializers, viewsets
 
 import re
 
-from .models import App
+from .models import App, Service
 
 class AppSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -17,6 +17,15 @@ class AppSerializer(serializers.HyperlinkedModelSerializer):
 class AppViewSet(viewsets.ModelViewSet):
     queryset = App.objects.all()
     serializer_class = AppSerializer
+
+class ServiceSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Service
+        fields = ('url', 'title', 'load_url')
+
+class ServiceViewSet(viewsets.ModelViewSet):
+    queryset = Service.objects.all()
+    serializer_class = ServiceSerializer
 
 def _local_routing(request, urlconf, path):
     """Redirect request to a local view."""
@@ -41,7 +50,7 @@ def app_routing(request, app_id, path):
     """Redirect request to the referred app's location."""
     app = get_object_or_404(App, pk=app_id)
     if app.local:
-        response = _local_routing(request, app.location, path)
+        response = _local_routing(request, app.root, path)
 
         # TODO: Modify response where necessary
 
@@ -50,5 +59,15 @@ def app_routing(request, app_id, path):
         # TODO: Write and use _remote_routing function
         return HttpResponse()
 
-def service_routing(request, app_id):
-    return HttpResponse()
+def service_routing(request, service_id, path):
+    """Redirect request to the referred service' location."""
+    service = get_object_or_404(Service, pk=service_id)
+    if service.local:
+        response = _local_routing(request, service.root, path)
+
+        # TODO: Modify response where necessary
+
+        return response
+    else:
+        # TODO: Write and use _remote_routing function
+        return HttpResponse()

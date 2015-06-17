@@ -22,10 +22,28 @@ class App(LocalOrRemoteResource):
 
     @property
     def load_url(self):
-        return reverse('app_routing', args=(self.pk,))
+        return reverse('app_routing', args=(self.pk, '/'))
 
     def __unicode__(self):
         return self.title
 
     def __repr__(self):
         return "App(%s)" % (self,)
+
+class Service(LocalOrRemoteResource):
+    # Unique identifier
+    name = models.CharField(max_length=255, primary_key=True)
+    # Title of the application
+    title = models.CharField(max_length=255)
+    # Whether the app is hosted on the same domain or not
+    local = models.BooleanField(default=True)
+
+    @property
+    def load_url(self):
+        return reverse('service_routing', args=(self.pk, '/'))
+
+    def __unicode__(self):
+        return self.title
+
+    def __repr__(self):
+        return "Service(%s)" % (self,)
