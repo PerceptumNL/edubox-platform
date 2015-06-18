@@ -4,8 +4,10 @@ from django.shortcuts import get_object_or_404
 from django.core.urlresolvers import RegexURLResolver, Resolver404
 
 from rest_framework import serializers, viewsets
+from bs4 import BeautifulSoup
 
 import re
+import requests
 
 from .models import App, Service
 
@@ -46,6 +48,12 @@ def _local_routing(request, urlconf, path):
     # Redirect request to local function
     return match.func(request)
 
+def _remote_routing(request, urlconf, path):
+    req = BeautifulSoup(requests.get(urlconf+path).text)
+    [print(x.prettify()) for x in req.findAll('form')]
+    return HttpResponse(str(req))
+    
+
 def app_routing(request, app_id, path):
     """Redirect request to the referred app's location."""
     app = get_object_or_404(App, pk=app_id)
@@ -56,8 +64,10 @@ def app_routing(request, app_id, path):
 
         return response
     else:
+        response = _remote_routing(request, app.root, path) 
+
         # TODO: Write and use _remote_routing function
-        return HttpResponse()
+        return response
 
 def service_routing(request, service_id, path):
     """Redirect request to the referred service' location."""
