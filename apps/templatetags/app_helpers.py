@@ -1,7 +1,9 @@
 from django import template
 from django.template.defaulttags import CsrfTokenNode
+from django.core.urlresolvers import reverse
 
 import uuid
+import re
 
 TEMPLATE_FORM = """
 <form id="%s">%s%s</form>
@@ -35,8 +37,18 @@ def do_form(parser, token):
 class FormNode(template.Node):
     def __init__(self, nodelist, submit_path=None, callback_fn=None):
         self.nodelist = nodelist
-        self.submit_path = submit_path or ""
+        self.submit_path = self.expand_location(submit_path) or ""
         self.callback_fn = callback_fn or "App.current().render"
+
+    def expand_location(self, location):
+        if location is None:
+            return None
+        service_match = re.search(r'^service:([^/]+)(/.+)?$', location)
+        if service_match:
+            service = service_match.group(1)
+            path = service_match.group(2) or "/"
+            location = reverse('service_routing', args=(service, path))
+        return location
 
     def render(self, context):
         output = self.nodelist.render(context)

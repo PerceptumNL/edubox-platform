@@ -7,7 +7,7 @@
 </head>
 <body>
 <h1> Hello {{ name }} </h1>
-{% form /router/services/echo/ cb %}
+{% form service:echo cb %}
 <input type='text' name='msg' />
 <input type='submit' value='Echo' />
 {% endform %}
