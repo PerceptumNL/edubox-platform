@@ -1,0 +1,10 @@
+<form id="{{ form_id }}">{% csrf_token %}{{ inner_output }}</form>
+<script>
+    $(function(){
+        $("#{{ form_id }}").submit(function(e){
+            data = $(this).serialize()
+            $.post("{{ submit_path }}", data, {{ callback_fn }});
+            e.preventDefault();
+        });
+    });
+</script>

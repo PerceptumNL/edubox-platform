@@ -41,6 +41,8 @@ def _local_routing(request, urlconf, path):
     # Reconstruct request path
     request.path = '%s/%s' % (script_name.rstrip('/'),
             path.replace('/', '', 1))
+    # Keep outer URL pattern match
+    request.outer_resolver_match = request.resolver_match
     # Change URL pattern match
     request.resolver_match = match
     # Redirect request to local function
