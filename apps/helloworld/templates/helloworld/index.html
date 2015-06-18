@@ -1,7 +1,20 @@
+{% load app_helpers %}
 <!DOCTYPE html>
 <html>
-<head><title>Hello World!</title></head>
+<head>
+    <title>Hello World!</title>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+</head>
 <body>
 <h1> Hello {{ name }} </h1>
+{% form service:echo cb %}
+<input type='text' name='msg' />
+<input type='submit' value='Echo' />
+{% endform %}
+<script>
+function cb(data){
+ console.log(data);
+}
+</script>
 </body>
 </html>
