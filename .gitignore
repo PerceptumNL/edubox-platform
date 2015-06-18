@@ -60,3 +60,5 @@ target/
 # Setup specific ignores
 staticfiles
 *.sqlite3
+*.swp
+*.swo
