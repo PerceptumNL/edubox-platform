@@ -83,3 +83,6 @@ def service_routing(request, service_id, path):
     else:
         # TODO: Write and use _remote_routing function
         return HttpResponse()
+
+def home(request):
+    return render(request, "loader/index.html", {})
