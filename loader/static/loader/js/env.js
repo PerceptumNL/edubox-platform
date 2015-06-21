@@ -8,117 +8,125 @@ function update(obj, key, val){
 	}
 }
 
-Environment = {
-	init: function(config){
-		update(Environment, "config", config)
-	},
-	config: {
-		container: undefined
-	},
-	render: function(html){
-		$(Environment.config.container).html(html);
-	}
-};
-
-App = {
-	init: function(config){
-		update(this, "config", config)
-	},
-	config: {
-		api: {
-			list: undefined,
-			details: undefined,
-			router: undefined
+(function(window, $, undefined){
+	window.Environment = {
+		init: function(config){
+			update(Environment, "config", config)
+		},
+		cache: {},
+		config: {
+			container: undefined
+		},
+		render: function(html){
+			$(Environment.config.container).html(html);
 		}
-	},
-	cache: {
-		list: undefined
-	},
-	list: function(cb_fn){
-		if(this.cache.list){
-			cb_fn(this.cache.list)
+	};
+})(window, jQuery);
+
+(function(window, $, undefined){
+	window.RESTObject = function(base_url){
+		this.get_absolute_path = function(relative_path){
+			if( !relative_path || relative_path == "/"){
+				relative_path = ""
+			}
+			return base_url.replace("--$path--", relative_path);
+		};
+		this.get = function(rel_path, cb_fn){
+			if(cb_fn == undefined){ cb_fn = Env.render; }
+			$.get(_this.get_absolute_path(path), cb);
+		};
+		this.post = function(rel_path, data, cb_fn){
+			if(cb_fn == undefined){ cb_fn = Env.render; }
+			$.post(_this.get_absolute_path(path), data, cb);
+		};
+	}
+})(window, jQuery);
+
+(function(Env, $, undefined){
+	function App(id, title, icon, base_url){
+		var _this = this;
+		_this.prototype = new RESTObject(base_url)
+
+		_this.get_id = function(){ return id; };
+		_this.get_title = function(){ return title; };
+		_this.get_icon = function(){ return icon; };
+
+		_this.get = function(rel_path, cb_fn){
+			if(cb_fn == undefined){ cb_fn = Env.render; }
+			return _this.prototype.get(rel_path, cb_fn);
+		};
+		_this.load = function(){ _this.get(); };
+
+		_this.post = function(rel_path, data, cb_fn){
+			if(cb_fn == undefined){ cb_fn = Env.render; }
+			return _this.prototype.post(rel_path, data, cb_fn);
+		};
+	}
+
+	// Add Env::cache slot, if necesary
+	Env.cache.apps = Env.cache.apps || undefined;
+	// Add Env::config slots, if neccary
+	var config = Env.config.apps = Env.config.apps || {}
+	config.api = config.api || {};
+	config.api.list = config.api.list || undefined;
+	config.api.details = config.api.details || undefined;
+	config.api.router = config.api.router || undefined;
+	// Define Env::apps function to retrieve App instances, if necessary
+	Env.apps = Env.apps || function(cb_fn){
+		if( Env.cache.apps ){
+			cb_fn(Env.cache.apps);
 		}else{
-			var _this = this
-			$.get(this.config.api.list, function(data, statusText, jqXhr){
-				_this.cache.list = data;
-				cb_fn(data);
+			$.get(config.api.list, function(data, statusText, jqXhr){
+				Env.cache.apps = [];
+				for(var i = 0; i < data.length; i++){
+					d = data[i];
+					Env.cache.apps.push(new App(
+						d['id'],
+						d['title'],
+						d['icon'],
+						config.api.router.replace("--$id--", d['id'])
+					));
+				}
+				cb_fn(Env.cache.apps);
 			});
 		}
-	},
-	load: function(url){
-		$.get(url, Environment.render);
-	},
-	get: function(app_id){
-		var endpoint = App.config.api.router.replace("--$id--", app_id);
-		var app = {
-			set: false,
-			config: {
-				endpoint: endpoint
-			},
-			get_absolute_path: function(path){
-				if(path == undefined || path == "/"){
-					path = ""
-				}
-				return app.config.endpoint.replace("--$path--", path);
-			},
-			get: function(path, cb){
-				$.get(app.get_absolute_path(path), cb);
-			},
-			post: function(path, data, cb){
-				$.post(app.get_absolute_path(path), data, cb);
-			},
-			load: function(path){
-				app.get(path, Environment.render);
-			}
-		}
-		return app
 	}
-};
+})(Environment, jQuery);
 
-Service = {
-	init: function(config){
-		update(Service, "config", config)
-	},
-	config: {
-		api: {
-			list: undefined,
-			details: undefined,
-			router: undefined
-		}
-	},
-	cache: {
-		list: undefined
-	},
-	list: function(cb_fn){
-		if(Service.cache.list){
-			cb_fn(Service.cache.list)
-		} else {
-			$.get(this.config.api.list, function(data, statusText, jqXhr){
-				Service.cache.list = data;
-				cb_fn(data);
+(function(Env, $, undefined){
+	function Service(name, title, base_url){
+		var _this = this;
+		this.prototype = new RESTObject(base_url)
+
+		this.get_name = function(){ return name; };
+		this.get_title = function(){ return title; };
+	}
+
+	// Add Env::cache slot, if necesary
+	Env.cache.services = Env.cache.services || undefined;
+	// Add Env::config slots, if neccary
+	var config = Env.config.services = Env.config.services || {};
+	config.api = config.api || {};
+	config.api.list = config.api.list || undefined;
+	config.api.details = config.api.details || undefined;
+	config.api.router = config.api.router || undefined;
+	// Define Env::services function to retrieve Service instances, if necessary
+	Env.services = Env.services || function(cb_fn){
+		if( Env.cache.apps ){
+			cb_fn(Env.cache.apps);
+		}else{
+			$.get(config.api.list, function(data, statusText, jqXhr){
+				Env.cache.services = [];
+				for(var i = 0; i < data.length; i++){
+					d = data[i];
+					Env.cache.services.push(new Service(
+						d['name'],
+						d['title'],
+						config.api.router.replace("--$id--", d['id'])
+					));
+				}
+				cb_fn(Env.cache.services);
 			});
 		}
-	},
-	get: function(service_id){
-		var endpoint = Service.config.api.router.replace("--$id--", service_id);
-		var service = {
-			set: false,
-			config: {
-				endpoint: endpoint
-			},
-			get_absolute_path: function(path){
-				if(path == undefined || path == "/"){
-					path = ""
-				}
-				return service.config.endpoint.replace("--$path--", path);
-			},
-			get: function(path, cb){
-				$.get(service.get_absolute_path(path), cb);
-			},
-			post: function(path, data, cb){
-				$.post(service.get_absolute_path(path), data, cb);
-			}
-		}
-		return service
 	}
-};
+})(Environment, jQuery);
