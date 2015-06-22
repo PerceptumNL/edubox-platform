@@ -35,7 +35,7 @@ def _local_routing(request, urlconf, path):
         match = RegexURLResolver("^/", urlconf).resolve(path)
     except Resolver404:
         raise Http404
-
+    
     # Change path_info of request
     request.path_info = path
     # Recover original script_name
@@ -47,12 +47,25 @@ def _local_routing(request, urlconf, path):
     request.outer_resolver_match = request.resolver_match
     # Change URL pattern match
     request.resolver_match = match
+    #Add app specific settings
+    settings_qd = request.GET.copy()
+    settings = {}
+    app_id = request.outer_resolver_match.kwargs['app_id']
+    settings_values = request.user.settings.filter(setting__app__pk=app_id,
+        setting__compact=True)
+    for value in settings_values:
+        settings[str(value.setting)] = value.value
+    settings_qd.update(settings)
+    request.GET = settings_qd
     # Redirect request to local function
     return match.func(request)
 
 def _remote_routing(request, urlconf, path):
     req = BeautifulSoup(requests.get(urlconf+path).text)
+    
+    #Simple test to filter forms, should replace all local urls
     [print(x.prettify()) for x in req.findAll('form')]
+
     return HttpResponse(str(req))
     
 
