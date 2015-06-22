@@ -134,8 +134,8 @@ function update(obj, key, val){
 	config.api.router = config.api.router || undefined;
 	// Define Env::services function to retrieve Service instances, if necessary
 	Env.services = Env.services || function(cb_fn){
-		if( Env.cache.apps ){
-			cb_fn(Env.cache.apps);
+		if( Env.cache.services ){
+			cb_fn(Env.cache.services);
 		}else{
 			$.get(config.api.list, function(data, statusText, jqXhr){
 				Env.cache.services = [];
