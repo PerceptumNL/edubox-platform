@@ -25,22 +25,76 @@ function update(obj, key, val){
 
 (function(window, $, undefined){
 	window.RESTObject = function(base_url){
-		this.get_absolute_path = function(relative_path){
+		var _this = this;
+		_this.get_absolute_path = function(relative_path){
 			if( !relative_path || relative_path == "/"){
 				relative_path = ""
 			}
 			return base_url.replace("--$path--", relative_path);
 		};
-		this.get = function(rel_path, cb_fn){
+		_this.get = function(rel_path, cb_fn){
 			if(cb_fn == undefined){ cb_fn = Env.render; }
-			$.get(_this.get_absolute_path(path), cb);
+			$.get(_this.get_absolute_path(rel_path), cb_fn);
 		};
-		this.post = function(rel_path, data, cb_fn){
+		_this.post = function(rel_path, data, cb_fn){
 			if(cb_fn == undefined){ cb_fn = Env.render; }
-			$.post(_this.get_absolute_path(path), data, cb);
+			$.post(_this.get_absolute_path(rel_path), data, cb_fn);
 		};
 	}
 })(window, jQuery);
+
+(function(Env, $, undefined){
+	Env.Router = {
+		set: function(url){
+			if(history.pushState){
+				history.pushState({}, "", url);
+				Env.Router.trigger();
+			}else{
+				document.location = url;
+			}
+		},
+		cache: {
+			url: undefined
+		},
+		_listeners: {},
+		bind: function(pattern, cb_fn){
+			if(typeof(patterm) == "object" && pattern.source){
+				// If pattern is a RegExp object, retrieve the string
+				pattern = pattern.source;
+			}
+			Env.Router._listeners[pattern] = Env.Router._listeners[pattern] || [];
+			Env.Router._listeners[pattern].push(cb_fn);
+		},
+		trigger: function(){
+			var url = document.location.pathname;
+			if( Env.Router.cache.url == url){
+				return;
+			}else{
+				Env.Router.cache.url = url;
+			}
+			for(pattern in Env.Router._listeners){
+				var regex = RegExp(pattern);
+				if(regex.test(url)){
+					var callbacks = Env.Router._listeners[pattern];
+					var matches = regex.exec(url);
+					// Ignore full match
+					matches.shift();
+					for(var i = 0; i < callbacks.length; i++){
+						callbacks[i].apply({}, matches);
+					}
+				}
+			}
+		},
+		poll: function(){
+			Env.Router.trigger()
+			setTimeout(Env.Router.poll, 50);
+		}
+	}
+	Env.Router.bind("^/?$", function(){
+		Env.render("App");
+	});
+	$(Env.Router.poll);
+})(Environment, jQuery);
 
 (function(Env, $, undefined){
 	function App(id, title, icon, base_url){
@@ -96,23 +150,29 @@ function update(obj, key, val){
 		if( Env.cache.apps ){
 			var apps = Env.cache.apps;
 			for(var i = 0; i < apps.length; i++){
-				if( apps[i].get_id() == app_id ){
+				if( apps[i].get_id() == parseInt(app_id) ){
 					cb_fn(apps[i]);
 				}
 			}
+		}else{
+			var apps = Env.cache.apps = []
 			var details_url = config.api.details.replace("--$id--", app_id);
 			$.get(details_url, function(data, statusText, jqXhr){
 				var app = new App(
 					data['id'],
 					data['title'],
 					data['icon'],
-					config.api.router.replace("--$id--", datum['id'])
+					config.api.router.replace("--$id--", data['id'])
 				);
 				apps.push(app);
 				cb_fn(app);
 			});
 		}
 	}
+	// Bind app view
+	Env.Router.bind("/app/([0-9]+)(/.*)", function(app_id, path){
+		Env.app(app_id, function(app){ app.get(path); });
+	});
 })(Environment, jQuery);
 
 (function(Env, $, undefined){
