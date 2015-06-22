@@ -71,7 +71,7 @@ function update(obj, key, val){
 	config.api.list = config.api.list || undefined;
 	config.api.details = config.api.details || undefined;
 	config.api.router = config.api.router || undefined;
-	// Define Env::apps function to retrieve App instances, if necessary
+	// Define Env::apps function to retrieve all App instances, if necessary
 	Env.apps = Env.apps || function(cb_fn){
 		if( Env.cache.apps ){
 			cb_fn(Env.cache.apps);
@@ -88,6 +88,28 @@ function update(obj, key, val){
 					));
 				}
 				cb_fn(Env.cache.apps);
+			});
+		}
+	};
+	// Define Env::app function to retrieve one App instance, if neccesary
+	Env.app = Env.app || function(app_id, cb_fn){
+		if( Env.cache.apps ){
+			var apps = Env.cache.apps;
+			for(var i = 0; i < apps.length; i++){
+				if( apps[i].get_id() == app_id ){
+					cb_fn(apps[i]);
+				}
+			}
+			var details_url = config.api.details.replace("--$id--", app_id);
+			$.get(details_url, function(data, statusText, jqXhr){
+				var app = new App(
+					data['id'],
+					data['title'],
+					data['icon'],
+					config.api.router.replace("--$id--", datum['id'])
+				);
+				apps.push(app);
+				cb_fn(app);
 			});
 		}
 	}
@@ -112,8 +134,8 @@ function update(obj, key, val){
 	config.api.router = config.api.router || undefined;
 	// Define Env::services function to retrieve Service instances, if necessary
 	Env.services = Env.services || function(cb_fn){
-		if( Env.cache.apps ){
-			cb_fn(Env.cache.apps);
+		if( Env.cache.services ){
+			cb_fn(Env.cache.services);
 		}else{
 			$.get(config.api.list, function(data, statusText, jqXhr){
 				Env.cache.services = [];
