@@ -14,7 +14,7 @@ from .models import App, Service
 class AppSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = App
-        fields = ('url', 'title', 'icon', 'load_url')
+        fields = ('id', 'title', 'icon')
 
 class AppViewSet(viewsets.ModelViewSet):
     queryset = App.objects.all()
@@ -23,7 +23,7 @@ class AppViewSet(viewsets.ModelViewSet):
 class ServiceSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Service
-        fields = ('url', 'title', 'load_url')
+        fields = ('name', 'title')
 
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
@@ -83,3 +83,6 @@ def service_routing(request, service_id, path):
     else:
         # TODO: Write and use _remote_routing function
         return HttpResponse()
+
+def home(request):
+    return render(request, "loader/index.html", {})

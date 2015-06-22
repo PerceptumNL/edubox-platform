@@ -1,0 +1,43 @@
+{% load i18n staticfiles compress %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{% trans "LeestMeer" %}</title>
+</head>
+<body>
+<style>
+ .app_container {
+     width: 90%
+     margin: auto;
+ }
+</style>
+<div class='app_container' id='app-vm'>App</div>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+{% compress js inline %}
+<script type="text/javascript" src="{% static "loader/js/env.js" %}"></script>
+<script type="text/javascript">
+$(function(){
+	Environment.init({
+        container: $('#api-vm'),
+        apps: {
+            api: {
+		        list: "{% url 'app-list' %}",
+		        details: "{% url 'app-detail' '--$id--' %}",
+		        router: "{% url 'app_routing' '--$id--' '/--$path--' %}"
+            }
+        },
+        services: {
+            api: {
+                list: "{% url 'service-list' %}",
+                details: "{% url 'service-detail' '--$id--' %}",
+                router: "{% url 'service_routing' '--$id--' '/--$path--' %}"
+            }
+        }
+    });
+    Environment.apps(function(data){ console.log(data); });
+    Environment.services(function(data){ console.log(data); });
+});
+</script>
+{% endcompress %}
+</body>
+</html>
