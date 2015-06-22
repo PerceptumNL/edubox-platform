@@ -24,7 +24,7 @@ class App(LocalOrRemoteResource):
     def load_url(self):
         return reverse('app_routing', args=(self.pk, '/'))
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
     def __repr__(self):
@@ -40,7 +40,7 @@ class Service(LocalOrRemoteResource):
     def load_url(self):
         return reverse('service_routing', args=(self.pk, '/'))
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title
 
     def __repr__(self):

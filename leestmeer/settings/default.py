@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'compressor',
     'loader',
+    'app_settings.apps.SettingsConfig',
     'apps',
     'apps.helloworld'
 )
