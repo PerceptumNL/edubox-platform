@@ -47,16 +47,17 @@ def _local_routing(request, urlconf, path):
     request.outer_resolver_match = request.resolver_match
     # Change URL pattern match
     request.resolver_match = match
-    #Add app specific settings
-    settings_qd = request.GET.copy()
-    settings = {}
-    app_id = request.outer_resolver_match.kwargs['app_id']
-    settings_values = request.user.settings.filter(setting__app__pk=app_id,
-        setting__compact=True)
-    for value in settings_values:
-        settings[str(value.setting)] = value.value
-    settings_qd.update(settings)
-    request.GET = settings_qd
+    #Add app specific settings for the user
+    if not request.user.is_anonymous():
+        settings_qd = request.GET.copy()
+        settings = {}
+        app_id = request.outer_resolver_match.kwargs['app_id']
+        settings_values = request.user.settings.filter(setting__app__pk=app_id,
+            setting__compact=True)
+        for value in settings_values:
+            settings[str(value.setting)] = value.value
+        settings_qd.update(settings)
+        request.GET = settings_qd
     # Redirect request to local function
     return match.func(request)
 
