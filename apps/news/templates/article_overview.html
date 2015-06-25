@@ -1,0 +1,103 @@
+{% extends "base_page.html" %}
+
+{% load staticfiles %}
+
+{% block extraCSS %}
+    <link href="{% static 'css/articleOverview.css' %}" rel="stylesheet">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+{% endblock %}
+{% block backdrop %}
+{% endblock %}
+
+{% block body %}
+    <div class="currentcategory">
+        <h1 class="leading"> <span id="categorytitle">Recent</span></h1>
+    </div>
+    <div id="search_articles">
+        <form id="searchForm">
+        <input id="search" type="text" name="q" placeholder="Zoek in artikelen"></input><button type="submit">Zoek</button>
+        </form>
+    </div>
+    <div class="isotope" id="articles">
+
+    </div>
+
+    <h3> Niks gevonden? Kies een categorie uit het menu in de onderbalk </h3>
+{% endblock %}
+
+{% block footer %}
+    <div id="filters"class="buttonHolder">
+        <a type="button" id="morecategories"><button><span>Meer</span>  <i class='fa fa-fw fa-lg fa-arrow-up'></i></button></a>
+        <a type="button"
+		    href="#category/recent" id="category-recent"
+            data-url="{% url 'content_query' %}"
+            data-filter="*"><button>Recent</button></a>
+        {% for category in categories %}
+            <a type="button"
+			    href='#category/{{category.id}}'
+			    id="category-{{category.id}}"
+			    data-filter="{{category.title}}"
+			    data-url="{{category.get_absolute_url}}"
+		    ><button>{{category.title}}</button></a>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+
+{% block extraScripts %}
+	<script src={% static "js/isotope.pkgd.min.js"%}></script>
+	<script src={% static "js/filteringIsotope.js"%}></script>
+	<!-- jquery mobile for hashchange event -->
+    <script src={% static 'js/jquery.mobile.custom.min.js' %}></script>
+	<script src={% static "js/loader.js"%}></script>
+
+	<script>
+	    $( function(){
+		    loader = new Loader("#articles");
+		    if(location.hash == ""){
+			    location.hash = 'category/recent';
+            } else {
+                loader.update();
+            }
+	        $('#searchForm').submit(function(){
+	            $.get('content/query/', $(this).serialize(), function(data) {
+	                if(data.articles.length > 0){
+	                    loader.clear();
+	                    loader.load(data);
+                    } else{
+                        var $el = $('#search');
+                        originalback = $el.css("background");
+                        originalcolor = $el.css("color");
+                        $el.val("Niks gevonden")
+                        $el.css('background', '#E57373');
+                        $el.css('color', '#FFF');
+                        setTimeout(function(){
+                          $el.val("")
+                          $el.css("background", originalback);
+                          $el.css("color", originalcolor);
+                        }, 2500);
+                    }
+	            });
+	            return false;
+	        });
+        });
+
+        $('#morecategories').click(function(){
+            if($('.footer').hasClass('open')){
+                $('.footer').removeClass('open');
+                this.firstElementChild.firstElementChild.innerHTML = "Meer";
+            } else{
+                $('.footer').addClass('open');
+                this.firstElementChild.firstElementChild.innerHTML = "Minder";
+            }
+        });
+
+        $(window).hashchange( function(){
+            $('.contentFrame').scrollTop(0);
+            if($('.footer').hasClass('open')){
+                $('.footer').removeClass('open');
+                $('#morecategories')[0].firstElementChild.firstElementChild.innerHTML = "Meer";
+            }
+        });
+    </script>
+{% endblock %}

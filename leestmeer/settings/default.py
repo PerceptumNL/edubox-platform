@@ -32,17 +32,20 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = (
     'django.contrib.admin',
+    'polymorphic',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_summernote',
     'rest_framework',
     'compressor',
     'loader',
     'app_settings.apps.SettingsConfig',
     'apps',
-    'apps.helloworld'
+    'apps.helloworld',
+    'apps.news',
 )
 
 MIDDLEWARE_CLASSES = (
