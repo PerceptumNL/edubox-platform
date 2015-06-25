@@ -18,6 +18,7 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^app/helloworld/', include('apps.helloworld.urls')),
+    url(r'^_apps/helloworld/', include('apps.helloworld.urls')),
+    url(r'^_apps/news/', include('apps.news.urls')),
     url(r'^', include('loader.urls'))
 ]

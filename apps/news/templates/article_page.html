@@ -1,0 +1,170 @@
+{% extends "base_page.html" %}
+{% load staticfiles %}
+
+{% block extraCSS %}
+    <!--<link href="{% static 'css/mainStyle.css' %}" rel="stylesheet">-->
+    <link href="{% static 'css/article_style.css' %}" rel="stylesheet">
+    <link href="{% static 'css/typography.css' %}" rel="stylesheet">
+    <link href="{% static 'css/base_page.css' %}" rel="stylesheet">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+    <link href='http://fonts.googleapis.com/css?family=Asap:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>  
+{% endblock %}
+
+{% block backdrop %}
+{% endblock %}
+
+{% block body %}
+
+<div id="mainContent">
+    {% if article.image %}
+	    <div id="mainImage" style="background-color: #151515;
+	                                background-repeat: no-repeat; 
+                                    background-size: contain; 
+                                    background-position:center; 
+                                    background-image: url('{{article.image}}')">
+	    </div>
+    {% endif %}
+	<section id="mainArticle">
+		<article id="article"></article>
+		{% if article.source %}
+		<div style='text-align: right;'>
+			<a href="{{ article.source.link }}" style='color: gray'>bron: {{ article.source.name }}</a>
+		</div>
+		{% endif %}
+		<div id="imageHolder"></div>
+		<div class='row'>
+			<a class="btn btn-large btn-primary col-md-8 col-md-offset-2 col-sm-offset-1 col-sm-10 col-xs-12"
+				href="{% url 'article_overview' %}"
+				style='color: #fff'>
+				Terug naar categorie-overzicht
+			</a>
+	</div>
+	</section>
+	{% if random_articles %}
+    <div id="recommendations">
+        <h4 style="text-align: center">Vergelijkbare artikelen</h4>
+
+        <div id="randomarticles">
+            {% for randomarticle in random_articles %}{% if randomarticle.image %}
+                <div class="articleTile" style="background-image: url('{{randomarticle.image}}');">
+                    <a href="{% url 'article' randomarticle.pk %}"></a>
+                    <div class="articleTitle"><p>{{ randomarticle }}</p></div>
+                </div>
+            {% endif %}{% endfor %}
+        </div>
+    </div>
+	{% endif %}
+	
+</div>
+
+
+{% endblock body %}
+
+{% block overlay %}
+<div id="cover">
+    <div id="closeOnBackground"></div>
+    <a id="closeCover"><i class="fa fa-angle-double-down fa-3x"></i></a>
+    <div class="container" id="row-holder">
+        <div class="row" id="cards"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+{% if not rating_given %}
+    <h4 style="color: white !important; text-align:center">Vind je dit een leuk artikel?
+        <div class="rating" id="articlerating">
+                <span rating="5"><i class="fa fa-star-o"></i></span>
+                <span rating="4"><i class="fa fa-star-o"></i></span>
+                <span rating="3"><i class="fa fa-star-o"></i></span>
+                <span rating="2"><i class="fa fa-star-o"></i></span>
+                <span rating="1"><i class="fa fa-star-o"></i></span>
+        </div></h4>
+        {% endif %}
+{% if not difficulty_given %}
+    <h4 style="color: white !important; text-align:center">Is dit artikel goed te lezen?
+        <div class="rating" id="articledifficulty">
+                <span rating="5"><i class="fa fa-star-o"></i></span>
+                <span rating="4"><i class="fa fa-star-o"></i></span>
+                <span rating="3"><i class="fa fa-star-o"></i></span>
+                <span rating="2"><i class="fa fa-star-o"></i></span>
+                <span rating="1"><i class="fa fa-star-o"></i></span>
+        </div>
+    </div></h4>
+{% endif %}
+{% endblock %}
+
+{% block extraScripts %}
+	<!-- jquery mobile for hashchange event -->
+    <script src="{% static 'js/jquery.mobile.custom.min.js' %}"></script>
+ 	<script src="{% static 'js/interface.js' %}"></script>
+	<script src="{% static 'js/carddeck.js' %}"></script>
+ 	<script src="{% static 'js/widget_articleviewer.js' %}"></script>
+ 	<script src="{% static 'js/widget_dummy.js' %}"></script>
+ 	<script src="{% static 'js/widget_dictionary.js' %}"></script>
+	<script src="{% static 'js/widget_carddeck.js' %}"></script>
+ 	<script src="{% static 'js/custom.js' %}"></script>
+ 	
+	<script src="{% static 'js/isotope.pkgd.min.js' %}"></script>
+    <script src="{% static 'js/filteringIsotope.js' %}"></script>
+    <script src="{% static 'js/baseline.js' %}"></script>
+    <!-- Parallax -->
+    <script src="{% static 'js/jquery.scrolly.js' %}"></script>
+    <script>
+        $(document).ready(function(){
+           $('.parallax').scrolly({bgParallax: true});
+        });
+		$('img').each(function(i, elem){ $(elem).baseline(16); });
+		$('#mainImage').each(function(i, elem){ $(elem).baseline(16); });
+		$('p').each(function(i, elem){ $(elem).baseline(16); });
+		$('.articleTitle').each(function(i, elem){ $(elem).baseline(16); });
+    </script>
+    <script>
+    $(document).ready(function(){
+        $.post( "/add_to_history/", {
+                article: '{{article.id}}',
+                value: '',
+                type: 'content',
+                csrfmiddlewaretoken: getCookie('csrftoken'),
+            });
+        });
+    $('.rating span').click(function(){
+        var rating = parseInt(this.getAttribute('rating'));
+        var rating_type = this.parentElement.id;  
+        this.parentElement.innerHTML = Array(rating+1).join("<i class='fa fa-star' style='color: #22ADC2'></i>");
+        $.post( "/add_to_history/", {   
+                article: '{{article.id}}',
+                value: rating,
+                type: rating_type,
+                csrfmiddlewaretoken: getCookie('csrftoken'),
+            });
+    });
+    $('.contentFrame').scroll( function(){
+		if( this.scrollHeight-this.clientHeight > 0){
+			if(this.scrollTop/(this.scrollHeight-this.clientHeight)>0.5){
+	            $('.footer').addClass('open');
+	        }else{
+	            $('.footer').removeClass('open');
+	        }
+		}else{
+	        $('.footer').addClass('open');
+		}
+    });
+	// Trigger the first time, in case there is no scroll opportunity
+	$('.contentFrame').scroll()
+
+    $(function(){
+        $("#article").articleviewer(
+            {'article': "{{ article.get_absolute_url }}" });
+        $("#cards").carddeck({
+			'cover': $("#cover"),
+			'carddecks': [
+				{'url': '/widgets/dictionary/', 'params': {'word':"%%WORD%%"}},
+				{'url': '/widgets/customcard/', 'params': {'word':"%%WORD%%"}}
+			]
+		});
+    });
+	</script>
+{% endblock extraScripts %}
