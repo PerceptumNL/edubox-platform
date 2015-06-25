@@ -60,6 +60,37 @@ class FormNode(template.Node):
                     "callback_fn": self.callback_fn
                 })
 
+@register.tag('link')
+def do_link(parser, token):
+    """Block template tag for links.
+    {% link href=url attributes %}
+      text
+    {% endlink %}
+    """
+    args, kwargs = _split_args_and_kwargs(token.split_contents()[1:])
+    nodelist = parser.parse(('endlink',))
+    parser.delete_first_token()
+    return LinkNode(nodelist, kwargs)
+
+class LinkNode(template.Node):
+    def __init__(self, nodelist, attr={}):
+        self.nodelist = nodelist
+        self.attr = attr
+
+    def render(self, context):
+        link_id = str(uuid.uuid4())
+        text = self.nodelist.render(context)
+        url = expand_location(context['request'], self.attr.pop("href"))
+        attr = " ".join([k +"="+ self.attr[k] for k in self.attr.keys()])
+        return get_template("app_helpers/link.html").render(
+                request=context['request'],
+                context={
+                    "link_id": link_id,
+                    "url": url,
+                    "text": text,
+                    "attr": attr
+                })
+
 def expand_location(request, location):
     """Expand location to fully-qualified URL
 
