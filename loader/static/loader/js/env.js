@@ -1,3 +1,8 @@
+/*******************************
+ * VM Environment for web apps *
+ * --------------------------- */
+
+/* Recursive update of obj with key-value pair. */
 function update(obj, key, val){
 	if( typeof(obj[key]) == "object" && typeof(val) == "object"){
 		for( inner_key in obj[key]){
@@ -109,7 +114,11 @@ function update(obj, key, val){
 			if(cb_fn == undefined){ cb_fn = Env.render; }
 			return _this.prototype.get(rel_path, cb_fn);
 		};
-		_this.load = function(){ _this.get(); };
+		_this.load = function(rel_path){
+			// Load app into environment
+			Env.cache.current_app = _this;
+			_this.get(rel_path);
+		};
 
 		_this.post = function(rel_path, data, cb_fn){
 			if(cb_fn == undefined){ cb_fn = Env.render; }
@@ -117,8 +126,9 @@ function update(obj, key, val){
 		};
 	}
 
-	// Add Env::cache slot, if necesary
+	// Add Env::cache slots, if necesary
 	Env.cache.apps = Env.cache.apps || undefined;
+	Env.cache.current_app = Env.cache.current_app || undefined;
 	// Add Env::config slots, if neccary
 	var config = Env.config.apps = Env.config.apps || {}
 	config.api = config.api || {};
@@ -146,32 +156,42 @@ function update(obj, key, val){
 		}
 	};
 	// Define Env::app function to retrieve one App instance, if neccesary
-	Env.app = Env.app || function(app_id, cb_fn){
-		if( Env.cache.apps ){
-			var apps = Env.cache.apps;
-			for(var i = 0; i < apps.length; i++){
-				if( apps[i].get_id() == parseInt(app_id) ){
-					cb_fn(apps[i]);
+	Env.app = Env.app || function(){
+		if( arguments.length == 2 ){
+			// Call: app(app_id, cb_fn)
+			// -> Retrieve details for app_id and call cb_fn with app object.
+			app_id = arguments[0];
+			cb_fn = arguments[1];
+			if( Env.cache.apps ){
+				var apps = Env.cache.apps;
+				for(var i = 0; i < apps.length; i++){
+					if( apps[i].get_id() == parseInt(app_id) ){
+						cb_fn(apps[i]);
+					}
 				}
+			}else{
+				var apps = Env.cache.apps = []
+				var details_url = config.api.details.replace("--$id--", app_id);
+				$.get(details_url, function(data, statusText, jqXhr){
+					var app = new App(
+						data['id'],
+						data['title'],
+						data['icon'],
+						config.api.router.replace("--$id--", data['id'])
+					);
+					apps.push(app);
+					cb_fn(app);
+				});
 			}
-		}else{
-			var apps = Env.cache.apps = []
-			var details_url = config.api.details.replace("--$id--", app_id);
-			$.get(details_url, function(data, statusText, jqXhr){
-				var app = new App(
-					data['id'],
-					data['title'],
-					data['icon'],
-					config.api.router.replace("--$id--", data['id'])
-				);
-				apps.push(app);
-				cb_fn(app);
-			});
+		}else if( arguments.length == 0 ){
+			// Call: app()
+			// -> Return App instance of currently loaded app, or undefined.
+			return Env.cache.current_app
 		}
 	}
 	// Bind app view
 	Env.Router.bind("/app/([0-9]+)(/.*)", function(app_id, path){
-		Env.app(app_id, function(app){ app.get(path); });
+		Env.app(app_id, function(app){ app.load(path); });
 	});
 })(Environment, jQuery);
 
