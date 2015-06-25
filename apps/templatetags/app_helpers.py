@@ -100,13 +100,16 @@ def expand_location(request, location):
         path = service_match.group(2) or "/"
         return reverse('service_routing', args=(service, path))
 
-    app = request.outer_resolver_match.kwargs['app_id']
-    if location[:1] == "/":
-        return reverse('app_routing', args=(app, location))
+    if hasattr(request, 'outer_resolver_match'):
+        app = request.outer_resolver_match.kwargs['app_id']
+        if location[:1] == "/":
+            return reverse('app_routing', args=(app, location))
+        else:
+            root = request.outer_resolver_match.kwargs['path']
+            if root == "":
+                root = "/"
+            elif root[-1] != "/":
+                root = "/"+"/".join(root.split("/")[:-1])
+            return reverse('app_routing', args=(app, root+location))
     else:
-        root = request.outer_resolver_match.kwargs['path']
-        if root == "":
-            root = "/"
-        elif root[-1] != "/":
-            root = "/"+"/".join(root.split("/")[:-1])
-        return reverse('app_routing', args=(app, root+location))
+        return location if location != "" else "/"
