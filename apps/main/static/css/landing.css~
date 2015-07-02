@@ -1,0 +1,124 @@
+.lightblue {
+    background-color: #95d7d4;
+}
+.darkblue {
+    background-color: #5fb5b2;
+    color: #FFF;
+}
+.dark{
+    background-color: #000;
+    color:#FFF;
+}
+
+.title{
+
+}
+
+.header{
+    position: relative;
+    margin: 128px auto;
+    color: #FFF;
+    text-align: center;
+}
+.header h1{
+    font-size: 4em;
+}
+.header p{
+    font-size: 1.6em;
+}
+.header a{
+    background-color: #f7c45f;
+    color: #FFF;
+}
+
+h1 a{
+    padding: 8px;
+    background: #f7c45f;
+    color: #FFF;
+    margin: 8px;
+}
+
+.footer{
+    margin-top: 64px;
+    margin-bottom: 32px;
+}
+.footer h1{
+    margin-bottom: 24px;
+}
+.footer h6{
+    text-align: right;
+}
+
+.content{
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.content p{
+    font-size: 1.3em;
+}
+
+.quote p{
+    margin: 16px 32px;
+    color: #FFF;
+    font-style: italic;
+    font-size: 2.5em;
+    text-align: center;
+}
+.quote h3{
+    text-align: right;
+    color: #555;
+}
+
+.features{
+    padding: 32px 0;
+}
+
+.features h1{
+    text-align:center;
+    margin: 8px 32px;
+}
+.features h2{
+    text-align:center;
+    margin: 8px 32px;
+}
+
+.features div{
+    text-align: center;    
+}
+.features div h1{
+    margin: 8px 64px;
+}
+.features div p{
+    text-align: left;
+    margin: 8px 64px;
+}
+.features div img{
+    max-height:240px;
+    margin: 32px auto;
+    width:auto;
+}
+
+.form{
+    margin-top: 48px;
+    margin-bottom: 48px;
+}
+
+div label{
+    float: right;
+    color: #5fb5b2;
+    font-size:2em;
+}
+
+.form-control{
+    border-radius: 0px;
+    border: none;
+    background-color: #f5f5f5;
+}
+
+button.submit{
+    float: right;
+    background-color: #f7c45f;
+    color: #FFF;
+}
+
