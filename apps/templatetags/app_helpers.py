@@ -143,4 +143,4 @@ def expand_location(request, location):
                 root = "/"+"/".join(root.split("/")[:-1])
             return reverse('app_routing', args=(app, root+location))
     else:
-        return location if location != "" else "/"
+        return location or "/"
