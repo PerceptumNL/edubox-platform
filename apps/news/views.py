@@ -77,7 +77,7 @@ def query(request):
         articles = []
         querylist = [Q(body__icontains=query) for query in normalize_query(query_string)]
         querylist += [Q(title__icontains=query) for query in normalize_query(query_string)]
-        matching = Article.objects.filter(reduce(operator.or_, querylist))
+        matching = TimestampedArticle.objects.filter(reduce(operator.or_, querylist))
         matching = sorted(matching, key=lambda x: x.publication_date,
                 reverse=True)
         for article in matching:
@@ -146,8 +146,8 @@ def article(request, identifier):
     # Resolve identified article
     try:
         # Attempt to retrieve the article
-        article = Article.objects.get(pk=int(identifier))
-    except Article.DoesNotExist:
+        article = TimestampedArticle.objects.get(pk=int(identifier))
+    except TimestampedArticle.DoesNotExist:
         return HttpResponseRedirect('/')
 
     # Retrieve the categories that this article belongs to.
@@ -178,7 +178,7 @@ def article(request, identifier):
             # If the category was stored in the database
             if category.pk is not None:
                 article_read.send(
-                        sender=Article,
+                        sender=TimestampedArticle,#Used to be Article, not sure if correct
                         user=request.user,
                         category=category,
                         article_id=identifier,
