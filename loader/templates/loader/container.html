@@ -1,0 +1,67 @@
+{% load i18n staticfiles compress %}
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{% trans "LeestMeer" %}</title>
+</head>
+<body>
+<style>
+ .app_container {
+     width: 100%;
+     margin: auto;
+ }
+</style>
+<div class='app_container' id='app-vm'>App</div>
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+{% compress js %}
+<script type="text/javascript" src="{% static "loader/js/env.js" %}"></script>
+<script type="text/javascript">
+Environment.init({
+    container: "#app-vm",
+    apps: {
+        api: {
+            list: "{% url 'app-list' %}",
+            details: "{% url 'app-detail' '--$id--' %}",
+            router: "{% url 'app_routing' '--$id--' '/--$path--' %}"
+        }
+    },
+    services: {
+        api: {
+            list: "{% url 'service-list' %}",
+            details: "{% url 'service-detail' '--$id--' %}",
+            router: "{% url 'service_routing' '--$id--' '/--$path--' %}"
+        }
+    }
+});
+</script>
+<script>
+$(document).ready(function(){
+  // Attach a submit handler to the form
+  $( ".login" ).submit(function( event ) {
+    // Stop form from submitting normally
+    event.preventDefault();
+ 
+    // Get some values from elements on the page:
+    var $form = $( this ),
+      username = $form.find( "input[name='login']" ).val(),
+      //STILL PLAIN TEXT!
+      pword = $form.find("input[name='password']").val(),
+      remember = $form.find("input[name='remember']").val(),
+      //get url to post form to from form action
+      url = $form.attr( "action" );
+ 
+    // Send the data using post
+    var posting = $.post( url, { login: username, password: pword, remember: remember }, 'jsonp');
+    // Put the results in a div....(not done)
+    posting.done(function( data ) {
+        console.log("posting done");
+    });
+  });
+});
+</script>
+{% endcompress %}
+<div id="loader_container">
+    <h1>{{ html |safe}}</h1>
+</div>
+</body>
+</html>

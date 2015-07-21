@@ -63,11 +63,38 @@ def _local_routing(request, urlconf, path):
 
 def _remote_routing(request, urlconf, path):
     req = BeautifulSoup(requests.get(urlconf+path).text)
+    print(path)
+    print(urlconf)
+    print("---")
+    print(request.get_full_path())
+    full_path = request.get_full_path()
+    root_path = "/".join(full_path.split('/')[:4])
+    print(root_path)
+    print("---")
     
     #Simple test to filter forms, should replace all local urls
     [print(x.prettify()) for x in req.findAll('form')]
+    
+    #needs work, redirects to original pilot.leestmeer now
+    for a in req.findAll('a'):
+        a['href'] = root_path+a['href']
+    print(urlconf)
+    
+    for b in req.findAll('form'):
+        print(b['action'])
+        b['action'] = urlconf+b['action']
 
-    return HttpResponse(str(req))
+    for img in req.findAll('img'):
+        print(img['src'])
+        img['src'] = urlconf+img['src']
+
+    for link in req.findAll('link'):
+        print(link['href'])
+        link['href'] = urlconf+link['href']
+
+    loaded_req=req
+
+    return render(request, "loader/container.html", {'html':str(req)}) #HttpResponse(str(req))
     
 
 def app_routing(request, app_id, path):
