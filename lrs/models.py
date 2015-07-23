@@ -1,30 +1,34 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from django.utils import formats
+from django.core.urlresolvers import reverse
 
 from polymorphic import PolymorphicModel
-from abc import ABCMeta
 from uuid import uuid4
 
+from loader.models import App
 
 class Event(PolymorphicModel):
-    __metaclass__ = ABCMeta
-    verb_mapping = {'read': ReadEvent,
-                    'rated': RatedEvent,
-                    'scored': ScoredEvent,
-                    'clicked': ClickedEvent}
+    uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    actor = models.ForeignKey(User)
-    
-    #This should be a seperate class with verb = models.ForeignKey(Verb)
-    #How to link subclasses to specific Verb instances?
-    verb_iri = models.URLField()
-    description = models.TextField
+    user = models.ForeignKey(User)
+    verb = models.ForeignKey(Verb)
 
-    date = models.DateTimeField(auto_now=True)
+    #The object and result properties are set in the verb-specific subclasses
+    #as the type of object or result can differ based on the verb used.
+    
+    context = models.ForeignKey(Context)
+    
+    timestamp = models.DateTimeField(default=timezone.now)
+    stored = models.DateTimeField(auto_now_add=True)
+
+    authority = models.CharField()
+    version = models.CharField()
 
     class Meta:
-        ordering = ["-date"]
+        abstract = True
+        ordering = ["-timestamp"]
 
     def __repr__(self):
         return str(self)
@@ -35,64 +39,69 @@ class Event(PolymorphicModel):
     def __str__(self):
         return unicode(self).encode('utf-8')
 
-    def xapi_id(self):
-        return self.uuid
-
-    def xapi_actor(self):
-        return self.user
-
-    def xapi_verb(self):
-        return self.verb_iri, self.description
-
-    @abstractproperty
-    def xapi_object(self):
-        pass
-
-    @abstractproperty
-    def xapi_result(self):
-        pass
-
-    def xapi_context(self):
-        #App
-        #School-Teacher
-            #Retrieve from User?
-
-    def xapi_timestamp(self):
-
-    def xapi_stored(self):
-
-    def xapi_authority(self):
-
-    def xapi_version(self):
-
     def describe(self):
         """Return a dictionary-like object with key properties."""
         displayname = (lambda user: u' '.join([user.first_name, user.last_name])
                 if user.first_name else user.username)
-        return {'type': 'event',
-                'date': formats.date_format(
-                    timezone.localtime(self.date),
+        return {'date': formats.date_format(
+                    timezone.localtime(self.timestamp),
                     "DATETIME_FORMAT"),
-                'user': unicode(displayname(self.user))
+                'user': unicode(displayname(self.user)),
+                'group': unicode(context.group),
+                'app': unicode(context.app)
                 }
     
-    def create():
-        #Static subclass constructor
+    def create(app, group, user, verb, obj, result=None, timestamp=None,
+            authority='admin', version='1.0.0'):    
+        #Should be wrapped with some try-excepts, but for now raising is fine
+        _app = App.objects.get(pk=app)
+        _verb = Verb.objects.get(key=verb)
+
+        kwargs = {'user': User.objects.get(pk=user),
+                  'verb': _verb,
+                  'context': Context.objects.get_or_create(_app, group)[1],
+                  'authority': authority,
+                  'version': version
+                  }
+        if timestamp:
+            kwargs.update({'timestamp': timestamp})
+
+        eval(_verb.event_class).create(kwargs, obj, result)
         
+class Verb(models.Model):
+    key = models.CharField()
+    event_class = models.CharField()
+    iri = models.URLField()
+    description = models.TextField()
+    
+    def __str__(self):
+        return str(key) +": "+ str(iri)
+    
+    def __repr__(self):
+        return str(self)
+
+class Context(models.Model):
+    app = models.ForeignKey(App)
+
+    #This should be a foreign key to Group-Institute hierarchy, but that hasn't
+    #been implemented yet.
+    group = models.CharField()
+    
+    def __str__(self):
+        return str(app) +": "+ str(group)
+    
+    def __repr__(self):
+        return str(self)
 
 class ReadEvent(Event):
-    verb_iri  = "http://id.tincanapi.com/verb/viewed"
-    description = ("Indicates that the actor has viewed the object. "
-                   "For now this will mean 'has read article'.")
+    article = models.ForeignKey('apps.news.TimestampedArticle')
     
-    article = models.ForeignKey('content.Article')
-
     def __unicode__(self):
         return u'%s' % (self.article.title,)
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
-        desc = super(ArticleHistoryItem, self).describe()
+        desc = super(ReadEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
             'type': 'event-article-view',
@@ -103,17 +112,12 @@ class ReadEvent(Event):
             })
         return desc
 
+    def create(kwargs, obj, res):
+        article = TimestampedArticle.objects.get(pk=obj)
+        ReadEvent.objects.create(**kwargs, article=article)
 
 class RatedEvent(Event):
-    verb_iri = "http://id.tincanapi.com/verb/rated"
-    description = ("Action of giving a rating to an object. Should only be "
-                   "used when the action is the rating itself, as opposed to "
-                   "another action such as 'reading' where a rating can be "
-                   "applied to the object as part of that action. In general "
-                   "the rating should be included in the Result with a Score "
-                   "object.")
-    
-    article = models.ForeignKey('content.Article')
+    article = models.ForeignKey('apps.news.TimestampedArticle')
     rating = models.IntegerField()
 
     def __unicode__(self):
@@ -121,7 +125,7 @@ class RatedEvent(Event):
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
-        desc = super(ArticleRatingItem, self).describe()
+        desc = super(RatedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
             'type': 'event-article-rating',
@@ -133,16 +137,13 @@ class RatedEvent(Event):
             })
         return desc
 
+    def create(kwargs, obj, res):
+        article = TimestampedArticle.objects.get(pk=obj)
+        rating = int(res)
+        RatedEvent.objects.create(**kwargs, article=article, rating=rating)
+
 class ScoredEvent(Event):
-    verb_iri = "http://adlnet.gov/expapi/verbs/scored"
-    description = ("A measure related to learner performance, typically "
-                   "between either 0 and 1 or 0 and 100, which corresponds to "
-                   "learner performance on an activity. It is expected the "
-                   "context property provides guidance to the allowed values "
-                   "of the result field."
-                   "For now this will mean 'rated article difficulty'.")
-    
-    article = models.ForeignKey('content.Article')
+    article = models.ForeignKey('apps.news.TimestampedArticle')
     rating = models.IntegerField()
 
     def __unicode__(self):
@@ -150,7 +151,7 @@ class ScoredEvent(Event):
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
-        desc = super(ArticleDifficultyItem, self).describe()
+        desc = super(ScoredEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
             'type': 'event-article-difficulty',
@@ -162,13 +163,13 @@ class ScoredEvent(Event):
             })
         return desc
 
-class ClickedEvent(Event):
-    verb_iri = "http://adlnet.gov/expapi/verbs/interacted"
-    description = ("A catch-all verb used to assert an actor's manipulation "
-                   "of an object, physical or digital, in some context."
-                   "For now this will mean 'clicked word'.")
+    def create(kwargs, obj, res):
+        article = TimestampedArticle.objects.get(pk=obj)
+        rating = int(res)
+        ScoredEvent.objects.create(**kwargs, article=article, rating=rating)
 
-    article = models.ForeignKey('content.Article')
+class ClickedEvent(Event):
+    article = models.ForeignKey('apps.news.TimestampedArticle')
     word = models.CharField(max_length=255)
 
     def __unicode__(self):
@@ -176,7 +177,7 @@ class ClickedEvent(Event):
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
-        desc = super(WordHistoryItem, self).describe()
+        desc = super(ClickedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
             'type': 'event-word-cover',
@@ -187,4 +188,9 @@ class ClickedEvent(Event):
                 }
             })
         return desc
+
+    def create(kwargs, obj, res):
+        article = TimestampedArticle.objects.get(pk=obj)
+        word = str(res)
+        RatedEvent.objects.create(**kwargs, article=article, word=word)
 
