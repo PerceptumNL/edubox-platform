@@ -156,7 +156,7 @@ def article(request, identifier):
     if not request.is_ajax():
         # Fetch random articles from the same categories for reading suggestions.
         random_articles = []
-        read_articles = ArticleHistoryItem.objects.filter(user=request.user)
+        read_articles = ReadEvent.objects.filter(user=request.user)
         read_articles = list(set([history.article.pk for history in read_articles] + [article.pk]))
         for category in categories:
             random_articles += category.get_random_articles(3, read_articles)
@@ -165,8 +165,8 @@ def article(request, identifier):
         if article in random_articles:
             random_articles.remove(article)
 
-        difficulty_items = ArticleDifficultyItem.objects.filter(user=request.user, article=article)
-        rating_items = ArticleRatingItem.objects.filter(user=request.user, article=article)
+        difficulty_items = ScoredEvent.objects.filter(user=request.user, article=article)
+        rating_items = RatingEvent.objects.filter(user=request.user, article=article)
 
         recommendations = []
         for rand_article in random_articles:
