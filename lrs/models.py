@@ -8,6 +8,32 @@ from polymorphic import PolymorphicModel
 from uuid import uuid4
 
 from loader.models import App
+from apps.news.models import TimestampedArticle
+
+class Verb(models.Model):
+    key = models.CharField(max_length=255)
+    event_class = models.CharField(max_length=255)
+    iri = models.URLField()
+    description = models.TextField()
+    
+    def __str__(self):
+        return str(self.key) +": "+ str(self.iri)
+    
+    def __repr__(self):
+        return str(self)
+
+class Context(models.Model):
+    app = models.ForeignKey(App)
+
+    #This should be a foreign key to Group-Institute hierarchy, but that hasn't
+    #been implemented yet.
+    group = models.CharField(max_length=255)
+    
+    def __str__(self):
+        return str(self.app) +": "+ str(self.group)
+    
+    def __repr__(self):
+        return str(self)
 
 class Event(PolymorphicModel):
     uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
@@ -23,11 +49,10 @@ class Event(PolymorphicModel):
     timestamp = models.DateTimeField(default=timezone.now)
     stored = models.DateTimeField(auto_now_add=True)
 
-    authority = models.CharField()
-    version = models.CharField()
+    authority = models.CharField(max_length=255)
+    version = models.CharField(max_length=255)
 
     class Meta:
-        abstract = True
         ordering = ["-timestamp"]
 
     def __repr__(self):
@@ -59,7 +84,7 @@ class Event(PolymorphicModel):
 
         kwargs = {'user': User.objects.get(pk=user),
                   'verb': _verb,
-                  'context': Context.objects.get_or_create(_app, group)[1],
+                  'context': Context.objects.get_or_create(app=_app, group=group)[0],
                   'authority': authority,
                   'version': version
                   }
@@ -68,33 +93,8 @@ class Event(PolymorphicModel):
 
         eval(_verb.event_class).create(kwargs, obj, result)
         
-class Verb(models.Model):
-    key = models.CharField()
-    event_class = models.CharField()
-    iri = models.URLField()
-    description = models.TextField()
-    
-    def __str__(self):
-        return str(key) +": "+ str(iri)
-    
-    def __repr__(self):
-        return str(self)
-
-class Context(models.Model):
-    app = models.ForeignKey(App)
-
-    #This should be a foreign key to Group-Institute hierarchy, but that hasn't
-    #been implemented yet.
-    group = models.CharField()
-    
-    def __str__(self):
-        return str(app) +": "+ str(group)
-    
-    def __repr__(self):
-        return str(self)
-
 class ReadEvent(Event):
-    article = models.ForeignKey('apps.news.TimestampedArticle')
+    article = models.ForeignKey(TimestampedArticle)
     
     def __unicode__(self):
         return u'%s' % (self.article.title,)
@@ -114,10 +114,10 @@ class ReadEvent(Event):
 
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
-        ReadEvent.objects.create(**kwargs, article=article)
+        ReadEvent.objects.create(article=article, **kwargs)
 
 class RatedEvent(Event):
-    article = models.ForeignKey('apps.news.TimestampedArticle')
+    article = models.ForeignKey(TimestampedArticle)
     rating = models.IntegerField()
 
     def __unicode__(self):
@@ -140,10 +140,10 @@ class RatedEvent(Event):
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
         rating = int(res)
-        RatedEvent.objects.create(**kwargs, article=article, rating=rating)
+        RatedEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ScoredEvent(Event):
-    article = models.ForeignKey('apps.news.TimestampedArticle')
+    article = models.ForeignKey(TimestampedArticle)
     rating = models.IntegerField()
 
     def __unicode__(self):
@@ -166,10 +166,10 @@ class ScoredEvent(Event):
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
         rating = int(res)
-        ScoredEvent.objects.create(**kwargs, article=article, rating=rating)
+        ScoredEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ClickedEvent(Event):
-    article = models.ForeignKey('apps.news.TimestampedArticle')
+    article = models.ForeignKey(TimestampedArticle)
     word = models.CharField(max_length=255)
 
     def __unicode__(self):
@@ -192,5 +192,5 @@ class ClickedEvent(Event):
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
         word = str(res)
-        RatedEvent.objects.create(**kwargs, article=article, word=word)
+        RatedEvent.objects.create(article=article, word=word, **kwargs)
 

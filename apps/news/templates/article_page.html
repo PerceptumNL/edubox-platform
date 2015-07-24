@@ -122,14 +122,14 @@
 		$('.articleTitle').each(function(i, elem){ $(elem).baseline(16); });
     </script>
     <script>
-    $(document).ready(function(){
+    /*$(document).ready(function(){
         $.post( "/add_to_history/", {
                 article: '{{article.id}}',
                 value: '',
                 type: 'content',
                 csrfmiddlewaretoken: getCookie('csrftoken'),
             });
-        });
+        }); 
     $('.rating span').click(function(){
         var rating = parseInt(this.getAttribute('rating'));
         var rating_type = this.parentElement.id;  
@@ -140,7 +140,7 @@
                 type: rating_type,
                 csrfmiddlewaretoken: getCookie('csrftoken'),
             });
-    });
+    });Removed by Tim; adding events to db directly for now*/
     $('.contentFrame').scroll( function(){
 		if( this.scrollHeight-this.clientHeight > 0){
 			if(this.scrollTop/(this.scrollHeight-this.clientHeight)>0.5){

@@ -14,6 +14,8 @@ import json
 import requests
 
 from .models import *
+from lrs.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
+from loader.models import App
 
 def update_feeds(request):
     for feed in ContentFeed.objects.all():
@@ -166,7 +168,7 @@ def article(request, identifier):
             random_articles.remove(article)
 
         difficulty_items = ScoredEvent.objects.filter(user=request.user, article=article)
-        rating_items = RatingEvent.objects.filter(user=request.user, article=article)
+        rating_items = RatedEvent.objects.filter(user=request.user, article=article)
 
         recommendations = []
         for rand_article in random_articles:
@@ -177,12 +179,16 @@ def article(request, identifier):
         for category in categories:
             # If the category was stored in the database
             if category.pk is not None:
-                article_read.send(
+                """article_read.send(
                         sender=TimestampedArticle,#Used to be Article, not sure if correct
                         user=request.user,
                         category=category,
                         article_id=identifier,
-                        article=article)
+                        article=article)"""
+                #The old solution is above, but can't find the corresponding
+                #Signal.connect, so this is a hacky fix
+                app_id = App.objects.get(title='News')
+                Event.create(app_id.id, '', request.user.id, 'read', identifier)
         return render(request, 'article_page.html', {
             "article": article,
             "random_articles": recommendations,
