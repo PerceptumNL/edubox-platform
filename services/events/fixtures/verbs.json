@@ -1,6 +1,6 @@
 [
     {
-        "model": "lrs.Verb",
+        "model": "events.Verb",
         "pk": 1,
         "fields": {
             "key": "read",
@@ -10,7 +10,7 @@
         }
     },
     {
-        "model": "lrs.Verb",
+        "model": "events.Verb",
         "pk": 2,
         "fields": {
             "key": "rated",
@@ -20,7 +20,7 @@
         }
     },
     {
-        "model": "lrs.Verb",
+        "model": "events.Verb",
         "pk": 3,
         "fields": {
             "key": "scored",
@@ -30,7 +30,7 @@
         }
     },
     {
-        "model": "lrs.Verb",
+        "model": "events.Verb",
         "pk": 4,
         "fields": {
             "key": "clicked",

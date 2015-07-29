@@ -14,7 +14,7 @@ import json
 import requests
 
 from .models import *
-from lrs.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
+from services.events.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
 from loader.models import App
 
 def update_feeds(request):

@@ -47,7 +47,7 @@ INSTALLED_APPS = (
     'apps.helloworld',
     'apps.news',
     'apps.main',
-    'lrs'
+    'services.events'
 )
 
 MIDDLEWARE_CLASSES = (

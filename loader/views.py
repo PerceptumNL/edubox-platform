@@ -29,7 +29,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
 
-def _local_routing(request, urlconf, path):
+def _local_routing(request, urlconf, path, app=True):
     """Redirect request to a local view."""
     try:
         match = RegexURLResolver("^/", urlconf).resolve(path)
@@ -48,7 +48,7 @@ def _local_routing(request, urlconf, path):
     # Change URL pattern match
     request.resolver_match = match
     #Add app specific settings for the user
-    if not request.user.is_anonymous():
+    if not request.user.is_anonymous() and app:
         settings_qd = request.GET.copy()
         settings = {}
         app_id = request.outer_resolver_match.kwargs['app_id']
@@ -89,7 +89,7 @@ def service_routing(request, service_id, path):
     """Redirect request to the referred service' location."""
     service = get_object_or_404(Service, pk=service_id)
     if service.local:
-        response = _local_routing(request, service.root, path)
+        response = _local_routing(request, service.root, path, False)
 
         # TODO: Modify response where necessary
 
