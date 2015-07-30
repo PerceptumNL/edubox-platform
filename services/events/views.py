@@ -5,8 +5,8 @@ from .models import Event
 import json
 
 
-def post_events(data):
-    events = json.loads(data)
+def post_events(request):
+    events = json.loads(request.data)
     if type(events)==list:
         for event in events:
             resp = post_event(event)
@@ -22,7 +22,7 @@ def post_event(event):
     except TypeError:
         return HttpResponse(status=400)
 
-def get_events():
+def get_events(request):
     #TODO: Implement filters
     pass
 
