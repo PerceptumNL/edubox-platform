@@ -1,30 +1,38 @@
-from django.shortcuts import render
+from django.http import HttpResponse
+from django.views.generic import View
 
 from .models import Event
 
 import json
 
 
-def post_events(request):
-    events = json.loads(request.data)
-    if type(events)==list:
-        for event in events:
-            resp = post_event(event)
-            if resp.status_code == 400:
-                return resp
-    else:
-        return post_event(events)
+class API(View)
 
-def post_event(event):
-    try:
-        Event.create(**event)
+    def get(self, request):
+        #TODO: Implement filters
         return HttpResponse()
-    except TypeError:
-        return HttpResponse(status=400)
 
-def get_events(request):
-    #TODO: Implement filters
-    pass
+    def get_event(event):
+        try:
+            return json.dumps(Event.objects.get(pk=event).describe())
+        except Event.DoesNotExist:
+            return HttpResponse(status=400)
 
-def get_event(event):
-    return json.dumps(Event.objects.get(pk=event).describe())
+    def post(self, request):
+        events = json.loads(request.POST)
+        if type(events)==list:
+            for event in events:
+                resp = post_event(event)
+                if resp.status_code == 400:
+                    return resp
+        else:
+            return post_event(events)
+
+    def post_event(event):
+        try:
+            #Event.create(**event)
+            print(event)
+            return HttpResponse()
+        except TypeError:
+            return HttpResponse(status=400)
+
