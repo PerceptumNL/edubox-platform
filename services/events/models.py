@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils import formats
@@ -22,19 +24,6 @@ class Verb(models.Model):
     def __repr__(self):
         return str(self)
 
-class Context(models.Model):
-    app = models.ForeignKey(App)
-
-    #This should be a foreign key to Group-Institute hierarchy, but that hasn't
-    #been implemented yet.
-    group = models.CharField(max_length=255)
-    
-    def __str__(self):
-        return str(self.app) +": "+ str(self.group)
-    
-    def __repr__(self):
-        return str(self)
-
 class Event(PolymorphicModel):
     uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     
@@ -44,15 +33,17 @@ class Event(PolymorphicModel):
     #The object and result properties are set in the verb-specific subclasses
     #as the type of object or result can differ based on the verb used.
     
-    context = models.ForeignKey(Context)
+    app = models.ForeignKey(App)
+
+    #This should be a foreign key to Group-Institute hierarchy, but that hasn't
+    #been implemented yet.
+    group = models.CharField(max_length=255)
     
     timestamp = models.DateTimeField(default=timezone.now)
     stored = models.DateTimeField(auto_now_add=True)
 
-    authority = models.CharField(max_length=255)
-    version = models.CharField(max_length=255)
-
     class Meta:
+        abstract = True
         ordering = ["-timestamp"]
 
     def __repr__(self):
@@ -62,7 +53,7 @@ class Event(PolymorphicModel):
         return u'Event'
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
+        return self.__unicode__().encode('utf-8')
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
@@ -72,27 +63,39 @@ class Event(PolymorphicModel):
                     timezone.localtime(self.timestamp),
                     "DATETIME_FORMAT"),
                 'user': unicode(displayname(self.user)),
-                'group': unicode(context.group),
-                'app': unicode(context.app)
+                'group': unicode(group),
+                'app': unicode(app)
                 }
     
-    def create(app, group, user, verb, obj, result=None, timestamp=None,
-            authority='admin', version='1.0.0'):    
+    def create(app, group, user, verb, obj, result=None, timestamp=None):    
         #Should be wrapped with some try-excepts, but for now raising is fine
         _app = App.objects.get(pk=app)
         _verb = Verb.objects.get(key=verb)
 
         kwargs = {'user': User.objects.get(pk=user),
                   'verb': _verb,
-                  'context': Context.objects.get_or_create(app=_app, group=group)[0],
-                  'authority': authority,
-                  'version': version
+                  'app': _app,
+                  'group': group
                   }
         if timestamp:
             kwargs.update({'timestamp': timestamp})
 
-        eval(_verb.event_class).create(kwargs, obj, result)
+        #eval(_verb.event_class).create(kwargs, obj, result)
+        #Create specific subclass instance and a generic event instance with
+        #with a pointer to the specific instance, thus the data is redundant
+        subclass = ContentType.objects.get(app_label='events',
+                model=_verb.event_class.lower())
+        instance = subclass.model_class().create(kwargs, obj, result)
+        #print(instance.pk)
+        #print(str(instance))
+        GenericEvent.objects.create(content_type=subclass,
+                object_id=instance.pk, verb_instance=instance, **kwargs)
         
+class GenericEvent(Event):
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.UUIDField()
+    verb_instance = GenericForeignKey('content_type', 'object_id')
+
 class ReadEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
     
@@ -114,7 +117,7 @@ class ReadEvent(Event):
 
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
-        ReadEvent.objects.create(article=article, **kwargs)
+        return ReadEvent.objects.create(article=article, **kwargs)
 
 class RatedEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
@@ -140,7 +143,7 @@ class RatedEvent(Event):
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
         rating = int(res)
-        RatedEvent.objects.create(article=article, rating=rating, **kwargs)
+        return RatedEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ScoredEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
@@ -166,7 +169,7 @@ class ScoredEvent(Event):
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
         rating = int(res)
-        ScoredEvent.objects.create(article=article, rating=rating, **kwargs)
+        return ScoredEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ClickedEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
@@ -192,5 +195,5 @@ class ClickedEvent(Event):
     def create(kwargs, obj, res):
         article = TimestampedArticle.objects.get(pk=obj)
         word = str(res)
-        RatedEvent.objects.create(article=article, word=word, **kwargs)
+        return RatedEvent.objects.create(article=article, word=word, **kwargs)
 

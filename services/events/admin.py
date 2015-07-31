@@ -22,7 +22,7 @@ class ScoredEventAdmin(PolymorphicChildModelAdmin):
     base_model = ScoredEvent
     list_display = ('user', 'rating', 'article', 'timestamp')
 
-
+"""
 class EventAdmin(PolymorphicParentModelAdmin):
     base_model = Event
     list_display = ('user', 'get_type', 'get_article', 'get_value', 'timestamp')
@@ -61,8 +61,8 @@ class EventAdmin(PolymorphicParentModelAdmin):
         else:
             return ""
     get_value.short_description = 'Value'
-
+"""
 
 admin.site.register(Verb)
-admin.site.register(Context)
-admin.site.register(Event, EventAdmin)
+admin.site.register(GenericEvent)
+#admin.site.register(Event, EventAdmin)

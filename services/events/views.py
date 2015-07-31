@@ -6,7 +6,7 @@ from .models import Event
 import json
 
 
-class API(View)
+class API(View):
 
     def get(self, request):
         #TODO: Implement filters
