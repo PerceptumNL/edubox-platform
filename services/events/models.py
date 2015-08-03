@@ -49,11 +49,10 @@ class Event(PolymorphicModel):
     def __repr__(self):
         return str(self)
 
-    def __unicode__(self):
-        return u'Event'
-
     def __str__(self):
-        return self.__unicode__().encode('utf-8')
+        return ('at '+ formats.date_format(timezone.localtime(self.timestamp),
+                'DATETIME_FORMAT') +' in '+ self.app.title +' : '+
+                self.user.username +' '+ self.verb.key +' ')
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
@@ -99,8 +98,8 @@ class GenericEvent(Event):
 class ReadEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
     
-    def __unicode__(self):
-        return u'%s' % (self.article.title,)
+    def __str__(self):
+        return super(ReadEvent, self).__str__() + self.article.title
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
@@ -123,8 +122,8 @@ class RatedEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
     rating = models.IntegerField()
 
-    def __unicode__(self):
-        return u'%s' % (self.article.title,)
+    def __str__(self):
+        return super(RatedEvent, self).__str__() + self.article.title
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
@@ -149,8 +148,8 @@ class ScoredEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
     rating = models.IntegerField()
 
-    def __unicode__(self):
-        return u'%s' % (self.article.title,)
+    def __str__(self):
+        return super(ScoredEvent, self).__str__() + self.article.title
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
@@ -175,8 +174,8 @@ class ClickedEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
     word = models.CharField(max_length=255)
 
-    def __unicode__(self):
-        return u'%s' % (self.word,)
+    def __str__(self):
+        return super(ClickedEvent, self).__str__() + self.word
 
     def describe(self):
         """Return a dictionary-like object with key properties."""

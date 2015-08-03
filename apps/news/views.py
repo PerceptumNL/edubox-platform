@@ -180,7 +180,7 @@ def article(request, identifier):
             # If the category was stored in the database
             if category.pk is not None:
                 """article_read.send(
-                        sender=TimestampedArticle,#Used to be Article, not sure if correct
+                        sender=TimestampedArticle,
                         user=request.user,
                         category=category,
                         article_id=identifier,
@@ -188,7 +188,16 @@ def article(request, identifier):
                 #The old solution is above, but can't find the corresponding
                 #Signal.connect, so this is a hacky fix
                 app_id = App.objects.get(title='News')
-                Event.create(app_id.id, '', request.user.id, 'read', identifier)
+                post_data = {'app': app_id.id, 'group': '', 'user':
+                        request.user.id, 'verb': 'read', 'obj': identifier}
+                #Uses the API directly, without CSRF tokens
+                #Should go through the JS VM Environment
+                resp = requests.post('http://localhost:8000/events/api/', post_data)
+                
+                """f = open('/home/tim/Perceptum/response.html', 'w')
+                f.write(resp.text)
+                f.close()
+                print(resp.status_code)"""
         return render(request, 'article_page.html', {
             "article": article,
             "random_articles": recommendations,

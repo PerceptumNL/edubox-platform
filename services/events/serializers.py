@@ -1,24 +1,9 @@
 from rest_framework import serializers
 
-from .models import Event
+from .models import ReadEvent
 
-class EventSerializer(serializers.ModelSerializer):
-    uuid = UUIDField(read_only=True)
-    user = PrimaryKeyRelatedField(queryset=User.objects.all())
-    verb = PrimaryKeyRelatedField(queryset=Verb.objects.all())
-    
-    obj = 
-    result = 
-
-    context = PrimaryKeyRelatedField(queryset=Context.objects.all())
-    stored = DateTimeField(read_only=True)
-    timestamp = DateTimeField()#required=False)
-    authority = CharField(max_length=255)
-    version = CharField(max_length=255)
-
-    """
+class ReadEventSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = Event
-        fields = ('uuid', 'user', 'verb', 'context',
-            'stored', 'timestamp', 'authority', 'version')
-    """
+        model = ReadEvent
+        fields = ('uuid', 'user', 'verb', 'article', 'app', 'group', 'stored',
+                'timestamp')
