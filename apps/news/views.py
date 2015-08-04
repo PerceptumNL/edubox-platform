@@ -179,25 +179,25 @@ def article(request, identifier):
         for category in categories:
             # If the category was stored in the database
             if category.pk is not None:
+                #The old solution for sending Event signal
                 """article_read.send(
                         sender=TimestampedArticle,
                         user=request.user,
                         category=category,
                         article_id=identifier,
                         article=article)"""
-                #The old solution is above, but can't find the corresponding
-                #Signal.connect, so this is a hacky fix
+                #Create the data object to post to the Event store
                 app_id = App.objects.get(title='News')
                 post_data = {'app': app_id.id, 'group': '', 'user':
                         request.user.id, 'verb': 'read', 'obj': identifier}
-                #Uses the API directly, without CSRF tokens
-                #Should go through the JS VM Environment
-                resp = requests.post('http://localhost:8000/events/api/', post_data)
-                
+                #Uses the API directly, should go through the JS VM Environment
+                resp = requests.post('http://localhost:8000/events/api/', 
+                        json.dumps(post_data))
+                #Write response to file for debugging purposes
                 """f = open('/home/tim/Perceptum/response.html', 'w')
                 f.write(resp.text)
-                f.close()
-                print(resp.status_code)"""
+                f.close()"""
+
         return render(request, 'article_page.html', {
             "article": article,
             "random_articles": recommendations,

@@ -22,9 +22,7 @@ class API(View):
             return HttpResponse(status=400)
     
     def post(self, request):
-        event = request.POST.dict()
-        return self.post_event(event)
-        """print(events)
+        events = json.loads(str(request.body, 'utf-8'))
         if type(events)==list:
             for event in events:
                 resp = self.post_event(event)
@@ -32,7 +30,7 @@ class API(View):
                     return resp
             return HttpResponse()
         else:
-            return self.post_event(events)"""
+            return self.post_event(events)
 
     def post_event(self, event):
         try:
@@ -41,7 +39,8 @@ class API(View):
         except TypeError:
             return HttpResponse(status=400)
     
-    #Just here to disable CSRF for testing purposes. SHOULD BE REMOVED!
+    #This means the API is completely open and thus all permissions should
+    #be thoroughly checked in the view functions
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
         return super(API, self).dispatch(*args, **kwargs)
