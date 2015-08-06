@@ -1,40 +1,21 @@
 from django.db import models
 from django.contrib.auth.models import User
-#from django.contrib.sites.models import Site
-from django.utils import timezone
-from django.core.urlresolvers import reverse
-from django.core.signals import request_started
-from django.dispatch import receiver
-
-import pytz
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, unique=True)
-    groups = models.ManyToManyField('Group', blank=True, related_name='users')
-    institute = models.ForeignKey('Institute', blank=True, null=True,
-            related_name='users')
-
-    def __unicode__(self):
-        return unicode(self.user)
+    groups = models.ManyToManyField('Group', through='Role', related_name='users')
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
-
-    @property
-    def is_teacher(self):
-        return Group.objects.filter(leader=self.user).exists()
+        return str(self.user)
 
 class Group(models.Model):
     title = models.CharField(max_length=255)
-    leader = models.ForeignKey(User, null=True, blank=True, related_name='teaches')
-    institute = models.ForeignKey('Institute', null=True, blank=True)
     code = models.CharField(max_length=255, blank=True)
-
-    def __unicode__(self):
-        return u'Group "%s" of %s' % (self.title, self.leader)
+    #If left empty, the group must be an Institute!
+    institute = models.ForeignKey('Group', blank=True, null=True)
 
     def __str__(self):
-        return unicode(self).encode('utf-8')
+        return self.title
 
     def pk_hash(self):
         pk_code = "%03d" % (self.pk*17,)
@@ -60,29 +41,21 @@ class Group(models.Model):
             self.code = self.generate_new_code()
         super(Group, self).save()
 
-class Institute(models.Model):
-    title = models.CharField(max_length=255)
-    #site_id = models.ForeignKey(Site)
-    timezone = models.CharField(max_length=100,
-            choices=zip(pytz.common_timezones, pytz.common_timezones))
+class Role(models.Model):
+    user = models.ForeignKey(UserProfile)
+    group = models.ForeignKey(Group)
 
-    """
-    @staticmethod
-    @receiver(request_started)
-    def set_current_timezone(*args, **kwargs):
-        try:
-            institute = Institute.objects.get(
-                    site_id=Site.objects.get_current())
-        except Institute.DoesNotExist:
-            pass
-        else:
-            timezone.activate(institute.timezone)
-    """
+    options = (('St', 'Student'),
+            ('Te', 'Teacher'),
+            ('Me', 'Mentor'),
+            ('Ex', 'Executive'))
+    role = models.CharField(max_length=2, choices=options)
 
-    def __repr__(self):
-        return '%s' % (self.title)
+    def __str__(self):
+        return self.role
 
-    def __unicode__(self):
-        return unicode(self.title)
+class Permission(models.Model):
+    codename = models.CharField(max_length=31)
+    name = models.CharField(max_length=255)
 
 
