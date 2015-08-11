@@ -7,7 +7,7 @@
 </head>
 <body>
 <h1> {{ settings.prefix }} Hello {{ name }} </h1>
-{% form cb=cb %}
+{% form cb=cb path=service:echo%}
 <input type='text' name='msg' />
 <input type='submit' value='Echo' />
 {% endform %}
