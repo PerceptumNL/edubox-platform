@@ -42,11 +42,13 @@ INSTALLED_APPS = (
     'rest_framework',
     'compressor',
     'loader',
-    'app_settings.apps.SettingsConfig',
     'apps',
     'apps.helloworld',
     'apps.news',
-    'apps.main'
+    'apps.main',
+    'services',
+    'services.events'
+    'services.usermanagement'
 )
 
 MIDDLEWARE_CLASSES = (

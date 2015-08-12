@@ -14,6 +14,8 @@ import json
 import requests
 
 from .models import *
+from services.events.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
+from loader.models import App
 
 def update_feeds(request):
     for feed in ContentFeed.objects.all():
@@ -152,7 +154,7 @@ def article(request, identifier):
     if not request.is_ajax():
         # Fetch random articles from the same categories for reading suggestions.
         random_articles = []
-        read_articles = ArticleHistoryItem.objects.filter(user=request.user)
+        read_articles = ReadEvent.objects.filter(user=request.user)
         read_articles = list(set([history.article.pk for history in read_articles] + [article.pk]))
         for category in categories:
             random_articles += category.get_random_articles(3, read_articles)
@@ -161,8 +163,8 @@ def article(request, identifier):
         if article in random_articles:
             random_articles.remove(article)
 
-        difficulty_items = ArticleDifficultyItem.objects.filter(user=request.user, article=article)
-        rating_items = ArticleRatingItem.objects.filter(user=request.user, article=article)
+        difficulty_items = ScoredEvent.objects.filter(user=request.user, article=article)
+        rating_items = RatedEvent.objects.filter(user=request.user, article=article)
 
         recommendations = []
         for rand_article in random_articles:
@@ -173,12 +175,25 @@ def article(request, identifier):
         for category in categories:
             # If the category was stored in the database
             if category.pk is not None:
-                article_read.send(
-                        sender=TimestampedArticle,#Used to be Article, not sure if correct
+                #The old solution for sending Event signal
+                """article_read.send(
+                        sender=TimestampedArticle,
                         user=request.user,
                         category=category,
                         article_id=identifier,
-                        article=article)
+                        article=article)"""
+                #Create the data object to post to the Event store
+                app_id = App.objects.get(title='News')
+                post_data = {'app': app_id.id, 'group': '', 'user':
+                        request.user.id, 'verb': 'read', 'obj': identifier}
+                #Uses the API directly, should go through the JS VM Environment
+                resp = requests.post('http://localhost:8000/events/api/', 
+                        json.dumps(post_data))
+                #Write response to file for debugging purposes
+                """f = open('/home/tim/Perceptum/response.html', 'w')
+                f.write(resp.text)
+                f.close()"""
+
         return render(request, 'article_page.html', {
             "article": article,
             "random_articles": recommendations,
