@@ -18,9 +18,16 @@ class UserProfile(models.Model):
             through_fields=('user', 'permission'))
     #A list of all permissions a user has, computed from the user's group(s),
     #role(s) and user permissions. Should never be updated directly!
-    flatperms = models.ManyToManyField('Permission', related_name='+')
-    
-    settings = models.ManyToManyField('SettingValue')
+    flat_permissions = models.ManyToManyField('Permission', related_name='+')
+   
+    #Iff a Setting has default==null: the user may further restrict the
+    #collection for that setting. Else: He must choice a default value.
+    setting_restrictions = models.ManyToManyField('SettingValue',
+            related_name='user_restrictions')
+    setting_defaults = models.ManyToManyField('SettingValue',
+            related_name='user_defaults')
+    #Flattened Settings where compact==True.
+    setting_string = models.OneToOneField('SettingString', null=True)
     
     def __str__(self):
         return str(self.user)
@@ -35,10 +42,12 @@ class Group(models.Model):
 
     permissions = models.ManyToManyField('Permission')
 
-    #Scope specifies the setting for which this value is relevant. This can be
-    #used to easily filter all values for a specific setting (e.g. RSS-feeds)
-    settings = models.ManyToManyField('SettingValue', through='Scope', 
-            through_fields=('group', 'settingVal'))
+    setting_restrictions = models.ManyToManyField('SettingValue',
+            through='Restriction', through_fields=('group', 'settingVal'),
+            related_name='group_restrictions')
+    setting_defaults = models.ManyToManyField('SettingValue',
+            through='Default', through_fields=('group', 'settingVal'),
+            related_name='group_defaults')
     
     def __str__(self):
         return self.title
@@ -75,6 +84,8 @@ class Institute(models.Model):
     def __str__(self):
         return self.title
 
+#Through models for Users and Groups
+
 class Member(models.Model):
     user = models.ForeignKey('UserProfile')
     group = models.ForeignKey('Group')
@@ -96,6 +107,8 @@ class Role(models.Model):
     def __str__(self):
         return dict(options)[self.role]
 
+#Through models for Permissions and Settings
+
 class Context(models.Model):
     user = models.ForeignKey('UserProfile')
     permission = models.ForeignKey('Permission')
@@ -105,11 +118,19 @@ class Context(models.Model):
     def __str__(self):
         return str(self.user) +' in '+ str(self.app) +' can '+ str(self.permission) 
 
-class Scope(models.Model):
+class Restriction(models.Model):
     group = models.ForeignKey('Group')
     settingVal = models.ForeignKey('SettingValue')
     
     setting = models.ForeignKey('Setting')
+
+class Default(models.Model):
+    group = models.ForeignKey('Group')
+    settingVal = models.ForeignKey('SettingValue')
+    
+    setting = models.ForeignKey('Setting', related_name='group_defaults')
+
+#Permission and Setting models
 
 class Permission(models.Model):
     code = models.CharField(max_length=31)
@@ -122,6 +143,10 @@ class Setting(models.Model):
     label = models.CharField(max_length=31)
     valueType = models.CharField(max_length=15)
     description = models.TextField()
+    
+    #Default Value for this Setting. Iff null: the setting should resolve to
+    #a collection of values instead of a slinge choice.
+    default = models.OneToOneField('SettingValue', null=True, related_name='+')
 
     #Indicates if the setting is simple enough to add to the request query dict
     #TODO: Reconsider the way this is implemented in loader.views._local_routing
@@ -137,11 +162,16 @@ class Setting(models.Model):
 
 class SettingValue(models.Model):
     value = models.CharField(max_length=255)    
-    setting = models.ForeignKey(Setting)
+    setting = models.ForeignKey(Setting, related_name='values')
 
     def __str__(self):
         return self.value
     
     def __repr__(self):
         return "Value(%s)" % (self,)
+
+class SettingString(models.Model):
+    #The string containing all compact (added to the request) settings for the
+    #user, computed from (group and user)'s restrictions and defaults
+    string = models.CharField(max_length=511)
 

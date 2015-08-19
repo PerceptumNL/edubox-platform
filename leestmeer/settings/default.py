@@ -47,7 +47,7 @@ INSTALLED_APPS = (
     'apps.news',
     'apps.main',
     'services',
-    'services.events'
+    'services.events',
     'services.usermanagement'
 )
 
