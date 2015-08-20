@@ -1,0 +1,46 @@
+[
+    {
+        "model": "services.usermanagement.Permission",
+        "pk": "add_event",
+        "fields": {
+            "name": "Can POST events in the LRS"
+        }
+    },
+    {
+        "model": "services.usermanagement.Permission",
+        "pk": "get_event_aggregate",
+        "fields": {
+            "name": "Can GET event aggregates from the LRS"
+        }
+    },
+    {
+        "model": "services.usermanagement.Permission",
+        "pk": "get_event_filter",
+        "fields": {
+            "name": "Can GET events using filters from the LRS"
+        }
+    },
+    {
+        "model": "services.usermanagement.Permission",
+        "pk": "get_event_detail",
+        "fields": {
+            "name": "Can GET event specifics from the LRS"
+        }
+    },
+    {
+        "model": "services.usermanagement.Permission",
+        "pk": "edit_permissions_group",
+        "fields": {
+            "name": "Can edit permissions for users in their own group(s)"
+        }
+    },
+    {
+        "model": "services.usermanagement.Permission",
+        "pk": "edit_settings_group",
+        "fields": {
+            "name": "Can edit settings of users in their own group(s)"
+        }
+    }
+]
+
+

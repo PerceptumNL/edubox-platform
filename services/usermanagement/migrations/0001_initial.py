@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
                 ('title', models.CharField(max_length=255)),
-                ('code', models.CharField(blank=True, max_length=255)),
+                ('code', models.CharField(max_length=255, blank=True)),
             ],
         ),
         migrations.CreateModel(
@@ -52,8 +52,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Permission',
             fields=[
-                ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
-                ('code', models.CharField(max_length=31)),
+                ('code', models.CharField(max_length=31, primary_key=True, serialize=False)),
                 ('name', models.CharField(max_length=255)),
             ],
         ),
@@ -68,19 +67,18 @@ class Migration(migrations.Migration):
             name='Role',
             fields=[
                 ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
-                ('role', models.CharField(max_length=2, choices=[('St', 'Student'), ('Te', 'Teacher'), ('Me', 'Mentor'), ('Ex', 'Executive')])),
+                ('role', models.CharField(choices=[('St', 'Student'), ('Te', 'Teacher'), ('Me', 'Mentor'), ('Ex', 'Executive')], max_length=2)),
                 ('permissions', models.ManyToManyField(to='usermanagement.Permission')),
             ],
         ),
         migrations.CreateModel(
             name='Setting',
             fields=[
-                ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
-                ('label', models.CharField(max_length=31)),
+                ('code', models.CharField(max_length=31, primary_key=True, serialize=False)),
                 ('valueType', models.CharField(max_length=15)),
                 ('description', models.TextField()),
                 ('compact', models.BooleanField(default=True)),
-                ('app', models.ForeignKey(null=True, to='loader.App')),
+                ('app', models.ForeignKey(to='loader.App', null=True)),
             ],
         ),
         migrations.CreateModel(
@@ -95,7 +93,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
                 ('value', models.CharField(max_length=255)),
-                ('setting', models.ForeignKey(related_name='values', to='usermanagement.Setting')),
+                ('setting', models.ForeignKey(to='usermanagement.Setting', related_name='values')),
             ],
         ),
         migrations.CreateModel(
@@ -103,12 +101,12 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, verbose_name='ID', auto_created=True, serialize=False)),
                 ('flat_permissions', models.ManyToManyField(related_name='+', to='usermanagement.Permission')),
-                ('groups', models.ManyToManyField(through='usermanagement.Member', related_name='users', to='usermanagement.Group')),
-                ('institute', models.ForeignKey(related_name='users', to='usermanagement.Institute')),
-                ('permissions', models.ManyToManyField(through='usermanagement.Context', to='usermanagement.Permission')),
+                ('groups', models.ManyToManyField(related_name='users', through='usermanagement.Member', to='usermanagement.Group')),
+                ('institute', models.ForeignKey(to='usermanagement.Institute', related_name='users')),
+                ('permissions', models.ManyToManyField(to='usermanagement.Permission', through='usermanagement.Context')),
                 ('setting_defaults', models.ManyToManyField(related_name='user_defaults', to='usermanagement.SettingValue')),
                 ('setting_restrictions', models.ManyToManyField(related_name='user_restrictions', to='usermanagement.SettingValue')),
-                ('setting_string', models.OneToOneField(null=True, to='usermanagement.SettingString')),
+                ('setting_string', models.OneToOneField(to='usermanagement.SettingString', null=True)),
                 ('user', models.OneToOneField(to=settings.AUTH_USER_MODEL)),
             ],
         ),
@@ -140,12 +138,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='group',
             name='institute',
-            field=models.ForeignKey(related_name='groups', to='usermanagement.Institute'),
+            field=models.ForeignKey(to='usermanagement.Institute', related_name='groups'),
         ),
         migrations.AddField(
             model_name='group',
             name='parent',
-            field=models.ForeignKey(blank=True, related_name='subgroups', null=True, to='usermanagement.Group'),
+            field=models.ForeignKey(to='usermanagement.Group', related_name='subgroups', null=True, blank=True),
         ),
         migrations.AddField(
             model_name='group',
@@ -155,12 +153,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='group',
             name='setting_defaults',
-            field=models.ManyToManyField(through='usermanagement.Default', related_name='group_defaults', to='usermanagement.SettingValue'),
+            field=models.ManyToManyField(related_name='group_defaults', through='usermanagement.Default', to='usermanagement.SettingValue'),
         ),
         migrations.AddField(
             model_name='group',
             name='setting_restrictions',
-            field=models.ManyToManyField(through='usermanagement.Restriction', related_name='group_restrictions', to='usermanagement.SettingValue'),
+            field=models.ManyToManyField(related_name='group_restrictions', through='usermanagement.Restriction', to='usermanagement.SettingValue'),
         ),
         migrations.AddField(
             model_name='default',
@@ -170,7 +168,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='default',
             name='setting',
-            field=models.ForeignKey(related_name='group_defaults', to='usermanagement.Setting'),
+            field=models.ForeignKey(to='usermanagement.Setting', related_name='group_defaults'),
         ),
         migrations.AddField(
             model_name='default',

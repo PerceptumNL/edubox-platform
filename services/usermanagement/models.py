@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.db.models.signals import post_save, m2m_changed
+from django.dispatch import receiver
 
 from loader.models import App
 
@@ -23,19 +25,64 @@ class UserProfile(models.Model):
     #Iff a Setting has default==null: the user may further restrict the
     #collection for that setting. Else: He must choice a default value.
     setting_restrictions = models.ManyToManyField('SettingValue',
+            through='UserRestriction', through_fields=('user', 'settingVal'),
             related_name='user_restrictions')
     setting_defaults = models.ManyToManyField('SettingValue',
+            through='UserDefault', through_fields=('user', 'settingVal'),
             related_name='user_defaults')
-    #Flattened Settings where compact==True.
-    setting_string = models.OneToOneField('SettingString', null=True)
     
     def __str__(self):
         return str(self.user)
+
+    def _update_setting_string(self, app, group):
+        settings = {setting.code: None for setting in
+                Settings.objects.filter(compact=True, app=app)}
+        settings_string = ''
+        user_settings = UserDefault.objects.filter(user=self, setting__app=app,
+                group=group)
+
+        while group != None:
+            #Apply user defaults for this group context
+            for default in user_settings.filter(group=group):
+                code = default.setting.code
+                if code in settings:
+                    settings_string += '&'+ code +'='+ default.settingVal.value
+                    #Remove the setting from dict, so new value cannot be set
+                    settings.pop(code)
+            
+            #Find group-level defaults for setttings that have not been set yet
+            for default in GroupDefault.objects.filter(group=group, setting__app=app):
+                code = default.setting.code
+                if code in settings and settings[code] == None:
+                    settings[code] = default.settingVal.value
+            
+            #Move up to next group in the hierarchy
+            group = group.parent
+        
+        #Add all group defaults that had no user defaults
+        for setting, value in settings.iteritems():
+            settings_string += '&'+ code +'='+ value
+
+        #Set the value in the corresonding CompactSettings, remove the first '&'
+        compact, c = CompactSettings.objects.get_or_create(user=self,
+                group=group, app=app)
+        compact.string = settings_string[1:]
+        compact.save()
+
+    def _update_flat_permission(self, action, pk_set):
+        if action == 'post_add':
+            self.flat_permissions.add([Permission.objects.get(pk) for pk in pk_set])
+        elif action == 'post_remove':
+            self.flat_permissions.remove([Permission.objects.get(pk) for pk in pk_set])
+        elif action == 'post_clear':
+            self.flat_permissions.clear()
 
 class Group(models.Model):
     title = models.CharField(max_length=255)
     code = models.CharField(max_length=255, blank=True)
     
+    apps = models.ManyToManyField(App, blank=True, null=True)
+
     parent = models.ForeignKey('Group', blank=True, null=True,
             related_name='subgroups')
     institute = models.ForeignKey('Institute', related_name='groups')
@@ -43,10 +90,10 @@ class Group(models.Model):
     permissions = models.ManyToManyField('Permission')
 
     setting_restrictions = models.ManyToManyField('SettingValue',
-            through='Restriction', through_fields=('group', 'settingVal'),
+            through='GroupRestriction', through_fields=('group', 'settingVal'),
             related_name='group_restrictions')
     setting_defaults = models.ManyToManyField('SettingValue',
-            through='Default', through_fields=('group', 'settingVal'),
+            through='GroupDefault', through_fields=('group', 'settingVal'),
             related_name='group_defaults')
     
     def __str__(self):
@@ -96,11 +143,7 @@ class Member(models.Model):
         return str(self.user) +' as '+ str(self.role) +' in '+ str(self.group)
 
 class Role(models.Model):
-    options = (('St', 'Student'),
-            ('Te', 'Teacher'),
-            ('Me', 'Mentor'),
-            ('Ex', 'Executive'))
-    role = models.CharField(max_length=2, choices=options)
+    role = models.CharField(max_length=31)
     
     permissions = models.ManyToManyField('Permission')
 
@@ -118,41 +161,92 @@ class Context(models.Model):
     def __str__(self):
         return str(self.user) +' in '+ str(self.app) +' can '+ str(self.permission) 
 
-class Restriction(models.Model):
+class GroupRestriction(models.Model):
     group = models.ForeignKey('Group')
     settingVal = models.ForeignKey('SettingValue')
     
     setting = models.ForeignKey('Setting')
 
-class Default(models.Model):
+
+class GroupDefault(models.Model):
     group = models.ForeignKey('Group')
     settingVal = models.ForeignKey('SettingValue')
     
     setting = models.ForeignKey('Setting', related_name='group_defaults')
 
+    @receiver(post_save)
+    def update_setting_strings(sender, **kwargs):
+        app = kwargs['instance'].setting.app
+        if sender == GroupDefault and app != None:
+            group = kwargs['instance'].group
+            for user in kwargs['instance'].group.users:
+                user._update_setting_string(app, group)
+
+class UserRestriction(models.Model):
+    user = models.ForeignKey('UserProfile')
+    settingVal = models.ForeignKey('SettingValue')
+    
+    setting = models.ForeignKey('Setting')
+    #Group context is required to resolve the setting
+    group = models.ForeignKey('Group')
+
+class UserDefault(models.Model):
+    user = models.ForeignKey('UserProfile')
+    settingVal = models.ForeignKey('SettingValue')
+    
+    setting = models.ForeignKey('Setting', related_name='user_defaults')
+    #Group context is required to resolve the setting
+    group = models.ForeignKey('Group', related_name='user_defaults')
+
+    @receiver(post_save)
+    def update_setting_strings(sender, **kwargs):
+        app = kwargs['instance'].setting.app
+        if sender == UserDefault and app != None:
+            kwargs['instance'].user._update_setting_string(app,
+                    kwargs['instance'].group)
+
 #Permission and Setting models
 
 class Permission(models.Model):
-    code = models.CharField(max_length=31)
+    code = models.CharField(max_length=31, primary_key=True)
     name = models.CharField(max_length=255)
+   
+    @receiver(m2m_changed)
+    def update_flat_permissions(sender, **kwargs):
+        if kwargs['model'] == Permission:
+            source = type(kwargs['instance'])
+            #UserProfile had 2 ManyToMany's with Permission, distinguished by Context 
+            if source == UserProfile and sender == Context:
+                kwargs['instance']._update_flat_permission(kwargs['action'],
+                        kwargs['pk_set'])
+            elif source == Group:
+                pass
+            elif source == Role:
+                pass
 
     def __str__(self):
         return self.name
 
 class Setting(models.Model):
-    label = models.CharField(max_length=31)
-    valueType = models.CharField(max_length=15)
+    code = models.CharField(max_length=31, primary_key=True)
     description = models.TextField()
     
     #Default Value for this Setting. Iff null: the setting should resolve to
-    #a collection of values instead of a slinge choice.
+    #a collection of values instead of a single choice.
     default = models.OneToOneField('SettingValue', null=True, related_name='+')
-
+    
     #Indicates if the setting is simple enough to add to the request query dict
     #TODO: Reconsider the way this is implemented in loader.views._local_routing
     compact = models.BooleanField(default=True)
-    
+
+    #If compact: Setting must have a default (i.e. resolve to a single value)
+    # -> Adding restrictions never updates the CompactSettings string.
+
     app = models.ForeignKey(App, null=True)
+
+    @property
+    def single(self):
+        return self.default != None
 
     def __str__(self):
         return self.label
@@ -170,8 +264,13 @@ class SettingValue(models.Model):
     def __repr__(self):
         return "Value(%s)" % (self,)
 
-class SettingString(models.Model):
+class CompactSettings(models.Model):
     #The string containing all compact (added to the request) settings for the
     #user, computed from (group and user)'s restrictions and defaults
-    string = models.CharField(max_length=511)
+    string = models.CharField(max_length=511, default='')
+
+    user = models.ForeignKey('UserProfile', related_name='compact_settings')
+    group = models.ForeignKey('Group')
+    app = models.ForeignKey(App)
+
 

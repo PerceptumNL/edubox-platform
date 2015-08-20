@@ -1,0 +1,5 @@
+
+    options = (('St', 'Student'),
+            ('Te', 'Teacher'),
+            ('Me', 'Mentor'),
+            ('Ex', 'Executive'))
