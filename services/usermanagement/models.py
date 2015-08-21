@@ -1,8 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.db.models.signals import post_save, m2m_changed
-from django.dispatch import receiver
 
 from loader.models import App
 
@@ -38,8 +36,8 @@ class UserProfile(models.Model):
         settings = {setting.code: None for setting in
                 Settings.objects.filter(compact=True, app=app)}
         settings_string = ''
-        user_settings = UserDefault.objects.filter(user=self, setting__app=app,
-                group=group)
+        #Force QuerySet evaltion so the database is only hit once for user defaults
+        user_settings = list(UserDefault.objects.filter(user=self, setting__app=app))
 
         while group != None:
             #Apply user defaults for this group context
@@ -69,7 +67,7 @@ class UserProfile(models.Model):
         compact.string = settings_string[1:]
         compact.save()
 
-    def _update_flat_permission(self, action, pk_set):
+    def _update_flat_permissions(self, action, pk_set):
         if action == 'post_add':
             self.flat_permissions.add([Permission.objects.get(pk) for pk in pk_set])
         elif action == 'post_remove':
@@ -123,6 +121,12 @@ class Group(models.Model):
             self.code = self.generate_new_code()
         super(Group, self).save()
 
+    def _update_flat_permissions(self, action, pk_set):
+        for user in self.users:
+            user._update_flat_permissions(action, pk_set)
+        for group in self.subgroups:
+            group._update_flat_permissions(action, pk_set)
+        
 class Institute(models.Model):
     title = models.CharField(max_length=255)
     #The apps an institute (client) has access to, OS-level setting
@@ -137,7 +141,7 @@ class Member(models.Model):
     user = models.ForeignKey('UserProfile')
     group = models.ForeignKey('Group')
 
-    role = models.ForeignKey('Role')
+    role = models.ForeignKey('Role', related_name='members')
 
     def __str__(self):
         return str(self.user) +' as '+ str(self.role) +' in '+ str(self.group)
@@ -149,6 +153,10 @@ class Role(models.Model):
 
     def __str__(self):
         return dict(options)[self.role]
+
+    def _update_flat_permissions(self, action, pk_set):
+        for member in self.members:
+            member.user._update_flat_permissions(action, pk_set)
 
 #Through models for Permissions and Settings
 
@@ -174,14 +182,6 @@ class GroupDefault(models.Model):
     
     setting = models.ForeignKey('Setting', related_name='group_defaults')
 
-    @receiver(post_save)
-    def update_setting_strings(sender, **kwargs):
-        app = kwargs['instance'].setting.app
-        if sender == GroupDefault and app != None:
-            group = kwargs['instance'].group
-            for user in kwargs['instance'].group.users:
-                user._update_setting_string(app, group)
-
 class UserRestriction(models.Model):
     user = models.ForeignKey('UserProfile')
     settingVal = models.ForeignKey('SettingValue')
@@ -198,32 +198,12 @@ class UserDefault(models.Model):
     #Group context is required to resolve the setting
     group = models.ForeignKey('Group', related_name='user_defaults')
 
-    @receiver(post_save)
-    def update_setting_strings(sender, **kwargs):
-        app = kwargs['instance'].setting.app
-        if sender == UserDefault and app != None:
-            kwargs['instance'].user._update_setting_string(app,
-                    kwargs['instance'].group)
-
 #Permission and Setting models
 
 class Permission(models.Model):
     code = models.CharField(max_length=31, primary_key=True)
     name = models.CharField(max_length=255)
    
-    @receiver(m2m_changed)
-    def update_flat_permissions(sender, **kwargs):
-        if kwargs['model'] == Permission:
-            source = type(kwargs['instance'])
-            #UserProfile had 2 ManyToMany's with Permission, distinguished by Context 
-            if source == UserProfile and sender == Context:
-                kwargs['instance']._update_flat_permission(kwargs['action'],
-                        kwargs['pk_set'])
-            elif source == Group:
-                pass
-            elif source == Role:
-                pass
-
     def __str__(self):
         return self.name
 
