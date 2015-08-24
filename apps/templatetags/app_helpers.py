@@ -2,6 +2,7 @@ from django import template
 from django.template.loader import get_template
 from django.template.defaultfilters import stringfilter
 from django.core.urlresolvers import reverse
+from loader.helpers import get_current_app_id
 
 import uuid
 import re
@@ -131,8 +132,8 @@ def expand_location(request, location):
         path = service_match.group(2) or "/"
         return reverse('service_routing', args=(service, path))
 
-    if hasattr(request, 'outer_resolver_match'):
-        app = request.outer_resolver_match.kwargs['app_id']
+    app = get_current_app_id(request)
+    if app is not None:
         if location[:1] == "/":
             return reverse('app_routing', args=(app, location))
         else:
