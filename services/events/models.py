@@ -6,7 +6,6 @@ from django.utils import timezone
 from django.utils import formats
 from django.core.urlresolvers import reverse
 
-from polymorphic import PolymorphicModel
 from uuid import uuid4
 
 from loader.models import App
@@ -24,7 +23,7 @@ class Verb(models.Model):
     def __repr__(self):
         return str(self)
 
-class Event(PolymorphicModel):
+class Event(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     
     user = models.ForeignKey(User)
