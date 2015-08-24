@@ -79,7 +79,7 @@ class Group(models.Model):
     title = models.CharField(max_length=255)
     code = models.CharField(max_length=255, blank=True)
     
-    apps = models.ManyToManyField(App, blank=True, null=True)
+    apps = models.ManyToManyField(App)
 
     parent = models.ForeignKey('Group', blank=True, null=True,
             related_name='subgroups')
