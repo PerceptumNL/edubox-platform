@@ -32,9 +32,9 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = (
     'django.contrib.admin',
-    'polymorphic',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'polymorphic',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
