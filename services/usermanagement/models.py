@@ -79,7 +79,7 @@ class Group(models.Model):
     title = models.CharField(max_length=255)
     code = models.CharField(max_length=255, blank=True)
     
-    apps = models.ManyToManyField(App, blank=True)
+    apps = models.ManyToManyField(App)
 
     parent = models.ForeignKey('Group', blank=True, null=True,
             related_name='subgroups')
@@ -250,7 +250,3 @@ class CompactSettings(models.Model):
     string = models.CharField(max_length=511, default='')
 
     user = models.ForeignKey('UserProfile', related_name='compact_settings')
-    group = models.ForeignKey('Group')
-    app = models.ForeignKey(App)
-
-

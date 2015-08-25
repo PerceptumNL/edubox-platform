@@ -16,6 +16,7 @@ import requests
 from .models import *
 from services.events.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
 from loader.models import App
+from loader.helpers import dispatch_service_request, get_current_app_id
 
 def update_feeds(request):
     for feed in ContentFeed.objects.all():
@@ -175,24 +176,18 @@ def article(request, identifier):
         for category in categories:
             # If the category was stored in the database
             if category.pk is not None:
-                #The old solution for sending Event signal
-                """article_read.send(
-                        sender=TimestampedArticle,
-                        user=request.user,
-                        category=category,
-                        article_id=identifier,
-                        article=article)"""
-                #Create the data object to post to the Event store
-                app_id = App.objects.get(title='News')
-                post_data = {'app': app_id.id, 'group': '', 'user':
-                        request.user.id, 'verb': 'read', 'obj': identifier}
-                #Uses the API directly, should go through the JS VM Environment
-                resp = requests.post('http://localhost:8000/events/api/', 
-                        json.dumps(post_data))
-                #Write response to file for debugging purposes
-                """f = open('/home/tim/Perceptum/response.html', 'w')
-                f.write(resp.text)
-                f.close()"""
+                # Store read event in the Event store
+                response = dispatch_service_request(request,
+                        method="POST",
+                        url="service:events/api/",
+                        json = {
+                            'app':  get_current_app_id(request),
+                            'group': '',
+                            'user': request.user.pk,
+                            'verb': 'read',
+                            'obj': identifier
+                        })
+                import q; q.d()
 
         return render(request, 'article_page.html', {
             "article": article,

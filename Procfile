@@ -1,1 +1,1 @@
-web: gunicorn leestmeer.wsgi.production --log-file -
+web: gunicorn leestmeer.wsgi --log-file -
