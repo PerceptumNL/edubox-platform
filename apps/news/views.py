@@ -187,7 +187,6 @@ def article(request, identifier):
                             'verb': 'read',
                             'obj': identifier
                         })
-                import q; q.d()
 
         return render(request, 'article_page.html', {
             "article": article,
