@@ -1,7 +1,7 @@
-from django.app import AppConfig
+from django.apps import AppConfig
 
 class CustomConfig(AppConfig):
-    name = 'usermanagement'
+    name = 'services.usermanagement'
     verbose_name = 'User Management'
 
     def ready(self):

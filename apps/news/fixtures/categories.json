@@ -1,0 +1,162 @@
+[
+    {
+        "model": "usermanagement.Setting",
+        "pk": "news_categories",
+        "fields": {
+            "description": "Categories to choose from in News app",
+            "compact": "False"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 1,
+        "fields": {
+            "value": "7Days",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 2,
+        "fields": {
+            "value": "KidsWeek",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 3,
+        "fields": {
+            "value": "Electronica",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 4,
+        "fields": {
+            "value": "360 Magazine",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 5,
+        "fields": {
+            "value": "Politie Katwijk",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 6,
+        "fields": {
+            "value": "Muziek",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 7,
+        "fields": {
+            "value": "Voetbal",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 8,
+        "fields": {
+            "value": "Koningshuis",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 9,
+        "fields": {
+            "value": "Politiek",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 10,
+        "fields": {
+            "value": "Sport",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 11,
+        "fields": {
+            "value": "Opmerkelijk",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 12,
+        "fields": {
+            "value": "Economie",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 13,
+        "fields": {
+            "value": "Marcel van Roosmalen",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 14,
+        "fields": {
+            "value": "Simone van Saarloos",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 15,
+        "fields": {
+            "value": "Wilfried de Jong",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 16,
+        "fields": {
+            "value": "Buitenland nieuws",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 17,
+        "fields": {
+            "value": "Binnenland nieuws",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 18,
+        "fields": {
+            "value": "Nieuws",
+            "setting": "news_categories"
+        }
+    },
+    {
+        "model": "usermanagement.SettingValue",
+        "pk": 19,
+        "fields": {
+            "value": "Youp van 't Hek",
+            "setting": "news_categories"
+        }
+    }
+]

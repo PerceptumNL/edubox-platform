@@ -3,18 +3,19 @@ from django.contrib.auth.models import User
 from django.conf import settings
 
 from loader.models import App
+from .helpers import *
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, unique=True)
    
     #Member specifies the role the user has in the group
-    groups = models.ManyToManyField('Group', through='Member', 
+    groups = models.ManyToManyField('Group', through='Membership', 
             through_fields=('user', 'group'), related_name='users')
     institute = models.ForeignKey('Institute', related_name='users')
     
     #User specific additions to permissions, outside of group or role
-    #permission. Context specifies the app for which this addition applies
-    permissions = models.ManyToManyField('Permission', through='Context', 
+    #permission. UserPermissions specifies the app for which this addition applies
+    permissions = models.ManyToManyField('Permission', through='UserPermission',
             through_fields=('user', 'permission'))
     #A list of all permissions a user has, computed from the user's group(s),
     #role(s) and user permissions. Should never be updated directly!
@@ -28,7 +29,7 @@ class UserProfile(models.Model):
     setting_defaults = models.ManyToManyField('SettingValue',
             through='UserDefault', through_fields=('user', 'settingVal'),
             related_name='user_defaults')
-    
+
     def __str__(self):
         return str(self.user)
 
@@ -69,11 +70,24 @@ class UserProfile(models.Model):
 
     def _update_flat_permissions(self, action, pk_set):
         if action == 'post_add':
-            self.flat_permissions.add([Permission.objects.get(pk) for pk in pk_set])
+            self.flat_permissions.add(Permission.objects.in_bulk(pk_set).values())
         elif action == 'post_remove':
-            self.flat_permissions.remove([Permission.objects.get(pk) for pk in pk_set])
+            self.flat_permissions.remove(Permission.objects.in_bulk(pk_set).values())
         elif action == 'post_clear':
             self.flat_permissions.clear()
+
+    def _recompute_flat_permissions(self):
+        self.flat_permissions.clear()
+        for member in Membership.objects.filter(user=self):
+            self.flat_permissions.add(*(member.group.permissions.all() |
+                    member.role.permissions.all()))
+        #User permissions require app context
+        #self.flat_permissions.add(*self.permissions.all())
+
+class UserProfileProxy(UserProfile):
+    class Meta:
+        proxy = True
+        verbose_name = 'User profile: Admin view'
 
 class Group(models.Model):
     title = models.CharField(max_length=255)
@@ -122,9 +136,9 @@ class Group(models.Model):
         super(Group, self).save()
 
     def _update_flat_permissions(self, action, pk_set):
-        for user in self.users:
+        for user in self.users.all():
             user._update_flat_permissions(action, pk_set)
-        for group in self.subgroups:
+        for group in self.subgroups.all():
             group._update_flat_permissions(action, pk_set)
         
 class Institute(models.Model):
@@ -137,7 +151,7 @@ class Institute(models.Model):
 
 #Through models for Users and Groups
 
-class Member(models.Model):
+class Membership(models.Model):
     user = models.ForeignKey('UserProfile')
     group = models.ForeignKey('Group')
 
@@ -152,15 +166,15 @@ class Role(models.Model):
     permissions = models.ManyToManyField('Permission')
 
     def __str__(self):
-        return dict(options)[self.role]
+        return self.role
 
     def _update_flat_permissions(self, action, pk_set):
-        for member in self.members:
+        for member in self.members.all():
             member.user._update_flat_permissions(action, pk_set)
 
 #Through models for Permissions and Settings
 
-class Context(models.Model):
+class UserPermission(models.Model):
     user = models.ForeignKey('UserProfile')
     permission = models.ForeignKey('Permission')
 
@@ -229,7 +243,7 @@ class Setting(models.Model):
         return self.default != None
 
     def __str__(self):
-        return self.label
+        return self.code
 
     def __repr__(self):
         return "Setting(%s)" % (self,)
@@ -250,3 +264,11 @@ class CompactSettings(models.Model):
     string = models.CharField(max_length=511, default='')
 
     user = models.ForeignKey('UserProfile', related_name='compact_settings')
+    group = models.ForeignKey('Group')
+    app = models.ForeignKey(App)
+
+    class Meta:
+        verbose_name_plural = 'Compact settings'
+
+
+
