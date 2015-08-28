@@ -99,7 +99,7 @@ class Group(models.Model):
             related_name='subgroups')
     institute = models.ForeignKey('Institute', related_name='groups')
 
-    permissions = models.ManyToManyField('Permission')
+    permissions = models.ManyToManyField('Permission', blank=True)
 
     setting_restrictions = models.ManyToManyField('SettingValue',
             through='GroupRestriction', through_fields=('group', 'settingVal'),
@@ -140,7 +140,7 @@ class Group(models.Model):
             user._update_flat_permissions(action, pk_set)
         for group in self.subgroups.all():
             group._update_flat_permissions(action, pk_set)
-        
+
 class Institute(models.Model):
     title = models.CharField(max_length=255)
     #The apps an institute (client) has access to, OS-level setting
@@ -227,7 +227,8 @@ class Setting(models.Model):
     
     #Default Value for this Setting. Iff null: the setting should resolve to
     #a collection of values instead of a single choice.
-    default = models.OneToOneField('SettingValue', null=True, related_name='+')
+    default = models.OneToOneField('SettingValue', blank=True, null=True,
+            related_name='+')
     
     #Indicates if the setting is simple enough to add to the request query dict
     #TODO: Reconsider the way this is implemented in loader.views._local_routing
@@ -236,7 +237,7 @@ class Setting(models.Model):
     #If compact: Setting must have a default (i.e. resolve to a single value)
     # -> Adding restrictions never updates the CompactSettings string.
 
-    app = models.ForeignKey(App, null=True)
+    app = models.ForeignKey(App, blank=True, null=True)
 
     @property
     def single(self):

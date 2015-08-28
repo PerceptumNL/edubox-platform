@@ -1,0 +1,6 @@
+<h2>Select restrictions to make</h2>
+<form action="form_submit/" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit" />
+</form>
