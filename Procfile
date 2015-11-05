@@ -1,1 +1,1 @@
-web: gunicorn leestmeer.wsgi --log-file -
+web: gunicorn edubox.wsgi --log-file -
