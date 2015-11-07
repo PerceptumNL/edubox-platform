@@ -1,4 +1,4 @@
-"""leestmeer URL Configuration
+"""EduBox URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.8/topics/http/urls/
@@ -21,5 +21,7 @@ urlpatterns = [
     url(r'^_apps/helloworld/', include('apps.helloworld.urls')),
     url(r'^_apps/news/', include('apps.news.urls')),
     url(r'^_apps/main/', include('apps.main.urls')),
-    url(r'^', include('loader.urls'))
+    url(r'^', include('loader.urls')),
+    url(r'^events/', include('services.events.urls')),
+    url(r'^settings/', include('services.usermanagement.urls'))
 ]

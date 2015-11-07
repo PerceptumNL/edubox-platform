@@ -1,0 +1,350 @@
+/*
+Primary Color:  #39BAF4
+Highlights:     #F3F3F3
+Shadow:         #736f66
+Contrast:       #F35C9F
+*/
+
+#mainContent {
+    margin-bottom:128px;
+}
+#mainImage{
+    width:100%;
+    height:320px;
+}
+#randomarticles{
+    margin-top: 16px;
+    position:relative;
+    width:100%;
+    height:auto;
+    z-index:0;
+}
+#randomarticles:after {
+    content:'';
+    display:block;
+    clear: both;
+}
+.articleTile{
+    width:256px;
+    height:256px;
+    margin-bottom:32px;
+    float: left;
+    position:relative;
+    z-index:1;
+    cursor: pointer;
+    -webkit-transition: all 0.15s ;
+    -moz-transition: all 0.15s ;
+    -o-transition: all 0.15s ;
+    transition: all 0.15s ;  
+    background-position:center;
+    background-size:cover;
+}
+.articleTile  a {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    text-decoration: none; /* No underlines on the link */
+    z-index: 10; /* Places the link above everything else in the div */
+    background-color: #FFF; /* Fix to make div clickable in IE */
+    opacity: 0; /* Fix to make div clickable in IE */
+    filter: alpha(opacity=1); /* Fix to make div clickable in IE */
+}
+
+.articleTile .articleTitle{
+    position:absolute;
+    bottom: 0px;
+    left:0px;
+    right: 0px;
+    height: auto;
+    background-color: rgba(0,0,0,0.85);
+}
+.articleTile .articleTitle p{
+    padding:8px;
+    color: #FFF;
+}
+.articleTile:hover .articleTitle{
+    background-color: rgba(0,0,0,0.975);
+    
+}
+ul li{
+    list-style: none;
+    margin: 16px 0;
+}
+ul li a {
+    text-decoration: none;
+    color: #39BAF4;
+}
+ul li a:hover {
+    color: #67A8CF;
+    text-decoration: none;
+}
+li a p{
+    margin: 0;
+    line-height:16px;
+    font-size: 16px;
+    color: inherit;
+}
+
+#article {
+    padding: 32px 32px 32px 32px;
+    max-width:1100px;
+}
+
+#article header {
+    color: #39BAF4;
+    font-size: 2.25em;
+    font-weight: bold;
+    box-shadow: 0px 2px 2px -2px; #39BAF4 inset;
+    padding: 5px 10px;
+}
+
+#article h1,h2,h3,h4{
+    color: #39BAF4 !important;
+    padding: 0px 15px;
+}
+
+#article p {
+    font-size: 1.2em;
+        padding: 5px 25px;
+}
+
+#article blockquote{
+    padding: 4px 8px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    font-size: 1em;
+    border-left: 5px solid #39BAF4;
+}
+
+#article blockquote.twitter-tweet::after{
+    
+}
+
+#cover {
+    display:block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top:100%;
+    bottom: 0;
+    width:100%;
+    height:0%;
+    background-color: #F3F3F3;
+    overflow: hidden;
+    -webkit-transition: all 0.4s, all 0.4s,-webkit-transform 0.4s;  /* For Safari 3.1 to 6.0 */
+    transition: all 0.4s, all 0.4s, transform 0.4s;
+}
+
+#cover.open {
+    height: 100%;
+    top: 0;
+    position: fixed;
+    overflow-y: auto;
+    background-color: rgba(243, 243, 243, 0.9);
+    z-index: 10;
+}
+
+#cover.open  #closeOnBackground {
+    position:absolute;
+    overflow-y: auto;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index: 11;
+}
+
+#cover a{
+    position:fixed;
+    text-align:center;
+    cursor:pointer;
+    background-color: #111;
+    bottom: -100px;
+    color: #FFF;
+    min-height:5%;
+    height:5%;
+    width:100%;
+    z-index:15;
+    margin: auto 0px;
+    -webkit-transition: all 0.4s, all 0.4s,-webkit-transform 0.4s;  /* For Safari 3.1 to 6.0 */
+    transition: all 0.4s, all 0.4s, transform 0.4s;
+}
+
+#cover a:hover{
+    color: #39BAF4;
+    background-color: #000;
+    height:7%;
+}
+
+#cover.open a{
+    bottom: 0px;
+}
+
+@media all and (max-width: 800px){
+    #cover a{
+        font-size: 0.5em;
+        height:10%;
+    }
+    #mainContent .row{
+        margin: 0 0;
+    }
+}
+
+#row-holder {
+    width:100%;
+    padding-bottom: 5%;
+}
+
+#cards {
+    position: relative;
+    padding:25px 0px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.form_card textarea {
+    margin-top: 5px;
+    width: 100%;
+    height: 100px;
+}
+
+.form_card button {
+    margin-top: 5px;
+}
+
+span.word {
+    cursor: pointer;
+}
+
+.word + #selected {
+    border-radius: 2px;
+    box-shadow: 3px 0px 0px #39BAF4, -3px 0px 0px #39BAF4;
+    background-color: #39BAF4;
+}
+.word + .prevSelected {
+    color: #0E7080;
+}
+.word + .lastSelected {
+    color: #39BAF4;
+    font-weight: bold;
+    box-shadow: 0px 1px 1px -1px; #39BAF4 inset;
+}
+
+.element-item {
+    padding: 10px;
+
+}
+
+.element-item .well{
+    border: 1px solid #777;
+    box-shadow: 1px 1px 1px #333;
+    background-color: rgba(255, 255, 255, 100);
+    margin: 10px 5px;
+}
+
+
+.element-item .title {
+	background-color: #39BAF4;
+	display: block;
+	width: 100%;
+	padding: 5px;
+	color: #ffffff;
+}
+
+.li .definition {
+	margin-left: 10px;
+}
+
+.element-item dl dt{
+	float: left;
+	clear: left;
+	font-weight: normal;
+}
+
+.element-item dl dd{
+	float: left;
+	margin-left: 20px;
+}
+
+.element-item.dict_term_card .word {
+	font-weight: bold;
+}
+
+.element-item.dict_term_card .category {
+	text-decoration: italic;
+	margin-left: 2px;
+}
+
+
+.example {
+    font-weight: 300;
+    padding: 0px 5px;
+}
+
+.example  .word {
+    color: #39BAF4;
+    font-style: italic;
+}
+
+.definition {
+    font-weight: normal;
+}
+
+.element-item .word {
+    font-weight: bold;
+}
+
+.word ~ .category{
+    font-weight: 300;
+    font-style: italic;
+}
+
+.footer{
+    margin-top: 0 !important;
+}
+
+.footer:hover{
+    top: initial;
+    bottom:0;
+    margin-top:0px !important;
+    overflow-y:auto;
+}
+
+.rating {
+    unicode-bidi: bidi-override;
+    direction: rtl;
+    font-family: FontAwesome;
+    font-size:1.5em;
+    text-align:right;
+    display: inline-block;
+    margin: 0 16px;
+
+}
+.rating > span {
+  display: inline-block;
+  position: relative;
+  width: 1.1em;
+  cursor: pointer;
+  color: #22ADC2;
+}
+.rating > span:hover:before,
+.rating > span:hover ~ span:before {
+   content:  "\f005";
+   position: absolute;
+}
+
+@media screen and (max-width: 872px) {
+    #article{
+        padding:0;
+    }
+}
+@media screen and (max-width: 616px) {
+
+}
+@media screen and (max-width: 580px) {
+    .articleTile{
+        width: 100%;
+    }
+}
