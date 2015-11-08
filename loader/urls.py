@@ -9,7 +9,8 @@ index.register(r'services', ServiceViewSet)
 
 urlpatterns = [
     url(r'^$', 'loader.views.home'),
-    url(r'^app/', 'loader.views.home'),
+    url(r'^app/(?P<app_id>[^/]+)(?P<path>/.*)$', 'loader.views.home',
+        name='contained_app'),
     url(r'^index/', include(index.urls)),
     url(r'^index/api-auth/', include('rest_framework.urls',
         namespace='rest_framework')),

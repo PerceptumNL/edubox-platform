@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
-from django.core.urlresolvers import RegexURLResolver, Resolver404
+from django.core.urlresolvers import RegexURLResolver, Resolver404, reverse
 
 from rest_framework import serializers, viewsets
 from bs4 import BeautifulSoup
 
+from datetime import datetime
 import re
 import requests
 
@@ -62,40 +63,49 @@ def _local_routing(request, urlconf, path, app=True):
     return match.func(request)
 
 def _remote_routing(request, urlconf, path):
-    req = BeautifulSoup(requests.get(urlconf+path).text)
-    print(path)
-    print(urlconf)
-    print("---")
-    print(request.get_full_path())
-    full_path = request.get_full_path()
-    root_path = "/".join(full_path.split('/')[:4])
-    print(root_path)
-    print("---")
-    
-    #Simple test to filter forms, should replace all local urls
-    [print(x.prettify()) for x in req.findAll('form')]
-    
-    #needs work, redirects to original pilot.leestmeer now
+    """Redirect request to remote web app."""
+    app_id = request.resolver_match.kwargs['app_id']
+    reroute_fn = lambda url: reverse('contained_app', args=(app_id, url))
+    # Construct redirected URL
+    redirect_url = urlconf+path
+    res = requests.get(urlconf+path)
+
+    req = BeautifulSoup(res.text).body
+
+    req.name = "div"
+    req['id'] = "_body"
+
     for a in req.findAll('a'):
-        a['href'] = root_path+a['href']
-    print(urlconf)
-    
-    for b in req.findAll('form'):
-        print(b['action'])
-        b['action'] = urlconf+b['action']
+        if a['href'][0] != "h" and a['href'][0:2] != "//":
+            a['href'] = reroute_fn(a['href'])
+        print repr(a)
 
     for img in req.findAll('img'):
-        print(img['src'])
-        img['src'] = urlconf+img['src']
+        img['src'] = reroute_fn(img['src'])
+        print img
 
     for link in req.findAll('link'):
-        print(link['href'])
-        link['href'] = urlconf+link['href']
+        if link['href'][0] != "h" and link['href'][0:2] != "//":
+            link['href'] = reroute_fn(link['href'])
+        print link
 
-    loaded_req=req
+    http_response = HttpResponse(str(req),
+            content_type=res.headers.get('content-type'))
 
-    return render(request, "loader/container.html", {'html':str(req)}) #HttpResponse(str(req))
-    
+    # Cookie transplant
+    for cookie in res.cookies:
+        # TODO: Update server-stored cookiejar for this user
+        if cookie.expires is not None:
+            expires = datetime.fromtimestamp(cookie.expires)
+        else:
+            expires = None
+
+        http_response.set_cookie(
+                cookie.name,
+                cookie.value,
+                expires=expires,
+                path=reverse('contained_app', args=(app_id,cookie.path)))
+    return http_response
 
 def app_routing(request, app_id, path):
     """Redirect request to the referred app's location."""
@@ -125,5 +135,5 @@ def service_routing(request, service_id, path):
         # TODO: Write and use _remote_routing function
         return HttpResponse()
 
-def home(request):
+def home(request, *args, **kwargs):
     return render(request, "loader/index.html", {})
