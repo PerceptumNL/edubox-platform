@@ -62,7 +62,7 @@ def _local_routing(request, urlconf, path, app=True):
         """
         request.GET = settings_qd
     # Redirect request to local function
-    return match.func(request)
+    return match.func(request, **match.kwargs)
 
 def _remote_routing(request, urlconf, path):
     """Redirect request to remote web app."""
