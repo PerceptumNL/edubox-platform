@@ -36,7 +36,7 @@ def _local_routing(request, urlconf, path, app=True):
         match = RegexURLResolver("^/", urlconf).resolve(path)
     except Resolver404:
         raise Http404
-    
+
     # Change path_info of request
     request.path_info = path
     # Recover original script_name
@@ -51,6 +51,7 @@ def _local_routing(request, urlconf, path, app=True):
     #Add app specific settings for the user
     if not request.user.is_anonymous() and app:
         settings_qd = request.GET.copy()
+        """
         settings = {}
         app_id = request.outer_resolver_match.kwargs['app_id']
         settings_values = request.user.settings.filter(setting__app__pk=app_id,
@@ -58,6 +59,7 @@ def _local_routing(request, urlconf, path, app=True):
         for value in settings_values:
             settings[str(value.setting)] = value.value
         settings_qd.update(settings)
+        """
         request.GET = settings_qd
     # Redirect request to local function
     return match.func(request)
