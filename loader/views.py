@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from django.core.urlresolvers import RegexURLResolver, Resolver404, reverse
 
 from rest_framework import serializers, viewsets
@@ -11,6 +12,7 @@ import re
 import requests
 
 from .models import App, Service
+from .helpers import Router
 
 class AppSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -110,6 +112,7 @@ def _remote_routing(request, urlconf, path):
                 path=reverse('contained_app', args=(app_id,cookie.path)))
     return http_response
 
+@csrf_exempt
 def app_routing(request, app_id, path):
     """Redirect request to the referred app's location."""
     app = get_object_or_404(App, pk=app_id)
@@ -120,9 +123,9 @@ def app_routing(request, app_id, path):
 
         return response
     else:
-        response = _remote_routing(request, app.root, path) 
-
-        # TODO: Write and use _remote_routing function
+        #response = _remote_routing(request, app.root, path)
+        router = Router(app)
+        response = router.request(request, path)
         return response
 
 def service_routing(request, service_id, path):

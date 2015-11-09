@@ -1,9 +1,14 @@
-from loader.models import App, Service
+from django.http import HttpResponse
+from django.core.urlresolvers import reverse, RegexURLResolver, Resolver404
 
 from bs4 import BeautifulSoup
 from copy import copy
+from datetime import datetime
+from urlparse import urlsplit, urlunsplit
 import requests
 import re
+
+from loader.models import App, Service
 
 def get_current_app_id(request):
     """Return the id of the current loaded app.
@@ -135,41 +140,145 @@ class Router(object):
     def __init__(self, app, *args, **kwargs):
         self.app = app
 
-    def reroute(self, url):
-        return reverse('contained_app', args=(self.app.pk, url))
+    def reroute(self, url, pattern="app_routing"):
+        return reverse(pattern, args=(self.app.pk, url))
+
+    def unroute(self, route):
+        try:
+            match = RegexURLResolver("^/", 'loader.urls').resolve(route)
+        except Resolver404:
+            return route
+        else:
+            return match.kwargs['path']
 
     def request(self, request, path):
         self.request = request
-        self.remote_response = requests.request(
+        self.path = path
+        self.session = requests.Session()
+        self.remote_response = self.session.request(
                 method=request.method,
-                url=app.root+path,
+                data=request.body,
+                headers=self.create_request_headers(),
+                url=self.app.root+path,
                 params=request.GET)
-        self.response_document = BeautifulSoup(self.remote_response.text)
-        self.response = HttpResponse(self.response_document,
-                status=self.remote_response.status_code)
+        self.create_response_content()
+        if self.remote_response.status_code == 200:
+            self.alter_response_content()
+        # TODO: Add (some) remote_response headers to response?
+        self.response = HttpResponse(self.response_content,
+                status=self.remote_response.status_code,
+                content_type=self.remote_response.headers.get('content-type'))
         self.alter_response()
         return self.response
 
+    def create_request_headers(self):
+        headers = {}
+        app_root_parts = urlsplit(self.app.root)
+        convert_fn = lambda s: s.replace("_","-").lower()
+        for header, value in self.request.META.items():
+            if header == "CONTENT_TYPE":
+                headers[convert_fn(header)] = value
+            elif header[:5] == "HTTP_":
+                if header == "HTTP_HOST":
+                    value = app_root_parts.netloc
+                elif header == "HTTP_REFERER":
+                    referer_parts = urlsplit(value)
+                    value = urlunsplit((
+                        app_root_parts.scheme,
+                        app_root_parts.netloc,
+                        self.unroute(referer_parts.path),
+                        referer_parts.query,
+                        referer_parts.fragment))
+                headers[convert_fn(header[5:])] = value
+                print header
+        return headers
+
+    def create_response_content(self):
+        content_type = self.remote_response.headers.get('content-type','')
+        if "html" in content_type:
+            self.response_content = BeautifulSoup(self.remote_response.text)
+        elif "image" in content_type:
+            self.response_content = self.remote_response.content
+        else:
+            self.response_content = self.remote_response.text
+
+    def alter_response_content(self):
+        if isinstance(self.response_content, BeautifulSoup):
+            self.update_local_references()
+            self.add_jquery_route()
+
     def alter_response(self):
         self.route_cookies()
-        self.update_local_links()
 
-    def route_cookies(self)
+    def route_cookies(self):
         # Cookie transplant
-        for cookie in self.remote_response.cookies:
+        print('check cookies', self.remote_response.request.method,
+                self.remote_response.request.url)
+        for cookie in self.session.cookies:
             # TODO: Update server-stored cookiejar for this user
             if cookie.expires is not None:
                 expires = datetime.fromtimestamp(cookie.expires)
             else:
                 expires = None
-
+            print('set cookie %s=%s' % (cookie.name,cookie.value))
             self.response.set_cookie(
                     cookie.name,
                     cookie.value,
                     expires=expires,
                     path=self.reroute(cookie.path))
 
-    def update_local_links(self):
-        for a in self.response_document.findAll('a'):
-            if a['href'][0] != "h" and a['href'][0:2] != "//":
-                a['href'] = self.reroute(a['href'])
+    def update_local_references(self):
+        # Routing <link:href> in head
+        try:
+            for elem in self.response_content.head.findAll('link'):
+                if not 'href' in elem.attrs:
+                    continue
+                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                    elem['href'] = self.reroute(elem['href'])
+            # Routing <script:src> in head
+            for elem in self.response_content.head.findAll('script'):
+                if not 'src' in elem.attrs:
+                    continue
+                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                    elem['src'] = self.reroute(elem['src'])
+            # Routing <link:href> in body
+            for elem in self.response_content.body.findAll('link'):
+                if not 'href' in elem.attrs:
+                    continue
+                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                    elem['href'] = self.reroute(elem['href'])
+            # Routing <script:src> in body
+            for elem in self.response_content.body.findAll('script'):
+                if not 'src' in elem.attrs:
+                    continue
+                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                    elem['src'] = self.reroute(elem['src'])
+            # Routing <img:src> in body
+            for elem in self.response_content.body.findAll('img'):
+                if not 'src' in elem.attrs:
+                    continue
+                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                    elem['src'] = self.reroute(elem['src'])
+            # Routing <a:href> in body
+            for elem in self.response_content.body.findAll('a'):
+                if not 'href' in elem.attrs:
+                    continue
+                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                    elem['href'] = self.reroute(elem['href'])
+            # Routing <form:action> in body
+            for elem in self.response_content.body.findAll('form'):
+                if not 'action' in elem.attrs:
+                    continue
+                if elem['action'][0] != "h" and elem['action'][0:2] != "//":
+                    elem['action'] = self.reroute(elem['action'])
+        except Exception as e:
+            import q; q.d()
+
+    def add_jquery_route(self):
+        base_route = self.reroute('')
+        script_tag = self.response_content.new_tag("script")
+        script_tag.string = ("if(window.$ != undefined){ "
+            "$.ajaxPrefilter(function( options ){"
+                "if(options.url[0] == '/'){"
+                    "options.url = '"+base_route+"'+options.url; }});}")
+        self.response_content.body.append(script_tag)
