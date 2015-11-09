@@ -14,16 +14,28 @@ function update(obj, key, val){
 }
 
 (function(window, $, undefined){
+	var local_rgx = /^\/\b[-a-zA-Z0-9@:%_\+.~#?&//=]*$/g;
+	var remote_rgx = /^(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/g;
 	window.Environment = {
 		init: function(config){
 			update(Environment, "config", config)
 		},
 		cache: {},
 		config: {
-			container: undefined
+			container: undefined,
 		},
-		render: function(html){
-			$(Environment.config.container).html(html);
+		render: function(url_or_content){
+			$(Environment.config.container).empty();
+			if(local_rgx.test(url_or_content)){
+				$(Environment.config.container).append(
+						$("<iframe>").attr('src', url_or_content));
+			} else if(remote_rgx.test(url_or_content)){
+				console.log("What to do with remote rendering?")
+				$(Environment.config.container).append(
+						$("<iframe>").attr('src', url_or_content));
+			} else {
+				$(Environment.config.container).html(url_or_content);
+			}
 		}
 	};
 })(window, jQuery);
@@ -38,8 +50,12 @@ function update(obj, key, val){
 			return base_url.replace("--$path--", relative_path);
 		};
 		_this.get = function(rel_path, cb_fn){
-			if(cb_fn == undefined){ cb_fn = Env.render; }
-			$.get(_this.get_absolute_path(rel_path), cb_fn);
+			if(cb_fn == undefined){ cb_fn = window.Environment.render; }
+			if(cb_fn == window.Environment.render){
+				window.Environment.render(_this.get_absolute_path(rel_path));
+			}else{
+				$.get(_this.get_absolute_path(rel_path), cb_fn);
+			}
 		};
 		_this.post = function(rel_path, data, cb_fn){
 			if(cb_fn == undefined){ cb_fn = Env.render; }

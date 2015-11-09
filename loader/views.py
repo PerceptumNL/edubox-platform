@@ -71,11 +71,11 @@ def _remote_routing(request, urlconf, path):
     # Construct redirected URL
     redirect_url = urlconf+path
     res = requests.get(urlconf+path)
+    """
+    req = BeautifulSoup(res.text)
 
-    req = BeautifulSoup(res.text).body
-
-    req.name = "div"
-    req['id'] = "_body"
+#    req.name = "div"
+#    req['id'] = "_body"
 
     for a in req.findAll('a'):
         if a['href'][0] != "h" and a['href'][0:2] != "//":
@@ -90,8 +90,9 @@ def _remote_routing(request, urlconf, path):
         if link['href'][0] != "h" and link['href'][0:2] != "//":
             link['href'] = reroute_fn(link['href'])
         print link
+    """
 
-    http_response = HttpResponse(str(req),
+    http_response = HttpResponse(res.text,
             content_type=res.headers.get('content-type'))
 
     # Cookie transplant

@@ -9,6 +9,11 @@
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 </head>
 <body>
+<style>
+	#app-vm iframe {
+		height: 800px;
+	}
+</style>
 <!-- Always shows a header, even in smaller screens. -->
 <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
   <header class="mdl-layout__header">
@@ -25,7 +30,7 @@
     </div>
   </header>
   <main class="mdl-layout__content">
-    <div class="page-content" id="app-vm"><!-- Your content goes here --></div>
+    <div class="page-content" id="app-vm"></div>
   </main>
 </div>
 
