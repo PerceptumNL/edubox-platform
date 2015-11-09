@@ -1,6 +1,8 @@
 from loader.models import App, Service
 
+from bs4 import BeautifulSoup
 from copy import copy
+import requests
 import re
 
 def get_current_app_id(request):
@@ -127,3 +129,47 @@ def dispatch_service_request(outer_request, *args, **kwargs):
                                domain=domain, path=path)
 
         return http_response
+
+class Router(object):
+
+    def __init__(self, app, *args, **kwargs):
+        self.app = app
+
+    def reroute(self, url):
+        return reverse('contained_app', args=(self.app.pk, url))
+
+    def request(self, request, path):
+        self.request = request
+        self.remote_response = requests.request(
+                method=request.method,
+                url=app.root+path,
+                params=request.GET)
+        self.response_document = BeautifulSoup(self.remote_response.text)
+        self.response = HttpResponse(self.response_document,
+                status=self.remote_response.status_code)
+        self.alter_response()
+        return self.response
+
+    def alter_response(self):
+        self.route_cookies()
+        self.update_local_links()
+
+    def route_cookies(self)
+        # Cookie transplant
+        for cookie in self.remote_response.cookies:
+            # TODO: Update server-stored cookiejar for this user
+            if cookie.expires is not None:
+                expires = datetime.fromtimestamp(cookie.expires)
+            else:
+                expires = None
+
+            self.response.set_cookie(
+                    cookie.name,
+                    cookie.value,
+                    expires=expires,
+                    path=self.reroute(cookie.path))
+
+    def update_local_links(self):
+        for a in self.response_document.findAll('a'):
+            if a['href'][0] != "h" and a['href'][0:2] != "//":
+                a['href'] = self.reroute(a['href'])
