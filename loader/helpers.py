@@ -155,8 +155,13 @@ class Router(object):
         self.request = request
         self.path = path
         self.session = requests.Session()
+        self.session.cookies = requests.utils.cookiejar_from_dict(
+                request.COOKIES)
+        print("Sending", self.session.cookies)
+        url = self.app.root+path
         self.remote_response = self.session.request(
                 method=request.method,
+                allow_redirects=False,
                 data=request.body,
                 headers=self.create_request_headers(),
                 url=self.app.root+path,
@@ -196,7 +201,7 @@ class Router(object):
     def create_response_content(self):
         content_type = self.remote_response.headers.get('content-type','')
         if "html" in content_type:
-            self.response_content = BeautifulSoup(self.remote_response.text)
+            self.response_content = BeautifulSoup(self.remote_response.text, 'lxml')
         elif "image" in content_type:
             self.response_content = self.remote_response.content
         else:
@@ -206,9 +211,12 @@ class Router(object):
         if isinstance(self.response_content, BeautifulSoup):
             self.update_local_references()
             self.add_jquery_route()
+            self.response_content = self.response_content.prettify()
 
     def alter_response(self):
         self.route_cookies()
+        for header,value in self.create_response_headers().items():
+            self.response[header] = value
 
     def route_cookies(self):
         # Cookie transplant
@@ -226,6 +234,15 @@ class Router(object):
                     cookie.value,
                     expires=expires,
                     path=self.reroute(cookie.path))
+
+    def create_response_headers(self):
+        headers = {}
+        for header, value in self.remote_response.headers.items():
+            header = header.lower()
+            #TODO: Extend list
+            if header in ("location", "content-type"):
+                headers[header.title()] = value
+        return headers
 
     def update_local_references(self):
         # Routing <link:href> in head
@@ -275,7 +292,7 @@ class Router(object):
             import q; q.d()
 
     def add_jquery_route(self):
-        base_route = self.reroute('')
+        base_route = self.reroute('/')[:-1]
         script_tag = self.response_content.new_tag("script")
         script_tag.string = ("if(window.$ != undefined){ "
             "$.ajaxPrefilter(function( options ){"
