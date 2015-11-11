@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse, RegexURLResolver, Resolver404
 from bs4 import BeautifulSoup
 from copy import copy
 from datetime import datetime
-from urlparse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit
 import requests
 import re
 
