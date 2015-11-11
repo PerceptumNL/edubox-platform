@@ -8,7 +8,7 @@ index.register(r'apps', AppViewSet)
 index.register(r'services', ServiceViewSet)
 
 urlpatterns = [
-    url(r'^$', 'loader.views.home'),
+    url(r'^$', 'loader.views.home', name="home"),
     url(r'^app/(?P<app_id>[^/]+)(?P<path>/.*)$', 'loader.views.home',
         name='contained_app'),
     url(r'^index/', include(index.urls)),

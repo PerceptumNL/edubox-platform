@@ -149,7 +149,10 @@ class Router(object):
         except Resolver404:
             return route
         else:
-            return match.kwargs['path']
+            if match.url_name in ('app_routing', 'contained_app'):
+                return match.kwargs['path']
+            else:
+                return route
 
     def request(self, request, path):
         self.request = request
@@ -240,7 +243,18 @@ class Router(object):
         for header, value in self.remote_response.headers.items():
             header = header.lower()
             #TODO: Extend list
-            if header in ("location", "content-type"):
+            if header == "content-type":
+                headers[header.title()] = value
+            elif header == "location":
+                if self.app.identical_urls is not None and \
+                    re.test(self.app.identical_urls, value):
+                        urlparts = urlsplit(value)
+                        value = urlunsplit((
+                            urlparts.scheme,
+                            urlsplit(self.app.root).netloc,
+                            self.reroute(urlparts.path),
+                            urlparts.query,
+                            urlparts.fragment))
                 headers[header.title()] = value
         return headers
 

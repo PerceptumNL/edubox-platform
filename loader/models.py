@@ -7,6 +7,8 @@ class LocalOrRemoteResource(models.Model):
             verbose_name="URL/URLconf")
     # Whether the resource is hosted on the same domain or not
     local = models.BooleanField(default=True)
+    # Regex matching all URL's that are considered to match root.
+    identical_urls = models.CharField(null=True, blank=True, max_length=255)
 
     class Meta:
         abstract=True
