@@ -169,7 +169,6 @@ class Router(object):
         self.create_response_content()
         if self.remote_response.status_code == 200:
             self.alter_response_content()
-        # TODO: Add (some) remote_response headers to response?
         self.response = HttpResponse(self.response_content,
                 status=self.remote_response.status_code,
                 content_type=self.remote_response.headers.get('content-type'))
@@ -195,7 +194,6 @@ class Router(object):
                         referer_parts.query,
                         referer_parts.fragment))
                 headers[convert_fn(header[5:])] = value
-                print header
         return headers
 
     def create_response_content(self):
@@ -209,6 +207,8 @@ class Router(object):
 
     def alter_response_content(self):
         if isinstance(self.response_content, BeautifulSoup):
+            self.add_document_location_route()
+            self.add_serviceworker_route()
             self.update_local_references()
             self.add_jquery_route()
             self.response_content = self.response_content.prettify()
@@ -243,6 +243,27 @@ class Router(object):
             if header in ("location", "content-type"):
                 headers[header.title()] = value
         return headers
+
+    def add_document_location_route(self):
+        base_route = self.reroute('/')[:-1]
+        script_tag = self.response_content.new_tag("script")
+        script_tag.string = (
+            "window.history.replaceState({},'', "
+            "document.location.href.replace('"+base_route+"',''))")
+        self.response_content.head.append(script_tag)
+
+    def add_serviceworker_route(self):
+        base_route = self.reroute('/')[:-1]
+        script_tag = self.response_content.new_tag("script")
+        script_tag.string = ("if(navigator != undefined && "
+                "navigator.serviceWorker != undefined){ "
+            "var __aLSNSrcoDfAJqUe = navigator.serviceWorker.register;"
+            "navigator.serviceWorker.register = function(){"
+                "if( arguments[0][0] == '/' ){"
+                    "arguments[0] = '"+base_route+"'+arguments[0];"
+                "}"
+                "return __aLSNSrcoDfAJqUe.apply(this, arguments);}}")
+        self.response_content.body.append(script_tag)
 
     def update_local_references(self):
         # Routing <link:href> in head
