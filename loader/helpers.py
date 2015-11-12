@@ -184,12 +184,18 @@ class Router(object):
                 url=url,
                 params=request.GET)
         self.create_response_content()
+        if self.remote_response.is_redirect:
+            print("REDIRECTING TO",
+                    self.remote_response.headers.get("location"))
         if self.remote_response.status_code == 200:
             self.alter_response_content()
         self.response = HttpResponse(self.response_content,
                 status=self.remote_response.status_code,
                 content_type=self.remote_response.headers.get('content-type'))
         self.alter_response()
+        if self.remote_response.is_redirect:
+            print("ALTERED REDIRECTING TO",
+                    self.response["Location"])
         return self.response
 
     def create_request_headers(self):
@@ -260,8 +266,8 @@ class Router(object):
                     re.match(self.app.identical_urls, value):
                         urlparts = urlsplit(value)
                         value = urlunsplit((
-                            urlparts.scheme,
-                            urlsplit(self.app.root).netloc,
+                            self.request.scheme,
+                            self.request.get_host(),
                             self.reroute(urlparts.path),
                             urlparts.query,
                             urlparts.fragment))
@@ -269,6 +275,8 @@ class Router(object):
         return headers
 
     def add_document_location_route(self):
+        if self.domain_routing:
+            return
         base_route = self.reroute('/')[:-1]
         script_tag = self.response_content.new_tag("script")
         script_tag.string = (
@@ -277,6 +285,8 @@ class Router(object):
         self.response_content.head.append(script_tag)
 
     def add_serviceworker_route(self):
+        if self.domain_routing:
+            return
         base_route = self.reroute('/')[:-1]
         script_tag = self.response_content.new_tag("script")
         script_tag.string = ("if(navigator != undefined && "
@@ -290,53 +300,54 @@ class Router(object):
         self.response_content.body.append(script_tag)
 
     def update_local_references(self):
+        if self.domain_routing:
+            return
         # Routing <link:href> in head
-        try:
-            for elem in self.response_content.head.findAll('link'):
-                if not 'href' in elem.attrs:
-                    continue
-                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
-                    elem['href'] = self.reroute(elem['href'])
-            # Routing <script:src> in head
-            for elem in self.response_content.head.findAll('script'):
-                if not 'src' in elem.attrs:
-                    continue
-                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
-                    elem['src'] = self.reroute(elem['src'])
-            # Routing <link:href> in body
-            for elem in self.response_content.body.findAll('link'):
-                if not 'href' in elem.attrs:
-                    continue
-                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
-                    elem['href'] = self.reroute(elem['href'])
-            # Routing <script:src> in body
-            for elem in self.response_content.body.findAll('script'):
-                if not 'src' in elem.attrs:
-                    continue
-                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
-                    elem['src'] = self.reroute(elem['src'])
-            # Routing <img:src> in body
-            for elem in self.response_content.body.findAll('img'):
-                if not 'src' in elem.attrs:
-                    continue
-                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
-                    elem['src'] = self.reroute(elem['src'])
-            # Routing <a:href> in body
-            for elem in self.response_content.body.findAll('a'):
-                if not 'href' in elem.attrs:
-                    continue
-                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
-                    elem['href'] = self.reroute(elem['href'])
-            # Routing <form:action> in body
-            for elem in self.response_content.body.findAll('form'):
-                if not 'action' in elem.attrs:
-                    continue
-                if elem['action'][0] != "h" and elem['action'][0:2] != "//":
-                    elem['action'] = self.reroute(elem['action'])
-        except Exception as e:
-            import q; q.d()
+        for elem in self.response_content.head.findAll('link'):
+            if not 'href' in elem.attrs:
+                continue
+            if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                elem['href'] = self.reroute(elem['href'])
+        # Routing <script:src> in head
+        for elem in self.response_content.head.findAll('script'):
+            if not 'src' in elem.attrs:
+                continue
+            if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                elem['src'] = self.reroute(elem['src'])
+        # Routing <link:href> in body
+        for elem in self.response_content.body.findAll('link'):
+            if not 'href' in elem.attrs:
+                continue
+            if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                elem['href'] = self.reroute(elem['href'])
+        # Routing <script:src> in body
+        for elem in self.response_content.body.findAll('script'):
+            if not 'src' in elem.attrs:
+                continue
+            if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                elem['src'] = self.reroute(elem['src'])
+        # Routing <img:src> in body
+        for elem in self.response_content.body.findAll('img'):
+            if not 'src' in elem.attrs:
+                continue
+            if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                elem['src'] = self.reroute(elem['src'])
+        # Routing <a:href> in body
+        for elem in self.response_content.body.findAll('a'):
+            if not 'href' in elem.attrs:
+                continue
+            if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                elem['href'] = self.reroute(elem['href'])
+        # Routing <form:action> in body
+        for elem in self.response_content.body.findAll('form'):
+            if not 'action' in elem.attrs:
+                continue
+            if elem['action'][0] != "h" and elem['action'][0:2] != "//":
+                elem['action'] = self.reroute(elem['action'])
 
     def add_jquery_route(self):
+        if self.domain_routing:
+            return
         base_route = self.reroute('/')[:-1]
         script_tag = self.response_content.new_tag("script")
         script_tag.string = ("if(window.$ != undefined){ "
