@@ -32,6 +32,8 @@ class SubdomainAppRoutingMiddleware(SubdomainMiddleware):
                     request.urlconf = routing
             else:
                 for pattern, routing in settings.SUBDOMAIN_ROUTING.items():
+                    if pattern is None:
+                        continue
                     match = re.match(pattern, subdomain)
                     if match:
                         if callable(routing):
