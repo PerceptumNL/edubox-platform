@@ -176,6 +176,10 @@ class Router(object):
         self.session.cookies = requests.utils.cookiejar_from_dict(
                 request.COOKIES)
         url = "%s://%s%s" % (self.app.scheme,self.app.root,path)
+        print("External request", request.method, "%s://%s%s" % (
+            self.request.scheme, self.request.get_host(), path))
+        print("Internal request", request.method, url)
+        print(request.method, url)
         self.remote_response = self.session.request(
                 method=request.method,
                 allow_redirects=False,
@@ -184,18 +188,12 @@ class Router(object):
                 url=url,
                 params=request.GET)
         self.create_response_content()
-        if self.remote_response.is_redirect:
-            print("REDIRECTING TO",
-                    self.remote_response.headers.get("location"))
         if self.remote_response.status_code == 200:
             self.alter_response_content()
         self.response = HttpResponse(self.response_content,
                 status=self.remote_response.status_code,
                 content_type=self.remote_response.headers.get('content-type'))
         self.alter_response()
-        if self.remote_response.is_redirect:
-            print("ALTERED REDIRECTING TO",
-                    self.response["Location"])
         return self.response
 
     def create_request_headers(self):
