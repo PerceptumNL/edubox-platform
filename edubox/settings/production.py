@@ -18,7 +18,8 @@ ALLOWED_HOSTS = ['*']
 
 # Static asset configuration
 STATIC_ROOT = 'staticfiles'
-STATIC_URL = '/static/'
+# Try to prevent collisions with other django apps that are routed.
+STATIC_URL = '/static5bec552b27/'
 
 if 'SITE_ID' in os.environ:
     SITE_ID = int(os.environ.get('SITE_ID'))
