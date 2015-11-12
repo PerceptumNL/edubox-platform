@@ -16,4 +16,5 @@ ALLOWED_HOSTS = ['*']
 STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
 
-SITE_ID = int(os.environ.get('SITE_ID', 1))
+if 'SITE_ID' in os.environ:
+    SITE_ID = int(os.environ.get('SITE_ID'))
