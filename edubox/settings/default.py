@@ -37,6 +37,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'django_summernote',
     'rest_framework',
     'compressor',
@@ -52,6 +53,7 @@ INSTALLED_APPS = (
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'loader.middleware.SubdomainAppRoutingMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -62,6 +64,12 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'edubox.urls'
+
+from loader.helpers import Router
+SUBDOMAIN_ROUTING = {
+    None: "edubox.urls",
+    r"(?P<app_domain>.+)\.app": Router.route_path_by_subdomain
+}
 
 TEMPLATES = [
     {
@@ -120,3 +128,4 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = 'staticfiles'
 
+SITE_ID = 1

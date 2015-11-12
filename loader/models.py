@@ -9,9 +9,15 @@ class LocalOrRemoteResource(models.Model):
     local = models.BooleanField(default=True)
     # Regex matching all URL's that are considered to match root.
     identical_urls = models.CharField(null=True, blank=True, max_length=255)
+    # Whether the remote root needs HTTPS
+    secure = models.BooleanField(default=True)
 
     class Meta:
         abstract=True
+
+    @property
+    def scheme(self):
+        return 'https' if self.secure else 'http'
 
 class App(LocalOrRemoteResource):
     # Title of the application

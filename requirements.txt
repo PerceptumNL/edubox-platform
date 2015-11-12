@@ -5,6 +5,7 @@ Django==1.8.6
 django-appconf==1.0.1
 django-compressor==1.5
 django-polymorphic==0.7.1
+-e git+https://github.com/tkaemming/django-subdomains.git@7c57f0257dc1aaae7118f291e729f44ca3883532#egg=django_subdomains-master
 django-summernote==0.6.8
 django-toolbelt==0.0.1
 djangorestframework==3.1.3
