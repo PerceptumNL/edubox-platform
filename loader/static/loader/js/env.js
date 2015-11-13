@@ -112,7 +112,7 @@ function update(obj, key, val){
 		}
 	}
 	Env.Router.bind("^/?$", function(){
-		Env.render("App");
+		Env.render("");
 	});
 	$(Env.Router.poll);
 })(Environment, jQuery);
