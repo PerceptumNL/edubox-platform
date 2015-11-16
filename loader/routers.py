@@ -1,5 +1,8 @@
 """
-.. py:module:: routers
+loader.routers
+-------
+
+Routing local requests to remote servers
 """
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -15,7 +18,9 @@ import re
 
 class BaseRouter(object):
     """
-    .. py:class:: BaseRouter(remote_host)
+    Base class for all router classes.
+
+    :param str remote_host: The hostname of the remote sever.
     """
 
     def __init__(self, remote_host):
@@ -23,7 +28,11 @@ class BaseRouter(object):
 
     def debug(self, msg):
         """
-        .. py:method: debug(msg)
+        Prints a debug message when the setting `DEBUG` is set to True.
+        Each debug message is preprended with the current time provided by
+        :func:`datetime.datetime.now` and the class name."
+
+        :param str msg: The debug message to display
         """
         if not settings.DEBUG:
             return
@@ -37,14 +46,12 @@ class BaseRouter(object):
 
     def route_request(self, request):
         """
-        .. py:method:: route_request(request)
-
         Route the request to the remote server.
 
         :param request: Incoming request to route
-        :type request: :py:class:django.http.HttpRequest
+        :type request: :py:class:`django.http.HttpRequest`
         :return: The routed response
-        :rtype: :py:class:django.http.HttpResponse
+        :rtype: :py:class:`django.http.HttpResponse`
         """
         self.request = request
         self.debug("Incoming request: %s %s://%s" % (

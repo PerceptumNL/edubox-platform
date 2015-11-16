@@ -11,7 +11,13 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   introduction
+   apps
+   services
+   loader
+   settings
    api
+   reference
 
 
 Indices and tables
