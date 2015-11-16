@@ -3,6 +3,9 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 class LocalOrRemoteResource(models.Model):
+    """
+    Class for local or remote resources.
+    """
     root = models.CharField(max_length=255,
             verbose_name="URL/URLconf")
     # Whether the resource is hosted on the same domain or not
@@ -20,6 +23,9 @@ class LocalOrRemoteResource(models.Model):
         return 'https' if self.secure else 'http'
 
 class App(LocalOrRemoteResource):
+    """
+    Class for resources serving an Application.
+    """
     # Title of the application
     title = models.CharField(max_length=255)
     # Link to the application icon
@@ -39,6 +45,9 @@ class App(LocalOrRemoteResource):
         return "App(%s)" % (self,)
 
 class Service(LocalOrRemoteResource):
+    """
+    Class for resources serving a Service.
+    """
     # Unique identifier
     name = models.CharField(max_length=255, primary_key=True)
     # Title of the application

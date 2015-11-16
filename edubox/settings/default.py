@@ -66,10 +66,8 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'edubox.urls'
 
 from loader.helpers import Router
-SUBDOMAIN_ROUTING = {
-    None: "edubox.urls",
-    r"(?P<app_domain>.+)\.app": Router.route_path_by_subdomain
-}
+SUBDOMAIN_ROUTING = { None: "edubox.urls" }
+SUBDOMAIN_ROUTING.update(Router.get_subdomain_routing_mapping())
 
 TEMPLATES = [
     {

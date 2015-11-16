@@ -1,7 +1,4 @@
 """
-loader.routers
--------
-
 Routing local requests to remote servers
 """
 from django.http import HttpResponse
@@ -13,12 +10,13 @@ from bs4 import BeautifulSoup
 from copy import copy
 from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit
+import subdomains
 import requests
 import re
 
-class BaseRouter(object):
+class Router(object):
     """
-    Base class for all router classes.
+    Generic base class for all router classes.
 
     :param str remote_host: The hostname of the remote sever.
     """
@@ -28,7 +26,7 @@ class BaseRouter(object):
 
     def debug(self, msg):
         """
-        Prints a debug message when the setting `DEBUG` is set to True.
+        Prints a debug message when the setting ``DEBUG`` is set to True.
         Each debug message is preprended with the current time provided by
         :func:`datetime.datetime.now` and the class name."
 
@@ -38,11 +36,89 @@ class BaseRouter(object):
             return
         print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
 
-    def reroute(self, url):
-        return url
+    @classmethod
+    def get_subdomain_patterns(cls):
+        """
+        Return a tuple of subdomain pattern strings that should be handled by
+        this router class.
+        """
+        return (r"(?P<domain>.+)\.rtr",)
 
-    def unroute(self, routed_url):
-        return routed_url
+    @classmethod
+    def get_subdomain_routing_mapping(cls, map_to_function=True):
+        """
+        Return a dictionary mapping subdomain patterns to router classes.
+
+        :param bool map_to_function: Map subdomains to routing functions rather
+            than classes.
+        :return: a dictionary mapping pattern strings to either classes or
+            functions
+        """
+        mapping = {}
+        # Add subdomain patterns of this class
+        for pattern in cls.get_subdomain_patterns():
+            mapping[pattern] = cls.route_path_by_subdomain
+        # Add subdomain patterns of subclasses
+        for subclass in cls.__subclasses__():
+            mapping.update(subclass.get_subdomain_routing_mapping())
+        return mapping
+
+    def reroute(self, url, path_only=True):
+        """
+        Translate the url to a routed version.
+
+        :param str url: a fully qualified URL or a part of it.
+        :param bool path_only: whether to return only the path string or the
+            complete url.
+        :return: routed url or path depending on `path_only`
+        """
+        parts = urlsplit(url)
+        if path_only:
+            return parts.path
+        else:
+            return urlunsplit(
+                    self.request.scheme,
+                    self.get_router_domain(url),
+                    parts.path,
+                    parts.query,
+                    parts.fragment)
+
+    def get_routed_domain(self, url):
+        parts = urlsplit(url)
+        netloc = parts.netloc or '_'
+        return "%s.rtr.%s" % (parts.netloc, subdomains.utils.get_domain())
+
+    def get_unrouted_domain_by_match(self, **kwargs):
+        return kwargs.get('domain', subdomains.utils.get_domain())
+
+    def unroute(self, routed_url, path_only=True):
+        """
+        Translate a routed url back to the original version.
+
+        :param str url: a routed fully qualified URL or a part of it.
+        :param bool path_only: whether to return only the path string or the
+            complete url.
+        :return: the unrouted url or path depending on `path_only`
+        """
+        parts = urlsplit(routed_url)
+        if path_only:
+            return parts.path
+
+        for pattern, cls in self.__class__.get_subdomain_routing_mapping():
+            match = re.match(pattern, "%s.%s" % (parts.netloc,
+                subdomains.utils.get_domain()))
+            if match is not None:
+                domain = cls.get_unrouted_domain(**match.groupdict())
+                break;
+        else:
+            domain = subdomains.utils.get_domain()
+
+        return urlunsplit(
+                self.get_remote_request_scheme(),
+                domain,
+                parts.path,
+                parts.query,
+                parts.fragment)
 
     def route_request(self, request):
         """
@@ -170,16 +246,26 @@ class BaseRouter(object):
                     cookie.name,
                     cookie.value,
                     expires=expires,
-                    path=self.reroute(cookie.path))
+                    path=self.reroute(cookie.path, path_only=True))
 
-class AppRouter(BaseRouter):
+class AppRouter(Router):
+    """
+    Router class for remote severs proving apps.
+
+    :param app: The application it is routing a request for.
+    :type app: :py:class:`loader.models.App`
+    """
 
     def __init__(self, app, *args, **kwargs):
         self.app = app
         kwargs['remote_host'] = self.app.root
         super().__init__(*args, **kwargs)
 
-    def reroute(self, url, pattern="app_routing"):
+    @classmethod
+    def get_subdomain_patterns(cls):
+        return (r"(?P<app_domain>.+)\.app",)
+
+    def reroute(self, url, path_only=True, pattern="app_routing"):
         if self.domain_routing:
             return url
         else:
@@ -202,15 +288,6 @@ class AppRouter(BaseRouter):
             value = headers['Location']
             if self.app.identical_urls is not None and \
                 re.match(self.app.identical_urls, value):
-                    urlparts = urlsplit(value)
-                    value = urlunsplit((
-                        self.request.scheme,
-                        self.request.get_host(),
-                        self.reroute(urlparts.path),
-                        urlparts.query,
-                        urlparts.fragment))
+                    value = self.reroute(value)
             headers['Location'] = value
         return headers
-
-class ResourceRouter(BaseRouter):
-    pass
