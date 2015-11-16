@@ -60,9 +60,9 @@ class Event(models.Model):
         return {'date': formats.date_format(
                     timezone.localtime(self.timestamp),
                     "DATETIME_FORMAT"),
-                'user': unicode(displayname(self.user)),
-                'group': unicode(group),
-                'app': unicode(app)
+                'user': str(displayname(self.user)),
+                'group': str(self.group),
+                'app': str(self.app)
                 }
     
     def create(app, group, user, verb, obj, result=None, timestamp=None):    
@@ -108,7 +108,7 @@ class ReadEvent(Event):
             'type': 'event-article-view',
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
-                'title': unicode(self.article)
+                'title': str(self.article)
                 }
             })
         return desc
@@ -133,7 +133,7 @@ class RatedEvent(Event):
             'rating': str(self.rating),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
-                'title': unicode(self.article)
+                'title': str(self.article)
                 }
             })
         return desc
@@ -159,7 +159,7 @@ class ScoredEvent(Event):
             'rating': str(self.rating),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
-                'title': unicode(self.article)
+                'title': str(self.article)
                 }
             })
         return desc
@@ -182,10 +182,10 @@ class ClickedEvent(Event):
         desc = {} if desc is None else desc
         desc.update({
             'type': 'event-word-cover',
-            'word': unicode(self.word),
+            'word': str(self.word),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
-                'title': unicode(self.article)
+                'title': str(self.article)
                 }
             })
         return desc

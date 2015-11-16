@@ -1,3 +1,6 @@
+"""
+.. py:module:: routers
+"""
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.conf import settings
@@ -11,22 +14,38 @@ import requests
 import re
 
 class BaseRouter(object):
+    """
+    .. py:class:: BaseRouter(remote_host)
+    """
 
     def __init__(self, remote_host):
         self.remote_host = remote_host
 
     def debug(self, msg):
+        """
+        .. py:method: debug(msg)
+        """
         if not settings.DEBUG:
             return
         print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
 
-    def get_routed_url(self, url):
+    def reroute(self, url):
         return url
 
-    def get_unrouted_url(self, routed_url):
+    def unroute(self, routed_url):
         return routed_url
 
     def route_request(self, request):
+        """
+        .. py:method:: route_request(request)
+
+        Route the request to the remote server.
+
+        :param request: Incoming request to route
+        :type request: :py:class:django.http.HttpRequest
+        :return: The routed response
+        :rtype: :py:class:django.http.HttpResponse
+        """
         self.request = request
         self.debug("Incoming request: %s %s://%s" % (
             request.method, request.scheme, request.path_info ))
@@ -123,13 +142,68 @@ class BaseRouter(object):
             response[header] = value
 
     def get_response_headers(self, remote_response):
-        pass
+        headers = {}
+        for header, value in self.remote_response.headers.items():
+            header = header.lower()
+            #TODO: Extend list
+            if header == "content-type":
+                headers[header.title()] = value
+            elif header == "location":
+                headers[header.title()] = value
+        return headers
 
     def alter_response_cookies(self, response, remote_response):
-        pass
+        for cookie in self.remote_session.cookies:
+            # TODO: Update server-stored cookiejar for this user
+            if cookie.expires is not None:
+                expires = datetime.fromtimestamp(cookie.expires)
+            else:
+                expires = None
+            response.set_cookie(
+                    cookie.name,
+                    cookie.value,
+                    expires=expires,
+                    path=self.reroute(cookie.path))
 
 class AppRouter(BaseRouter):
-    pass
+
+    def __init__(self, app, *args, **kwargs):
+        self.app = app
+        kwargs['remote_host'] = self.app.root
+        super().__init__(*args, **kwargs)
+
+    def reroute(self, url, pattern="app_routing"):
+        if self.domain_routing:
+            return url
+        else:
+            return reverse(pattern, args=(self.app.pk, url))
+
+    def unroute(self, routed_url):
+        try:
+            match = RegexURLResolver("^/", 'loader.urls').resolve(routed_url)
+        except Resolver404:
+            return routed_url
+        else:
+            return match.kwargs.get('path', routed_url)
+
+    def alter_response_content(self, response_content, remote_response):
+        pass
+
+    def get_response_headers(self, remote_response):
+        headers = super().get_response_headers()
+        if 'Location' in headers:
+            value = headers['Location']
+            if self.app.identical_urls is not None and \
+                re.match(self.app.identical_urls, value):
+                    urlparts = urlsplit(value)
+                    value = urlunsplit((
+                        self.request.scheme,
+                        self.request.get_host(),
+                        self.reroute(urlparts.path),
+                        urlparts.query,
+                        urlparts.fragment))
+            headers['Location'] = value
+        return headers
 
 class ResourceRouter(BaseRouter):
     pass
