@@ -195,7 +195,7 @@ class Router(object):
             match = re.match(pattern, "%s.%s" % (parts.netloc,
                 subdomains.utils.get_domain()))
             if match is not None:
-                domain = cls.get_unrouted_domain_by_match(**match.groupdict())
+                domain = self.get_unrouted_domain_by_match(**match.groupdict())
                 break
         else:
             domain = subdomains.utils.get_domain()
