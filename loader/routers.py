@@ -406,7 +406,10 @@ class DuolingoAppRouter(AppRouter):
         return (r"(?P<domain>.+\.duolingo\.com)\.app",)
 
     def alter_response_content(self, response_content, remote_response):
+        #TODO: Wait for gapi to be loaded
         super().alter_response_content(response_content, remote_response)
+        if not isinstance(response_content, BeautifulSoup):
+            return
         script_tag = response_content.new_tag("script")
         script_tag.string = ("gapi.load('client:plusone', "
             "{_c:{'jsl':{'ci':{'oauth-flow':{'authUrl': "
