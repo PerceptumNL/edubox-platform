@@ -275,7 +275,7 @@ class Router(object):
                 value = self.get_remote_request_host()
                 headers[convert_fn(header[5:])] = value
             elif header == "HTTP_REFERER":
-                value = get_unrouted_url(value, path_only=False)
+                value = self.get_unrouted_url(value, path_only=False)
         self.debug("Remote request headers: %s" % (headers,))
         return headers
 
