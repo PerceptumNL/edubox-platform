@@ -191,7 +191,7 @@ class Router(object):
         if path_only:
             return parts.path
 
-        for pattern, cls in self.__class__.get_subdomain_routing_mapping():
+        for pattern, cls in self.get_subdomain_routing_mapping().items():
             match = re.match(pattern, "%s.%s" % (parts.netloc,
                 subdomains.utils.get_domain()))
             if match is not None:
