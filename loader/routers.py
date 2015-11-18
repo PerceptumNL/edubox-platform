@@ -397,3 +397,22 @@ class AppRouter(Router):
 
     def alter_response_content(self, response_content, remote_response):
         pass
+
+
+class DuolingoAppRouter(AppRouter):
+
+    @classmethod
+    def get_subdomain_patterns(cls):
+        return (r"(?P<domain>.+\.duolingo\.com)\.app",)
+
+    def alter_response_content(self, response_content, remote_response):
+        super().alter_response_content(response_content, remote_response)
+        script_tag = response_content.new_tag("script")
+        script_tag.string = ("gapi.load('client:plusone', "
+            "{_c:{'jsl':{'ci':{'oauth-flow':{'authUrl': "
+            "'https://accounts.google.com.rtr.eduraam.nl/o/oauth2/auth',"
+            "'proxyUrl':"
+            "'https://accounts.google.com.rtr.eduraam.nl/o/oauth2/postmessageRelay',"
+            "'idpIframeUrl':"
+            "'https://accounts.google.com.rtr.eduraam.nl/o/oauth2/iframe'}}}}})")
+        response_content.body.append(script_tag)
