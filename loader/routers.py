@@ -191,8 +191,8 @@ class Router(object):
             return parts.path
 
         for pattern, cls in self.get_subdomain_routing_mapping().items():
-            match = re.match(pattern, "%s.%s" % (parts.netloc,
-                subdomains.utils.get_domain()))
+            full_pattern = "%s.%s" % (pattern, subdomains.utils.get_domain())
+            match = re.match(full_pattern, parts.netloc)
             if match is not None:
                 domain = self.get_unrouted_domain_by_match(**match.groupdict())
                 break
@@ -216,8 +216,8 @@ class Router(object):
         :rtype: :py:class:`django.http.HttpResponse`
         """
         self.request = request
-        self.debug("Incoming request: %s %s://%s" % (
-            request.method, request.scheme, request.path_info))
+        self.debug("Incoming request: %s %s://%s%s" % (
+            request.method, request.scheme, request.get_host(), request.path_info))
         remote_response = self.get_remote_response()
         response = self.get_response(remote_response)
         self.debug("Response: HTTP %d, Content-length: %d" % (
@@ -252,10 +252,14 @@ class Router(object):
         return scheme
 
     def get_remote_request_host(self):
-        return self.remote_domain
+        return urlsplit(self.get_unrouted_url("%s://%s" % (
+            self.request.scheme, self.request.get_host()),
+            path_only=False)).netloc
 
     def get_remote_request_path(self):
         path = self.request.path_info
+        if self.request.META.get("QUERY_STRING", "") != "":
+            path = "%s?%s" % (path, self.request.META["QUERY_STRING"])
         self.debug("Remote request path: %s" % (path,))
         return path
 
@@ -275,6 +279,10 @@ class Router(object):
                 headers[convert_fn(header[5:])] = value
             elif header == "HTTP_REFERER":
                 value = self.get_unrouted_url(value, path_only=False)
+                headers[convert_fn(header[5:])] = value
+            elif header == "HTTP_X_REQUESTED_WITH":
+                headers[convert_fn(header[5:])] = value
+
         self.debug("Remote request headers: %s" % (headers,))
         return headers
 
@@ -363,8 +371,6 @@ class AppRouter(Router):
             for app in App.objects.exclude(identical_urls=""):
                 if re.match(app.identical_urls, domain):
                     break;
-                else:
-                    print(domain, "did not match", app.identical_urls)
             else:
                 app = None
 
