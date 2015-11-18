@@ -11,7 +11,7 @@ class LocalOrRemoteResource(models.Model):
     # Whether the resource is hosted on the same domain or not
     local = models.BooleanField(default=True)
     # Regex matching all URL's that are considered to match root.
-    identical_urls = models.CharField(null=True, blank=True, max_length=255)
+    identical_urls = models.CharField(blank=True, max_length=255)
     # Whether the remote root needs HTTPS
     secure = models.BooleanField(default=True)
 

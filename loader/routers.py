@@ -51,8 +51,7 @@ remote request / remote response
     belonging to the communication between the router and the remote server the
     request is routed to.
 """
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.core.urlresolvers import reverse, RegexURLResolver, Resolver404
 from bs4 import BeautifulSoup
@@ -160,7 +159,7 @@ class Router(object):
         :return: a routed domain string
         """
         parts = urlsplit(url)
-        netloc = parts.netloc or '_'
+        netloc = parts.netloc or self.remote_domain
         return "%s.rtr.%s" % (parts.netloc, subdomains.utils.get_domain())
 
     def get_unrouted_domain_by_match(self, **kwargs):
@@ -356,18 +355,39 @@ class AppRouter(Router):
         super().__init__(*args, **kwargs)
 
     @classmethod
+    def route_path_by_subdomain(cls, request, domain):
+        from .models import App
+        try:
+            app = App.objects.get(root=domain)
+        except App.DoesNotExist:
+            for app in App.objects.exclude(identical_urls=""):
+                if re.match(app.identical_urls, domain):
+                    break;
+                else:
+                    print(domain, "did not match", app.identical_urls)
+            else:
+                app = None
+
+        if app is None:
+            raise Http404
+        else:
+            router = cls(app)
+            return router.route_request(request)
+
+    def get_routed_domain(self, url):
+        """
+        Return a routed version of the domain in ``url``.
+
+        :param str url: The url that contains the domain that will be routed
+        :return: a routed domain string
+        """
+        parts = urlsplit(url)
+        netloc = parts.netloc or self.remote_domain
+        return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+
+    @classmethod
     def get_subdomain_patterns(cls):
         return (r"(?P<domain>.+)\.app",)
 
     def alter_response_content(self, response_content, remote_response):
         pass
-
-    def get_response_headers(self, remote_response):
-        headers = super().get_response_headers()
-        if 'Location' in headers:
-            value = headers['Location']
-            if self.app.identical_urls is not None and \
-                re.match(self.app.identical_urls, value):
-                    value = self.get_routed_url(value)
-            headers['Location'] = value
-        return headers
