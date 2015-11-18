@@ -4,6 +4,10 @@ Reference
 Loader
 ------
 
+loader.middleware
+^^^^^^^^^^^^^^^^^
+.. automodule:: loader.middleware
+
 loader.models
 ^^^^^^^^^^^^^
 .. automodule:: loader.models
