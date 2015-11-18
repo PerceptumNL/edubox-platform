@@ -182,7 +182,7 @@ def article(request, identifier):
                         url="service:events/api/",
                         json = {
                             'app':  get_current_app_id(request),
-                            'group': '',
+                            'group': 1,
                             'user': request.user.pk,
                             'verb': 'read',
                             'obj': identifier

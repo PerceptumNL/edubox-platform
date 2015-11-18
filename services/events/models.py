@@ -9,6 +9,7 @@ from django.core.urlresolvers import reverse
 from uuid import uuid4
 
 from loader.models import App
+from services.usermanagement.models import Group
 from apps.news.models import TimestampedArticle
 
 class Verb(models.Model):
@@ -36,7 +37,7 @@ class Event(models.Model):
 
     #This should be a foreign key to Group-Institute hierarchy, but that hasn't
     #been implemented yet.
-    group = models.CharField(max_length=255)
+    group = models.ForeignKey(Group)
     
     timestamp = models.DateTimeField(default=timezone.now)
     stored = models.DateTimeField(auto_now_add=True)
@@ -55,25 +56,21 @@ class Event(models.Model):
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
-        displayname = (lambda user: u' '.join([user.first_name, user.last_name])
-                if user.first_name else user.username)
         return {'date': formats.date_format(
                     timezone.localtime(self.timestamp),
                     "DATETIME_FORMAT"),
-                'user': str(displayname(self.user)),
+                'user': str(self.user.username),
                 'group': str(self.group),
                 'app': str(self.app)
                 }
     
     def create(app, group, user, verb, obj, result=None, timestamp=None):    
-        #Should be wrapped with some try-excepts, but for now raising is fine
-        _app = App.objects.get(pk=app)
         _verb = Verb.objects.get(key=verb)
-
+        #Should be wrapped with some try-excepts, but for now raising is fine
         kwargs = {'user': User.objects.get(pk=user),
                   'verb': _verb,
-                  'app': _app,
-                  'group': group
+                  'group': Group.objects.get(pk=group),
+                  'app': App.objects.get(pk=app)
                   }
         if timestamp:
             kwargs.update({'timestamp': timestamp})
@@ -105,7 +102,7 @@ class ReadEvent(Event):
         desc = super(ReadEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-article-view',
+            'verb': 'read',
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
                 'title': str(self.article)
@@ -129,7 +126,7 @@ class RatedEvent(Event):
         desc = super(RatedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-article-rating',
+            'verb': 'rated',
             'rating': str(self.rating),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
@@ -155,7 +152,7 @@ class ScoredEvent(Event):
         desc = super(ScoredEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-article-difficulty',
+            'verb': 'scored',
             'rating': str(self.rating),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
@@ -181,7 +178,7 @@ class ClickedEvent(Event):
         desc = super(ClickedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-word-cover',
+            'verb': 'clicked',
             'word': str(self.word),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
