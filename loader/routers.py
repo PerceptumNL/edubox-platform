@@ -200,12 +200,12 @@ class Router(object):
         else:
             domain = subdomains.utils.get_domain()
 
-        return urlunsplit(
+        return urlunsplit((
                 self.get_remote_request_scheme(),
                 domain,
                 parts.path,
                 parts.query,
-                parts.fragment)
+                parts.fragment))
 
     def route_request(self, request):
         """
