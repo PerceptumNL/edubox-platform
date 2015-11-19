@@ -375,6 +375,14 @@ class GoogleMixin(object):
                 quote(unrouted_url, safe="")))
             return re.sub(quote(routed_url, safe=""), quote(unrouted_url,
                 safe=""), path)
+        elif self.remote_domain == "accounts.google.com" and \
+                self.request.path_info == "/ServiceLogin":
+            routed_url = unquote(self.request.GET.get("continue", ''))
+            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
+            self.debug("Swapping %s with %s" % (quote(routed_url, safe=""),
+                quote(unrouted_url, safe="")))
+            return re.sub(quote(routed_url, safe=""), quote(unrouted_url,
+                safe=""), path)
         else:
             return path
 
