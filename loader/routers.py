@@ -362,7 +362,7 @@ class GoogleMixin(object):
                 script.string = re.sub(pattern_gapis, replacement_gapis,
                         str(script.string))
         elif self.remote_domain == "apis.google.com" and \
-                "javascript" in remote_response.content_type:
+                "javascript" in remote_response.headers.get('content-type',''):
             pattern = r"(['\"])https://accounts.google.com/o/([^'\"]+)['\"]"
             domain = self.get_routed_domain("https://accounts.google.com")
             replacement = r"\1https://%s/o/\2\1" % (domain,)
