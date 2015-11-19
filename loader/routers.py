@@ -293,7 +293,8 @@ class BaseRouter(object):
 
     def get_response(self, remote_response):
         response_content = self.get_response_content(remote_response)
-        self.alter_response_content(response_content, remote_response)
+        response_content = self.alter_response_content(response_content,
+                remote_response)
         response = HttpResponse(self.get_response_body(response_content),
                 status=remote_response.status_code,
                 content_type=remote_response.headers.get('content-type'))
@@ -304,10 +305,12 @@ class BaseRouter(object):
         content_type = remote_response.headers.get('content-type', '')
         if "html" in content_type:
             return BeautifulSoup(remote_response.text, 'lxml')
+        elif "text" in content_type or "javascript" in content_type:
+            return remote_response.text
         elif "image" in content_type:
             return remote_response.content
         else:
-            return remote_response.text
+            return remote_response.content
 
     def get_response_body(self, response_content):
         if isinstance(response_content, BeautifulSoup):
@@ -316,7 +319,7 @@ class BaseRouter(object):
             return str(response_content)
 
     def alter_response_content(self, response_content, remote_response):
-        pass
+        return response_content
 
     def alter_response(self, response, remote_response):
         self.alter_response_cookies(response, remote_response)
@@ -353,7 +356,8 @@ class BaseRouter(object):
 class GoogleMixin(object):
 
     def alter_response_content(self, response_content, remote_response):
-        super().alter_response_content(response_content, remote_response)
+        response_content = super().alter_response_content(response_content,
+                remote_response)
         if isinstance(response_content, BeautifulSoup):
             pattern_gapis = r"(['\"])https://apis.google.com/js/([^'\"]+)['\"]"
             domain = self.get_routed_domain("https://apis.google.com")
@@ -367,6 +371,7 @@ class GoogleMixin(object):
             domain = self.get_routed_domain("https://accounts.google.com")
             replacement = r"\1https://%s/o/\2\1" % (domain,)
             response_content = re.sub(pattern, replacement, response_content)
+        return response_content
 
 
 class Router(GoogleMixin, BaseRouter):
@@ -428,27 +433,9 @@ class AppRouter(Router):
         netloc = parts.netloc or self.remote_domain
         return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
 
-    def alter_response_content(self, response_content, remote_response):
-        pass
-
 
 class DuolingoAppRouter(AppRouter):
 
     @classmethod
     def get_subdomain_patterns(cls):
         return (r"(?P<domain>.+\.duolingo\.com)\.app",)
-
-    def alter_response_content(self, response_content, remote_response):
-        #TODO: Wait for gapi to be loaded
-        super().alter_response_content(response_content, remote_response)
-        if not isinstance(response_content, BeautifulSoup):
-            return
-        script_tag = response_content.new_tag("script")
-        script_tag.string = ("gapi.load('client:plusone', "
-            "{_c:{'jsl':{'ci':{'oauth-flow':{'authUrl': "
-            "'https://accounts.google.com.rtr.eduraam.nl/o/oauth2/auth',"
-            "'proxyUrl':"
-            "'https://accounts.google.com.rtr.eduraam.nl/o/oauth2/postmessageRelay',"
-            "'idpIframeUrl':"
-            "'https://accounts.google.com.rtr.eduraam.nl/o/oauth2/iframe'}}}}})")
-        response_content.body.append(script_tag)
