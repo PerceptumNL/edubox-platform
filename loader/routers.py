@@ -58,7 +58,7 @@ from bs4 import BeautifulSoup
 
 from copy import copy
 from datetime import datetime
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit, quote, unquote
 import subdomains
 import requests
 import re
@@ -355,6 +355,17 @@ class BaseRouter(object):
 
 class GoogleMixin(object):
 
+    def get_remote_request_path(self):
+        path = super().get_remote_request_path()
+
+        if self.remote_domain == "accounts.google.com" and \
+                self.request.path_info == "/o/oauth2/postmessageRelay":
+            routed_url = unquote(self.request.GET("parent", ''))
+            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
+            return re.sub(quote(routed_url), quote(unrouted_url), path)
+        else:
+            return path
+
     def alter_response_content(self, response_content, remote_response):
         response_content = super().alter_response_content(response_content,
                 remote_response)
@@ -371,6 +382,8 @@ class GoogleMixin(object):
             domain = self.get_routed_domain("https://accounts.google.com")
             replacement = r"\1https://%s/o/\2\1" % (domain,)
             response_content = re.sub(pattern, replacement, response_content)
+
+
         return response_content
 
 
