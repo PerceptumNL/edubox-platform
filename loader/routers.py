@@ -360,7 +360,7 @@ class GoogleMixin(object):
             replacement_gapis = r"https://%s/js/\1" % (domain,)
             for script in response_content.find_all('script'):
                 script.string = re.sub(pattern_gapis, replacement_gapis,
-                        script.string)
+                        str(script.string))
         elif self.remote_domain == "apis.google.com" and \
                 "javascript" in remote_response.content_type:
             pattern = r"['\"]https://accounts.google.com/o/([^'\"]+)['\"]"
@@ -382,7 +382,7 @@ class Router(GoogleMixin, BaseRouter):
         return (r"(?P<domain>.+)\.rtr",)
 
 
-class AppRouter(GoogleMixin, BaseRouter):
+class AppRouter(Router):
     """
     Router class for remote severs proving apps.
 
@@ -413,6 +413,10 @@ class AppRouter(GoogleMixin, BaseRouter):
             router = cls(app)
             return router.route_request(request)
 
+    @classmethod
+    def get_subdomain_patterns(cls):
+        return (r"(?P<domain>.+)\.app",)
+
     def get_routed_domain(self, url):
         """
         Return a routed version of the domain in ``url``.
@@ -423,10 +427,6 @@ class AppRouter(GoogleMixin, BaseRouter):
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
         return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
-
-    @classmethod
-    def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+)\.app",)
 
     def alter_response_content(self, response_content, remote_response):
         pass
