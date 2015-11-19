@@ -395,6 +395,16 @@ class GoogleMixin(object):
                 quote(routed_url, safe="")))
             return re.sub(quote(unrouted_url, safe=""), quote(routed_url,
                 safe=""), path)
+        elif self.remote_domain == "appengine.google.com" and \
+                self.request.path_info == "/_ah/conflogin":
+            unrouted_url = unquote(self.request.GET.get("continue", ''))
+            if unrouted_url == "":
+                return path
+            routed_url = self.get_routed_url(unrouted_url, path_only=False)
+            self.debug("Swapping %s with %s" % (quote(unrouted_url, safe=""),
+                quote(routed_url, safe="")))
+            return re.sub(quote(unrouted_url, safe=""), quote(routed_url,
+                safe=""), path)
         else:
             return path
 
