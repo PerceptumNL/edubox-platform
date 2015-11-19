@@ -388,7 +388,6 @@ class GoogleMixin(object):
             replacement = r"\1https://%s/o/\2\1" % (domain,)
             response_content = re.sub(pattern, replacement, response_content)
         elif self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/ServiceLogin" and \
                 self.request.method == "GET":
             if not isinstance(response_content, BeautifulSoup):
                 return response_content
