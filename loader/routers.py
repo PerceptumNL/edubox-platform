@@ -498,7 +498,10 @@ class AppRouter(Router):
         """
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
-        return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+        if re.match(self.app.identical_urls, netloc):
+            return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+        else:
+            return super().get_routed_domain(url)
 
 
 class DuolingoAppRouter(AppRouter):
