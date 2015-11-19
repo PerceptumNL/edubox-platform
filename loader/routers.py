@@ -363,7 +363,7 @@ class GoogleMixin(object):
             routed_url = unquote(self.request.GET.get("parent", ''))
             unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
             self.debug("Swapping %s with %s" % (quote(routed_url),
-                quote(unrouted_url))
+                quote(unrouted_url)))
             return re.sub(quote(routed_url), quote(unrouted_url), path)
         else:
             return path
