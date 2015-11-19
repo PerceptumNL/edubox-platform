@@ -355,17 +355,17 @@ class GoogleMixin(object):
     def alter_response_content(self, response_content, remote_response):
         super().alter_response_content(response_content, remote_response)
         if isinstance(response_content, BeautifulSoup):
-            pattern_gapis = r"['\"]https://apis.google.com/js/([^'\"]+)['\"]"
+            pattern_gapis = r"(['\"])https://apis.google.com/js/([^'\"]+)['\"]"
             domain = self.get_routed_domain("https://apis.google.com")
-            replacement_gapis = r"https://%s/js/\1" % (domain,)
+            replacement_gapis = r"\1https://%s/js/\2\1" % (domain,)
             for script in response_content.find_all('script'):
                 script.string = re.sub(pattern_gapis, replacement_gapis,
                         str(script.string))
         elif self.remote_domain == "apis.google.com" and \
                 "javascript" in remote_response.content_type:
-            pattern = r"['\"]https://accounts.google.com/o/([^'\"]+)['\"]"
+            pattern = r"(['\"])https://accounts.google.com/o/([^'\"]+)['\"]"
             domain = self.get_routed_domain("https://accounts.google.com")
-            replacement = r"https://%s/o/\1" % (domain,)
+            replacement = r"\1https://%s/o/\2\1" % (domain,)
             response_content = re.sub(pattern, replacement, response_content)
 
 
