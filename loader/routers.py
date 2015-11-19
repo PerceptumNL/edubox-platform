@@ -240,8 +240,7 @@ class BaseRouter(object):
                 allow_redirects=False,
                 data=self.get_remote_request_body(),
                 headers=self.get_remote_request_headers(),
-                url=url,
-                params=self.request.GET)
+                url=url)
 
     def get_remote_request_method(self):
         method = self.request.method
