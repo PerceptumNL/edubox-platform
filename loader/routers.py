@@ -54,8 +54,9 @@ remote request / remote response
 from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.core.urlresolvers import reverse, RegexURLResolver, Resolver404
-from bs4 import BeautifulSoup
+from django.views.decorators.clickjacking import xframe_options_exempt
 
+from bs4 import BeautifulSoup
 from copy import copy
 from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
@@ -206,6 +207,7 @@ class BaseRouter(object):
                 parts.query,
                 parts.fragment))
 
+    @xframe_options_exempt
     def route_request(self, request):
         """
         Route the request to the remote server.
