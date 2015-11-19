@@ -394,7 +394,20 @@ class GoogleMixin(object):
             domain = self.get_routed_domain("https://accounts.google.com")
             replacement = r"\1https://%s/o/\2\1" % (domain,)
             response_content = re.sub(pattern, replacement, response_content)
-
+        elif self.remote_domain == "accounts.google.com" and \
+                self.request.path_info == "ServiceLogin" and \
+                self.request.method == "GET":
+            if not isinstance(response_content, BeautifulSoup):
+                return response_content
+            for form in response_content.find_all('form'):
+                if not 'action' in form.attrs:
+                    continue
+                form['action'] = self.get_routed_url(form['action'],
+                        path_only=False)
+            for link in response_content.find_all('a'):
+                if not 'href' in link.attrs:
+                    continue
+                link['href'] = self.get_routed_url(link['href'])
 
         return response_content
 
