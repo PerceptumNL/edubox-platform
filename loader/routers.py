@@ -381,14 +381,7 @@ class GoogleMixin(object):
     def alter_response_content(self, response_content, remote_response):
         response_content = super().alter_response_content(response_content,
                 remote_response)
-        if isinstance(response_content, BeautifulSoup):
-            pattern_gapis = r"(['\"])https://apis.google.com/js/([^'\"]+)['\"]"
-            domain = self.get_routed_domain("https://apis.google.com")
-            replacement_gapis = r"\1https://%s/js/\2\1" % (domain,)
-            for script in response_content.find_all('script'):
-                script.string = re.sub(pattern_gapis, replacement_gapis,
-                        str(script.string))
-        elif self.remote_domain == "apis.google.com" and \
+        if self.remote_domain == "apis.google.com" and \
                 "javascript" in remote_response.headers.get('content-type',''):
             pattern = r"(['\"])https://accounts.google.com/o/([^'\"]+)['\"]"
             domain = self.get_routed_domain("https://accounts.google.com")
@@ -408,6 +401,13 @@ class GoogleMixin(object):
                 if not 'href' in link.attrs:
                     continue
                 link['href'] = self.get_routed_url(link['href'])
+        elif isinstance(response_content, BeautifulSoup):
+            pattern_gapis = r"(['\"])https://apis.google.com/js/([^'\"]+)['\"]"
+            domain = self.get_routed_domain("https://apis.google.com")
+            replacement_gapis = r"\1https://%s/js/\2\1" % (domain,)
+            for script in response_content.find_all('script'):
+                script.string = re.sub(pattern_gapis, replacement_gapis,
+                        str(script.string))
 
         return response_content
 
