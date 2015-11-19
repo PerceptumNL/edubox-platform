@@ -360,7 +360,7 @@ class GoogleMixin(object):
 
         if self.remote_domain == "accounts.google.com" and \
                 self.request.path_info == "/o/oauth2/postmessageRelay":
-            routed_url = unquote(self.request.GET("parent", ''))
+            routed_url = unquote(self.request.GET.get("parent", ''))
             unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
             return re.sub(quote(routed_url), quote(unrouted_url), path)
         else:
