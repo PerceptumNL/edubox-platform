@@ -63,7 +63,7 @@ import subdomains
 import requests
 import re
 
-class Router(object):
+class BaseRouter(object):
     """
     Generic base class for all router classes.
 
@@ -105,7 +105,7 @@ class Router(object):
 
         :rtype: tuple of regex strings
         """
-        return (r"(?P<domain>.+)\.rtr",)
+        raise NotImplemented()
 
     @classmethod
     def get_subdomain_routing_mapping(cls, map_to_function=True):
@@ -349,7 +349,40 @@ class Router(object):
                     expires=expires,
                     path=self.get_routed_url(cookie.path, path_only=True))
 
-class AppRouter(Router):
+
+class GoogleMixin(object):
+
+    def alter_response_content(self, response_content, remote_response):
+        super().alter_response_content(response_content, remote_response)
+        if isinstance(response_content, BeautifulSoup):
+            pattern_gapis = r"['\"]https://apis.google.com/js/([^'\"]+)['\"]"
+            domain = self.get_routed_domain("https://apis.google.com")
+            replacement_gapis = r"https://%s/js/\1" % (domain,)
+            for script in response_content.find_all('script'):
+                script.string = re.sub(pattern_gapis, replacement_gapis,
+                        script.string)
+        elif self.remote_domain == "apis.google.com" and \
+                "javascript" in remote_response.content_type:
+            pattern = r"['\"]https://accounts.google.com/o/([^'\"]+)['\"]"
+            domain = self.get_routed_domain("https://accounts.google.com")
+            replacement = r"https://%s/o/\1" % (domain,)
+            response_content = re.sub(pattern, replacement, response_content)
+
+
+class Router(GoogleMixin, BaseRouter):
+
+    @classmethod
+    def get_subdomain_patterns(cls):
+        """
+        Return a tuple of subdomain pattern strings that should be handled by
+        this router class.
+
+        :rtype: tuple of regex strings
+        """
+        return (r"(?P<domain>.+)\.rtr",)
+
+
+class AppRouter(GoogleMixin, BaseRouter):
     """
     Router class for remote severs proving apps.
 
