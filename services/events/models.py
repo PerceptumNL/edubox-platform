@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils import formats
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
 
 from uuid import uuid4
 
@@ -65,24 +66,29 @@ class Event(models.Model):
                 }
     
     def create(app, group, user, verb, obj, result=None, timestamp=None):    
-        _verb = Verb.objects.get(key=verb)
-        #Should be wrapped with some try-excepts, but for now raising is fine
-        kwargs = {'user': User.objects.get(pk=user),
-                  'verb': _verb,
-                  'group': Group.objects.get(pk=group),
-                  'app': App.objects.get(pk=app)
-                  }
+        try:
+            _verb = Verb.objects.get(key=verb)
+            kwargs = {'user': User.objects.get(pk=user),
+                      'verb': _verb,
+                      'group': Group.objects.get(pk=group),
+                      'app': App.objects.get(pk=app)
+                      }
+        except (ObjectDoesNotExist, ValueError):
+            raise AttributeError()
+
         if timestamp:
             kwargs.update({'timestamp': timestamp})
 
-        #eval(_verb.event_class).create(kwargs, obj, result)
-        #Create specific subclass instance and a generic event instance with
-        #with a pointer to the specific instance, thus the data is redundant
+        #Create a verb-specific subclass instance
         subclass = ContentType.objects.get(app_label='events',
                 model=_verb.event_class.lower())
         instance = subclass.model_class().create(kwargs, obj, result)
-        #print(instance.pk)
-        #print(str(instance))
+        
+        #If creation of the instance with these kwargs failed
+        if instance == None:
+            raise AttributeError()
+        
+        #Generic event instance with a pointer to the specific instance
         GenericEvent.objects.create(content_type=subclass,
                 object_id=instance.pk, verb_instance=instance, **kwargs)
         
@@ -111,7 +117,10 @@ class ReadEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+        except (ObjectDoesNotExist, ValueError):
+            return None
         return ReadEvent.objects.create(article=article, **kwargs)
 
 class RatedEvent(Event):
@@ -136,8 +145,11 @@ class RatedEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
-        rating = int(res)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+            rating = int(res)
+        except (ObjectDoesNotExist, ValueError):
+            return None
         return RatedEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ScoredEvent(Event):
@@ -162,8 +174,11 @@ class ScoredEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
-        rating = int(res)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+            rating = int(res)
+        except (ObjectDoesNotExist, ValueError):
+            return None
         return ScoredEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ClickedEvent(Event):
@@ -188,7 +203,9 @@ class ClickedEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
-        word = str(res)
-        return RatedEvent.objects.create(article=article, word=word, **kwargs)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+        except (ObjectDoesNotExist, ValueError):
+            return None
+        return RatedEvent.objects.create(article=article, word=str(res), **kwargs)
 

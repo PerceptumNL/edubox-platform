@@ -67,21 +67,25 @@ class API(View):
    
     def post(self, request):
         events = json.loads(str(request.body, 'utf-8'))
+        context = json.loads(request.context)
+        
         if type(events)==list:
             for event in events:
-                resp = self.post_event(event)
+                resp = self._post_event(event, context)
                 if resp.status_code == 400:
                     return resp
             return HttpResponse()
         else:
-            return self.post_event(events)
+            return self._post_event(events, context)
 
-    def post_event(self, event):
+    def _post_event(self, event, context):
+        event.update(context)
         try:
             Event.create(**event)
-            return HttpResponse()
-        except TypeError:
+        except (TypeError, AttributeError):
             return HttpResponse(status=400)
+        
+        return HttpResponse()
     
     #This means the API is completely open and thus all permissions should
     #be thoroughly checked in the view functions
