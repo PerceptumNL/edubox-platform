@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.core.urlresolvers import reverse, RegexURLResolver, Resolver404
 
 from bs4 import BeautifulSoup
@@ -7,8 +8,6 @@ from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit
 import requests
 import re
-
-from loader.models import App, Service
 
 def get_current_app_id(request):
     """Return the id of the current loaded app.
@@ -21,6 +20,7 @@ def get_current_app(request):
     """Return the App model instance.
     The instance is retrieved using the output of `get_current_app_id`.
     """
+    from loader.models import App
     app_id = get_current_app_id(request)
     if app_id is None:
         return None
@@ -32,6 +32,7 @@ def get_current_app(request):
         return app
 
 def dispatch_service_request(outer_request, *args, **kwargs):
+    from loader.models import Service
     # Create Request object
     from requests import Request
     inner_request = Request(*args, **kwargs)
@@ -140,8 +141,18 @@ class Router(object):
     def __init__(self, app, *args, **kwargs):
         self.app = app
 
+    @staticmethod
+    def route_path_by_subdomain(request, app_domain):
+        from loader.models import App
+        app = get_object_or_404(App, root=app_domain)
+        request.domain_routing = True
+        request.path_info = reverse("app_routing", args=(app.pk, request.path_info))
+
     def reroute(self, url, pattern="app_routing"):
-        return reverse(pattern, args=(self.app.pk, url))
+        if self.domain_routing:
+            return url
+        else:
+            return reverse(pattern, args=(self.app.pk, url))
 
     def unroute(self, route):
         try:
@@ -156,18 +167,25 @@ class Router(object):
 
     def request(self, request, path):
         self.request = request
+        if hasattr(request, 'domain_routing'):
+            self.domain_routing = request.domain_routing
+        else:
+            self.domain_routing = False
         self.path = path
         self.session = requests.Session()
         self.session.cookies = requests.utils.cookiejar_from_dict(
                 request.COOKIES)
-        print("Sending", self.session.cookies)
-        url = self.app.root+path
+        url = "%s://%s%s" % (self.app.scheme,self.app.root,path)
+        print("External request", request.method, "%s://%s%s" % (
+            self.request.scheme, self.request.get_host(), path))
+        print("Internal request", request.method, url)
+        print(request.method, url)
         self.remote_response = self.session.request(
                 method=request.method,
                 allow_redirects=False,
                 data=request.body,
                 headers=self.create_request_headers(),
-                url=self.app.root+path,
+                url=url,
                 params=request.GET)
         self.create_response_content()
         if self.remote_response.status_code == 200:
@@ -180,19 +198,18 @@ class Router(object):
 
     def create_request_headers(self):
         headers = {}
-        app_root_parts = urlsplit(self.app.root)
         convert_fn = lambda s: s.replace("_","-").lower()
         for header, value in self.request.META.items():
             if header == "CONTENT_TYPE":
                 headers[convert_fn(header)] = value
             elif header[:5] == "HTTP_":
                 if header == "HTTP_HOST":
-                    value = app_root_parts.netloc
+                    value = self.app.root
                 elif header == "HTTP_REFERER":
                     referer_parts = urlsplit(value)
                     value = urlunsplit((
-                        app_root_parts.scheme,
-                        app_root_parts.netloc,
+                        self.app.scheme,
+                        self.app.root,
                         self.unroute(referer_parts.path),
                         referer_parts.query,
                         referer_parts.fragment))
@@ -223,15 +240,12 @@ class Router(object):
 
     def route_cookies(self):
         # Cookie transplant
-        print('check cookies', self.remote_response.request.method,
-                self.remote_response.request.url)
         for cookie in self.session.cookies:
             # TODO: Update server-stored cookiejar for this user
             if cookie.expires is not None:
                 expires = datetime.fromtimestamp(cookie.expires)
             else:
                 expires = None
-            print('set cookie %s=%s' % (cookie.name,cookie.value))
             self.response.set_cookie(
                     cookie.name,
                     cookie.value,
@@ -247,11 +261,11 @@ class Router(object):
                 headers[header.title()] = value
             elif header == "location":
                 if self.app.identical_urls is not None and \
-                    re.test(self.app.identical_urls, value):
+                    re.match(self.app.identical_urls, value):
                         urlparts = urlsplit(value)
                         value = urlunsplit((
-                            urlparts.scheme,
-                            urlsplit(self.app.root).netloc,
+                            self.request.scheme,
+                            self.request.get_host(),
                             self.reroute(urlparts.path),
                             urlparts.query,
                             urlparts.fragment))
@@ -259,6 +273,8 @@ class Router(object):
         return headers
 
     def add_document_location_route(self):
+        if self.domain_routing:
+            return
         base_route = self.reroute('/')[:-1]
         script_tag = self.response_content.new_tag("script")
         script_tag.string = (
@@ -267,6 +283,8 @@ class Router(object):
         self.response_content.head.append(script_tag)
 
     def add_serviceworker_route(self):
+        if self.domain_routing:
+            return
         base_route = self.reroute('/')[:-1]
         script_tag = self.response_content.new_tag("script")
         script_tag.string = ("if(navigator != undefined && "
@@ -280,53 +298,54 @@ class Router(object):
         self.response_content.body.append(script_tag)
 
     def update_local_references(self):
+        if self.domain_routing:
+            return
         # Routing <link:href> in head
-        try:
-            for elem in self.response_content.head.findAll('link'):
-                if not 'href' in elem.attrs:
-                    continue
-                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
-                    elem['href'] = self.reroute(elem['href'])
-            # Routing <script:src> in head
-            for elem in self.response_content.head.findAll('script'):
-                if not 'src' in elem.attrs:
-                    continue
-                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
-                    elem['src'] = self.reroute(elem['src'])
-            # Routing <link:href> in body
-            for elem in self.response_content.body.findAll('link'):
-                if not 'href' in elem.attrs:
-                    continue
-                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
-                    elem['href'] = self.reroute(elem['href'])
-            # Routing <script:src> in body
-            for elem in self.response_content.body.findAll('script'):
-                if not 'src' in elem.attrs:
-                    continue
-                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
-                    elem['src'] = self.reroute(elem['src'])
-            # Routing <img:src> in body
-            for elem in self.response_content.body.findAll('img'):
-                if not 'src' in elem.attrs:
-                    continue
-                if elem['src'][0] != "h" and elem['src'][0:2] != "//":
-                    elem['src'] = self.reroute(elem['src'])
-            # Routing <a:href> in body
-            for elem in self.response_content.body.findAll('a'):
-                if not 'href' in elem.attrs:
-                    continue
-                if elem['href'][0] != "h" and elem['href'][0:2] != "//":
-                    elem['href'] = self.reroute(elem['href'])
-            # Routing <form:action> in body
-            for elem in self.response_content.body.findAll('form'):
-                if not 'action' in elem.attrs:
-                    continue
-                if elem['action'][0] != "h" and elem['action'][0:2] != "//":
-                    elem['action'] = self.reroute(elem['action'])
-        except Exception as e:
-            import q; q.d()
+        for elem in self.response_content.head.findAll('link'):
+            if not 'href' in elem.attrs:
+                continue
+            if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                elem['href'] = self.reroute(elem['href'])
+        # Routing <script:src> in head
+        for elem in self.response_content.head.findAll('script'):
+            if not 'src' in elem.attrs:
+                continue
+            if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                elem['src'] = self.reroute(elem['src'])
+        # Routing <link:href> in body
+        for elem in self.response_content.body.findAll('link'):
+            if not 'href' in elem.attrs:
+                continue
+            if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                elem['href'] = self.reroute(elem['href'])
+        # Routing <script:src> in body
+        for elem in self.response_content.body.findAll('script'):
+            if not 'src' in elem.attrs:
+                continue
+            if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                elem['src'] = self.reroute(elem['src'])
+        # Routing <img:src> in body
+        for elem in self.response_content.body.findAll('img'):
+            if not 'src' in elem.attrs:
+                continue
+            if elem['src'][0] != "h" and elem['src'][0:2] != "//":
+                elem['src'] = self.reroute(elem['src'])
+        # Routing <a:href> in body
+        for elem in self.response_content.body.findAll('a'):
+            if not 'href' in elem.attrs:
+                continue
+            if elem['href'][0] != "h" and elem['href'][0:2] != "//":
+                elem['href'] = self.reroute(elem['href'])
+        # Routing <form:action> in body
+        for elem in self.response_content.body.findAll('form'):
+            if not 'action' in elem.attrs:
+                continue
+            if elem['action'][0] != "h" and elem['action'][0:2] != "//":
+                elem['action'] = self.reroute(elem['action'])
 
     def add_jquery_route(self):
+        if self.domain_routing:
+            return
         base_route = self.reroute('/')[:-1]
         script_tag = self.response_content.new_tag("script")
         script_tag.string = ("if(window.$ != undefined){ "
