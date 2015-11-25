@@ -64,7 +64,7 @@ def _local_routing(request, urlconf, path, app=True):
         """
         request.GET = settings_qd
     # Redirect request to local function
-    return match.func(request)
+    return match.func(request, **match.kwargs)
 
 def _remote_routing(request, urlconf, path):
     """Redirect request to remote web app."""
@@ -116,6 +116,7 @@ def _remote_routing(request, urlconf, path):
 def app_routing(request, app_id, path):
     """Redirect request to the referred app's location."""
     app = get_object_or_404(App, pk=app_id)
+    print('Routing app %s' % (app_id,))
     if app.local:
         response = _local_routing(request, app.root, path)
 
@@ -142,4 +143,5 @@ def service_routing(request, service_id, path):
         return HttpResponse()
 
 def home(request, *args, **kwargs):
+    print('Home, because', request.path_info)
     return render(request, "loader/index.html", {})

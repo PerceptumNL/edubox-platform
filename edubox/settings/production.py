@@ -1,10 +1,14 @@
 from .default import *
 
-DEBUG = False
+DEBUG = bool(int(os.environ.get('DEBUG_FLAG', '0')))
+
+ADMINS = (
+    ('Sander', 'sander@perceptum.nl'),
+)
 
 # Parse database configuration from $DATABASE_URL
 import dj_database_url
-DATABASES['default'] =  dj_database_url.config()
+DATABASES = {"default": dj_database_url.config()}
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -13,11 +17,19 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 ALLOWED_HOSTS = ['*']
 
 # Static asset configuration
-import os
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_ROOT = 'staticfiles'
-STATIC_URL = '/static/'
+# Try to prevent collisions with other django apps that are routed.
+STATIC_URL = '/static5bec552b27/'
 
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, 'static'),
-)
+if 'SECRET_KEY' in os.environ:
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+
+if 'SITE_ID' in os.environ:
+    SITE_ID = int(os.environ.get('SITE_ID'))
+
+EMAIL_HOST_USER = os.environ['SENDGRID_USERNAME']
+EMAIL_HOST= 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_PASSWORD = os.environ['SENDGRID_PASSWORD']
+SERVER_EMAIL = 'edbx@perceptum.nl'

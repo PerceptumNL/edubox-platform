@@ -37,6 +37,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'django_summernote',
     'rest_framework',
     'compressor',
@@ -52,6 +53,8 @@ INSTALLED_APPS = (
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'loader.middleware.SubdomainAppRoutingMiddleware',
+    'services.events.middleware.ContextTokenProcessingMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -62,6 +65,10 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URLCONF = 'edubox.urls'
+
+from loader.routers import Router
+SUBDOMAIN_ROUTING = { None: "edubox.urls" }
+SUBDOMAIN_ROUTING.update(Router.get_subdomain_routing_mapping())
 
 TEMPLATES = [
     {
@@ -88,18 +95,6 @@ STATICFILES_FINDERS = (
 
 WSGI_APPLICATION = 'edubox.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/1.8/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
@@ -112,11 +107,3 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.8/howto/static-files/
-
-STATIC_URL = '/static/'
-STATIC_ROOT = 'staticfiles'
-
