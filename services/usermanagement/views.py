@@ -1,9 +1,108 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
+from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import View
+from django.contrib.auth.models import User
 
 from .forms import *
-from .models import Group, Setting, SettingValue, GroupRestriction
+from .models import *
+from services.events.helpers import unpack_token
+
+models = {'user': User, 'group': Group,
+        'option': GroupRestriction, 'option_user': UserRestriction,
+        'value': GroupDefault, 'value_user': UserDefault}
+
+@csrf_exempt
+def settings(request, setting_id, value_id, setting_type):
+    if request.method == 'PUT':
+        add = True
+    elif request.method == 'DELETE':
+        add = False
+    else:
+        return HttpResponse(status=400)
+    
+    #Check if the setting and value are a valid combination
+    try:
+        setting = Setting.objects.get(code=setting_id)
+        value = SettingValue.objects.get(value=value_id)
+    except (ObjectDoesNotExist, ValueError):
+        return HttpResponse(status=400)
+
+    if value.setting != setting or setting_type not in ['option', 'value']:
+        return HttpResponse(status=400)
+
+    #Parse and validate the request parameters
+    context = _parse_params(request.GET, request.user, setting)
+    if context == None:
+        return HttpResponse(status=400)
+    
+    #Add the settings to context to complete the through-model parameters
+    context['setting'] = setting
+    context['settingVal'] = value
+    
+    #Restrictions should be removed on PUT and added on DELETE
+    if setting_type == 'option':
+        add = not add
+    
+    #Distinguish between user and group settings
+    if 'user' in context:
+        setting_type += '_user'
+        context['user'] = context['user'].userprofile
+   
+    #Add or remove the setting
+    if add:
+        obj, created = models[setting_type].objects.get_or_create(**context)
+        if not created:
+            return HttpResponse(status=400)
+    else:
+        try:
+            models[setting_type].objects.get(**context).delete()
+        except (ObjectDoesNotExist, ValueError):
+            return HttpResponse(status=400)
+
+    return HttpResponse(status=201)
+
+def _parse_params(query, user, setting):
+    if 'token' in query:
+        context = unpack_token(query.get('token'))
+        if context == None or str(setting.app.pk) != context['app']:
+            return None
+        
+        del context['app']
+    elif 'group' in query:
+        context = {'group': query.get('group')}
+        
+        if 'user' in query:
+            context['user'] = query.get('user')
+    else:
+        return None
+
+    for key, val in context.items():
+        try:
+            context[key] = models[key].objects.get(pk=int(val))
+        except (ObjectDoesNotExist, ValueError):
+            return None
+
+    if 'group' in query and not _user_can_edit_group(user.userprofile, context['group']):
+        return None
+
+    return context
+
+def _user_can_edit_group(profile, group):
+    if profile.flat_permissions.filter(code='admin').exists():
+        return True
+    elif profile.flat_permissions.filter(code='can_edit_group').exists():
+        while group != None:
+            if Membership.objects.filter(user=profile, group=group, 
+                    role__role='teacher').exists():
+                return True
+            group = group.parent
+    return False
+
+
+# Old view functions (still needed for the admin)
 
 def group_defaults(request, setting_id):
     return HttpResponse()

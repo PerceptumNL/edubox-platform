@@ -1,9 +1,8 @@
 from django.conf import settings
 from django.http import HttpResponse
 
-from Crypto.Cipher import AES
+from .helpers import unpack_token
 
-import base64
 import json
 
 class ContextTokenProcessingMiddleware():
@@ -22,21 +21,11 @@ class ContextTokenProcessingMiddleware():
             if token == None:
                 return HttpResponse(status=400)
             
-            #Decode from base64
-            token = base64.urlsafe_b64decode(token)
-
-            #Decrypt AES using settings secret key
-            key = settings.SECRET_KEY[:16]
-            cipher = AES.new(key, AES.MODE_ECB)
-            context = cipher.decrypt(token)
-            
-            #Seperate the elements from the string
-            context = context.decode('utf-8')
-            elements = context.rstrip('*').split(':')
-            if len(elements) != 3:
+            #Unpack the token to the context elements
+            context = unpack_token(token)
+            if context == None:
                 return HttpResponse(status=400)
-            
+
             #Add the elements in request.context as JSON
-            user, group, app = elements
-            request.context = json.dumps({'user': user, 'group': group, 'app': app})
+            request.context = json.dumps(context)
 
