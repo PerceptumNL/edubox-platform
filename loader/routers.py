@@ -333,7 +333,7 @@ class BaseRouter(object):
         headers = {}
         for header, value in remote_response.headers.items():
             header = header.lower()
-            elif header == "location":
+            if header == "location":
                 value = self.get_routed_url(value, path_only=False)
                 headers[header.title()] = value
                 self.debug("Redirecting to %s" % (value,))
