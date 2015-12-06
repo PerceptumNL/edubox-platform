@@ -282,8 +282,15 @@ class BaseRouter():
             elif header == "HTTP_REFERER":
                 value = self.get_unrouted_url(value, path_only=False)
                 headers[convert_fn(header[5:])] = value
+            elif header == "HTTP_ACCEPT_ENCODING" and value != "*":
+                if "gzip" not in value and "deflate" not in value:
+                    value "gzip, deflate, %s" % (value,)
+                headers[convert_fn(header[5:])] = value
             elif header[:5] == "HTTP":
                 headers[convert_fn(header[5:])] = value
+
+        if 'accept-encoding' not in headers:
+            headers['accept-encoding'] = "gzip, deflate"
 
         self.debug("Remote request headers: %s" % (headers,))
         return headers
@@ -340,6 +347,11 @@ class BaseRouter():
                 value = self.get_routed_url(value, path_only=False)
                 headers[header.title()] = value
                 self.debug("Redirecting to %s" % (value,))
+            elif header == "content-encoding" and value in ["gzip", "deflate"]:
+                # Content compressed in gzip or deflate is automatically
+                # unpacked by the requests libary. For it to be packed
+                # later on, this header must not be already set.
+                continue
             elif header in ignore_list:
                 continue
             else:
