@@ -284,7 +284,7 @@ class BaseRouter():
                 headers[convert_fn(header[5:])] = value
             elif header == "HTTP_ACCEPT_ENCODING" and value != "*":
                 if "gzip" not in value and "deflate" not in value:
-                    value "gzip, deflate, %s" % (value,)
+                    value = "gzip, deflate, %s" % (value,)
                 headers[convert_fn(header[5:])] = value
             elif header[:5] == "HTTP":
                 headers[convert_fn(header[5:])] = value
