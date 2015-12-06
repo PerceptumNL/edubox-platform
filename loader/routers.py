@@ -55,7 +55,6 @@ from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.core.urlresolvers import reverse, RegexURLResolver, Resolver404
 from django.views.decorators.clickjacking import xframe_options_exempt
-
 from bs4 import BeautifulSoup
 from copy import copy
 from datetime import datetime
@@ -94,6 +93,7 @@ class BaseRouter(object):
         print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
 
     @classmethod
+    @xframe_options_exempt
     def route_path_by_subdomain(cls, request, domain):
         router = cls(domain)
         return router.route_request(request)
