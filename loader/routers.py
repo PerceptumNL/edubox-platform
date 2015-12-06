@@ -292,6 +292,9 @@ class BaseRouter():
         if 'accept-encoding' not in headers:
             headers['accept-encoding'] = "gzip, deflate"
 
+        if self.request.is_ajax():
+            self.debug("Incoming request send over ajax")
+
         self.debug("Remote request headers: %s" % (headers,))
         return headers
 
