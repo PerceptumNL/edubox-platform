@@ -281,7 +281,7 @@ class BaseRouter(object):
             elif header == "HTTP_REFERER":
                 value = self.get_unrouted_url(value, path_only=False)
                 headers[convert_fn(header[5:])] = value
-            elif header == "HTTP_X_REQUESTED_WITH":
+            elif header[:5] == "HTTP":
                 headers[convert_fn(header[5:])] = value
 
         self.debug("Remote request headers: %s" % (headers,))
@@ -333,13 +333,12 @@ class BaseRouter(object):
         headers = {}
         for header, value in remote_response.headers.items():
             header = header.lower()
-            #TODO: Extend list
-            if header == "content-type":
-                headers[header.title()] = value
             elif header == "location":
                 value = self.get_routed_url(value, path_only=False)
                 headers[header.title()] = value
                 self.debug("Redirecting to %s" % (value,))
+            else:
+                headers[header.title()] = value
         return headers
 
     def alter_response_cookies(self, response, remote_response):
