@@ -286,7 +286,7 @@ class BaseRouter():
                 if "gzip" not in value and "deflate" not in value:
                     value = "gzip, deflate, %s" % (value,)
                 headers[convert_fn(header[5:])] = value
-            elif header[:5] == "HTTP":
+            elif header[:5] == "HTTP_":
                 headers[convert_fn(header[5:])] = value
 
         if 'accept-encoding' not in headers:
