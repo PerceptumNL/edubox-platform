@@ -308,14 +308,16 @@ class BaseRouter(object):
             return BeautifulSoup(remote_response.text, 'lxml')
         elif "text" in content_type or "javascript" in content_type:
             return remote_response.text
-        elif "image" in content_type:
-            return remote_response.content
+        elif "json" in content_type:
+            return remote_response.text
         else:
             return remote_response.content
 
     def get_response_body(self, response_content):
         if isinstance(response_content, BeautifulSoup):
             return response_content.prettify()
+        elif isinstance(response_content, bytes):
+            return response_content
         else:
             return str(response_content)
 
