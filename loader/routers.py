@@ -333,12 +333,15 @@ class BaseRouter():
 
     def get_response_headers(self, remote_response):
         headers = {}
+        ignore_list = ["x-frame-options"]
         for header, value in remote_response.headers.items():
             header = header.lower()
             if header == "location":
                 value = self.get_routed_url(value, path_only=False)
                 headers[header.title()] = value
                 self.debug("Redirecting to %s" % (value,))
+            elif header in ignore_list:
+                continue
             else:
                 headers[header.title()] = value
         return headers
