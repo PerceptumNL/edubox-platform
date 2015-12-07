@@ -10,12 +10,122 @@ from .forms import *
 from .models import *
 from services.events.helpers import unpack_token
 
+import json
+
 models = {'user': User, 'group': Group,
         'option': GroupRestriction, 'option_user': UserRestriction,
         'value': GroupDefault, 'value_user': UserDefault}
 
 @csrf_exempt
-def settings(request, setting_id, value_id, setting_type):
+def get_settings(request, setting_id):
+    try:
+        setting = Setting.objects.get(code=setting_id)
+    except (ObjectDoesNotExist, ValueError):
+        return HttpResponse(status=400)
+
+    #Parse and validate the request parameters
+    context = _parse_params(request.GET, request.user, setting)
+    if context == None:
+        return HttpResponse(status=400)
+    
+    context['setting'] = setting
+    
+    values = {'value': _compute_setting_value(**context)}
+
+    if 'full' in request.GET:
+        values['options'] = _compute_setting_options(**context)
+
+    if 'meta' in request.GET:
+        values['desc'] = setting.description
+        values['single'] = setting.single
+     
+    return HttpResponse(json.dumps(values))
+
+
+def _compute_setting_value(setting, group, user=None):
+    #The default value for the user in that context
+    if setting.single:
+        return _get_setting_default(setting, group, user)
+    #The restricted set of values for the in user in that context
+    else:
+        return _get_setting_list(setting, group, user)
+
+def _compute_setting_options(setting, group, user=None):
+    #The set from which a default can be selected
+    if setting.single:
+        return _get_setting_list(setting, group, user)
+    #The restrictions which can be removed to expand the set
+    else:
+        return _current_restrictions(setting, group, user)
+        
+
+def _get_setting_default(setting, group, user=None):
+    value = None
+
+    while group != None:
+        #If a user default exists for this group, return that
+        if user != None:
+            try:
+                default = UserDefault.objects.get(user=user, group=group,
+                        setting=setting)
+                return default.value
+            except ObjectDoesNotExist:
+                pass
+        
+        #Find group-level defaults for settings that have not been set yet
+        if value == None:
+            try:
+                default = GroupDefault.objects.get(group=group, setting=setting)
+                value = default.value
+            except ObjectDoesNotExist:
+                pass
+        
+        #Move up to next group in the hierarchy
+        group = group.parent
+   
+    #If no group level default was found
+    if value == None:
+        return setting.default.value
+    else:
+        return value
+
+def _get_setting_list(setting, group, user=None):
+    #Retrieve the full value set for the setting
+    values = setting.values.all()
+
+    while group != None:
+        #Apply user restrictions to the value set, if relevant
+        if user != None:
+            try:
+                restrict = UserRestriction.objects.get(user=user, group=group,
+                        setting=setting)
+                values = values.exclude(value=restrict.settingVal)
+            except ObjectDoesNotExist:
+                pass
+        
+        #Apply group restrictions to the value set
+        try:
+            restrict = GroupRestriction.objects.get(group=group, setting=setting)
+            values = values.exclude(value=restrict.settingVal)
+        except ObjectDoesNotExist:
+            pass
+        
+        #Move up to next group in the hierarchy
+        group = group.parent
+    
+    return [elem.value for elem in values]
+
+def _get_current_restrictions(setting, group, user=None):
+    if user == None:
+        restrict = GroupRestriction.objects.filter(group=group, setting=setting)
+    else:
+        restrict = GroupRestriction.objects.filter(user=user, group=group, 
+                setting=setting)
+    
+    return [elem.value for elem in restrict]
+
+@csrf_exempt
+def set_settings(request, setting_id, value_id, setting_type):
     if request.method == 'PUT':
         add = True
     elif request.method == 'DELETE':
@@ -49,7 +159,6 @@ def settings(request, setting_id, value_id, setting_type):
     #Distinguish between user and group settings
     if 'user' in context:
         setting_type += '_user'
-        context['user'] = context['user'].userprofile
    
     #Add or remove the setting
     if add:
@@ -87,6 +196,9 @@ def _parse_params(query, user, setting):
 
     if 'group' in query and not _user_can_edit_group(user.userprofile, context['group']):
         return None
+
+    if 'user' in context:
+        context['user'] = context['user'].userprofile
 
     return context
 

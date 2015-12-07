@@ -59,7 +59,9 @@ class UserProfile(models.Model):
             group = group.parent
         
         #Add all group defaults that had no user defaults
-        for setting, value in settings.iteritems():
+        for code, value in settings.iteritems():
+            if value == None:
+                value = Setting.objects.get(app=app, code=code).default.value
             settings_string += '&'+ code +'='+ value
 
         #Set the value in the corresonding CompactSettings, remove the first '&'
