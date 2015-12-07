@@ -8,13 +8,48 @@ from django.contrib.auth.models import User
 
 from .forms import *
 from .models import *
-from services.events.helpers import unpack_token
+from services.events.helpers import *
 
+from collections import defaultdict
 import json
 
 models = {'user': User, 'group': Group,
         'option': GroupRestriction, 'option_user': UserRestriction,
         'value': GroupDefault, 'value_user': UserDefault}
+
+def app_view_list(request):
+    groups = request.user.userprofile.groups.all()
+    group_contexts = {}
+    parent_counts = defaultdict(int)
+    for group in groups:
+        parent = group
+        parents = []
+        while parent != None:
+            parents.append(parent)
+            parent_counts[parent] += 1
+            parent = parent.parent
+
+        group_contexts[group] = (group.apps.all(), parents)
+    
+    group_count = len(group_contexts)
+    for parent, count in parent_counts.items():
+        if count == group_count:
+            for context in group_contexts.values():
+                context[1].remove(parent)
+    
+    app_view = {}
+    for group, (apps, parents) in group_contexts.items():
+        context = []
+        parents = [parent.title for parent in parents[::-1]]
+        for app in apps:
+            context.append({'name': app.title, 'icon': app.icon, 'path': parents,
+                'token': create_token(user=user.pk, group=group.pk, 
+                app=app.pk).decode('utf-8')})
+        
+        app_view[group.title] = context
+
+    return HttpResponse(json.dumps(app_view))
+
 
 @csrf_exempt
 def get_settings(request, setting_id):
