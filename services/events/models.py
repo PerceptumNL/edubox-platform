@@ -5,10 +5,12 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils import formats
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
 
 from uuid import uuid4
 
 from loader.models import App
+from services.usermanagement.models import Group
 from apps.news.models import TimestampedArticle
 
 class Verb(models.Model):
@@ -36,7 +38,7 @@ class Event(models.Model):
 
     #This should be a foreign key to Group-Institute hierarchy, but that hasn't
     #been implemented yet.
-    group = models.CharField(max_length=255)
+    group = models.ForeignKey(Group)
     
     timestamp = models.DateTimeField(default=timezone.now)
     stored = models.DateTimeField(auto_now_add=True)
@@ -55,37 +57,38 @@ class Event(models.Model):
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
-        displayname = (lambda user: u' '.join([user.first_name, user.last_name])
-                if user.first_name else user.username)
         return {'date': formats.date_format(
                     timezone.localtime(self.timestamp),
                     "DATETIME_FORMAT"),
-                'user': str(displayname(self.user)),
+                'user': str(self.user.username),
                 'group': str(self.group),
                 'app': str(self.app)
                 }
     
     def create(app, group, user, verb, obj, result=None, timestamp=None):    
-        #Should be wrapped with some try-excepts, but for now raising is fine
-        _app = App.objects.get(pk=app)
-        _verb = Verb.objects.get(key=verb)
+        try:
+            _verb = Verb.objects.get(key=verb)
+            kwargs = {'user': User.objects.get(pk=user),
+                      'verb': _verb,
+                      'group': Group.objects.get(pk=group),
+                      'app': App.objects.get(pk=app)
+                      }
+        except (ObjectDoesNotExist, ValueError):
+            raise AttributeError()
 
-        kwargs = {'user': User.objects.get(pk=user),
-                  'verb': _verb,
-                  'app': _app,
-                  'group': group
-                  }
         if timestamp:
             kwargs.update({'timestamp': timestamp})
 
-        #eval(_verb.event_class).create(kwargs, obj, result)
-        #Create specific subclass instance and a generic event instance with
-        #with a pointer to the specific instance, thus the data is redundant
+        #Create a verb-specific subclass instance
         subclass = ContentType.objects.get(app_label='events',
                 model=_verb.event_class.lower())
         instance = subclass.model_class().create(kwargs, obj, result)
-        #print(instance.pk)
-        #print(str(instance))
+        
+        #If creation of the instance with these kwargs failed
+        if instance == None:
+            raise AttributeError()
+        
+        #Generic event instance with a pointer to the specific instance
         GenericEvent.objects.create(content_type=subclass,
                 object_id=instance.pk, verb_instance=instance, **kwargs)
         
@@ -105,7 +108,7 @@ class ReadEvent(Event):
         desc = super(ReadEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-article-view',
+            'verb': 'read',
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
                 'title': str(self.article)
@@ -114,7 +117,10 @@ class ReadEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+        except (ObjectDoesNotExist, ValueError):
+            return None
         return ReadEvent.objects.create(article=article, **kwargs)
 
 class RatedEvent(Event):
@@ -129,7 +135,7 @@ class RatedEvent(Event):
         desc = super(RatedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-article-rating',
+            'verb': 'rated',
             'rating': str(self.rating),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
@@ -139,8 +145,11 @@ class RatedEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
-        rating = int(res)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+            rating = int(res)
+        except (ObjectDoesNotExist, ValueError):
+            return None
         return RatedEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ScoredEvent(Event):
@@ -155,7 +164,7 @@ class ScoredEvent(Event):
         desc = super(ScoredEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-article-difficulty',
+            'verb': 'scored',
             'rating': str(self.rating),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
@@ -165,8 +174,11 @@ class ScoredEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
-        rating = int(res)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+            rating = int(res)
+        except (ObjectDoesNotExist, ValueError):
+            return None
         return ScoredEvent.objects.create(article=article, rating=rating, **kwargs)
 
 class ClickedEvent(Event):
@@ -181,7 +193,7 @@ class ClickedEvent(Event):
         desc = super(ClickedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'type': 'event-word-cover',
+            'verb': 'clicked',
             'word': str(self.word),
             'article': {
                 'url': reverse('article', args=(self.article.id,)),
@@ -191,7 +203,9 @@ class ClickedEvent(Event):
         return desc
 
     def create(kwargs, obj, res):
-        article = TimestampedArticle.objects.get(pk=obj)
-        word = str(res)
-        return RatedEvent.objects.create(article=article, word=word, **kwargs)
+        try:
+            article = TimestampedArticle.objects.get(pk=obj)
+        except (ObjectDoesNotExist, ValueError):
+            return None
+        return RatedEvent.objects.create(article=article, word=str(res), **kwargs)
 

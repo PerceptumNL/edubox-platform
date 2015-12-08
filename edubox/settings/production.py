@@ -21,6 +21,9 @@ STATIC_ROOT = 'staticfiles'
 # Try to prevent collisions with other django apps that are routed.
 STATIC_URL = '/static5bec552b27/'
 
+if 'SECRET_KEY' in os.environ:
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+
 if 'SITE_ID' in os.environ:
     SITE_ID = int(os.environ.get('SITE_ID'))
 
