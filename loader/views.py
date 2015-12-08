@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.urlresolvers import RegexURLResolver, Resolver404, reverse
@@ -143,5 +143,5 @@ def service_routing(request, service_id, path):
         return HttpResponse()
 
 def home(request, *args, **kwargs):
-    print('Home, because', request.path_info)
-    return render(request, "loader/index.html", {})
+    """Redirect to admin screen, frontend is hosted elsewhere."""
+    return HttpResponseRedirect("/admin")
