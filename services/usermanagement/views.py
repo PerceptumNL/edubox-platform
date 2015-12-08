@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.csrf import csrf_exempt
@@ -11,7 +11,6 @@ from .models import *
 from services.events.helpers import *
 
 from collections import defaultdict
-import json
 
 models = {'user': User, 'group': Group,
         'option': GroupRestriction, 'option_user': UserRestriction,
@@ -48,7 +47,7 @@ def app_view_list(request):
 
         app_view[group.title] = context
 
-    return HttpResponse(json.dumps(app_view))
+    return JsonResponse(app_view)
 
 @csrf_exempt
 def get_settings(request, setting_id):
@@ -73,7 +72,7 @@ def get_settings(request, setting_id):
         values['desc'] = setting.description
         values['single'] = setting.single
 
-    return HttpResponse(json.dumps(values))
+    return JsonResponse(values)
 
 
 def _compute_setting_value(setting, group, user=None):
