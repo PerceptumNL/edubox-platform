@@ -30,13 +30,13 @@ def app_view_list(request):
             parent = parent.parent
 
         group_contexts[group] = (group.apps.all(), parents)
-    
+
     group_count = len(group_contexts)
     for parent, count in parent_counts.items():
         if count == group_count:
             for context in group_contexts.values():
                 context[1].remove(parent)
-    
+
     app_view = {}
     for group, (apps, parents) in group_contexts.items():
         context = []
@@ -45,11 +45,10 @@ def app_view_list(request):
             context.append({'name': app.title, 'icon': app.icon, 'path': parents,
                 'token': create_token(user=user.pk, group=group.pk, 
                 app=app.pk).decode('utf-8')})
-        
+
         app_view[group.title] = context
 
     return HttpResponse(json.dumps(app_view))
-
 
 @csrf_exempt
 def get_settings(request, setting_id):
@@ -62,9 +61,9 @@ def get_settings(request, setting_id):
     context = _parse_params(request.GET, request.user, setting)
     if context == None:
         return HttpResponse(status=400)
-    
+
     context['setting'] = setting
-    
+
     values = {'value': _compute_setting_value(**context)}
 
     if 'full' in request.GET:
@@ -73,7 +72,7 @@ def get_settings(request, setting_id):
     if 'meta' in request.GET:
         values['desc'] = setting.description
         values['single'] = setting.single
-     
+
     return HttpResponse(json.dumps(values))
 
 
@@ -92,7 +91,6 @@ def _compute_setting_options(setting, group, user=None):
     #The restrictions which can be removed to expand the set
     else:
         return _current_restrictions(setting, group, user)
-        
 
 def _get_setting_default(setting, group, user=None):
     value = None
@@ -106,7 +104,7 @@ def _get_setting_default(setting, group, user=None):
                 return default.value
             except ObjectDoesNotExist:
                 pass
-        
+
         #Find group-level defaults for settings that have not been set yet
         if value == None:
             try:
@@ -114,10 +112,10 @@ def _get_setting_default(setting, group, user=None):
                 value = default.value
             except ObjectDoesNotExist:
                 pass
-        
+
         #Move up to next group in the hierarchy
         group = group.parent
-   
+
     #If no group level default was found
     if value == None:
         return setting.default.value
@@ -137,17 +135,17 @@ def _get_setting_list(setting, group, user=None):
                 values = values.exclude(value=restrict.settingVal)
             except ObjectDoesNotExist:
                 pass
-        
+
         #Apply group restrictions to the value set
         try:
             restrict = GroupRestriction.objects.get(group=group, setting=setting)
             values = values.exclude(value=restrict.settingVal)
         except ObjectDoesNotExist:
             pass
-        
+
         #Move up to next group in the hierarchy
         group = group.parent
-    
+
     return [elem.value for elem in values]
 
 def _get_current_restrictions(setting, group, user=None):
@@ -156,7 +154,7 @@ def _get_current_restrictions(setting, group, user=None):
     else:
         restrict = GroupRestriction.objects.filter(user=user, group=group, 
                 setting=setting)
-    
+
     return [elem.value for elem in restrict]
 
 @csrf_exempt
@@ -167,7 +165,7 @@ def set_settings(request, setting_id, value_id, setting_type):
         add = False
     else:
         return HttpResponse(status=400)
-    
+
     #Check if the setting and value are a valid combination
     try:
         setting = Setting.objects.get(code=setting_id)
@@ -182,19 +180,19 @@ def set_settings(request, setting_id, value_id, setting_type):
     context = _parse_params(request.GET, request.user, setting)
     if context == None:
         return HttpResponse(status=400)
-    
+
     #Add the settings to context to complete the through-model parameters
     context['setting'] = setting
     context['settingVal'] = value
-    
+
     #Restrictions should be removed on PUT and added on DELETE
     if setting_type == 'option':
         add = not add
-    
+
     #Distinguish between user and group settings
     if 'user' in context:
         setting_type += '_user'
-   
+
     #Add or remove the setting
     if add:
         obj, created = models[setting_type].objects.get_or_create(**context)
@@ -213,11 +211,11 @@ def _parse_params(query, user, setting):
         context = unpack_token(query.get('token'))
         if context == None or str(setting.app.pk) != context['app']:
             return None
-        
+
         del context['app']
     elif 'group' in query:
         context = {'group': query.get('group')}
-        
+
         if 'user' in query:
             context['user'] = query.get('user')
     else:

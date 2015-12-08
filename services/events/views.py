@@ -29,11 +29,11 @@ class API(View):
         for filt in self.filters:
             if filt in request.GET:
                 verb_filters[filt] = request.GET.get(filt)
-        
+
         events = self._filter_verb(verb_class, **verb_filters)
         if events == None:
             return HttpResponse(status=400)
-        
+
         if 'detail' in request.GET and request.GET.get('detail') == 'simple':
             dump = [super(verb_class, event).describe() for event in events]
         else:
@@ -41,7 +41,6 @@ class API(View):
 
         return HttpResponse(json.dumps(dump))
 
-    
     def _filter_verb(self, verb_class, **kwargs):
         events = verb_class.objects.all()
 
@@ -51,7 +50,6 @@ class API(View):
             events = events.filter(group__title=kwargs['group'])
         if 'app' in kwargs:
             events = events.filter(app__title=kwargs['app'])
-        
         if 'before' in kwargs:
             date = _date_instance(kwargs['before'])
             if date == None:
@@ -62,13 +60,12 @@ class API(View):
             if date == None:
                 return None
             events = events.filter(timestamp__gt=date)
-        
         return events
-   
+
     def post(self, request):
         events = json.loads(str(request.body, 'utf-8'))
         context = json.loads(request.context)
-        
+
         if type(events)==list:
             for event in events:
                 resp = self._post_event(event, context)
@@ -84,9 +81,9 @@ class API(View):
             Event.create(**event)
         except (TypeError, AttributeError):
             return HttpResponse(status=400)
-        
+
         return HttpResponse()
-    
+
     #This means the API is completely open and thus all permissions should
     #be thoroughly checked in the view functions
     @csrf_exempt

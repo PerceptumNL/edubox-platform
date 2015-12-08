@@ -18,28 +18,29 @@ class Verb(models.Model):
     event_class = models.CharField(max_length=255)
     iri = models.URLField()
     description = models.TextField()
-    
+
     def __str__(self):
         return str(self.key) +": "+ str(self.iri)
-    
+
     def __repr__(self):
         return str(self)
 
+
 class Event(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    
+
     user = models.ForeignKey(User)
     verb = models.ForeignKey(Verb)
 
     #The object and result properties are set in the verb-specific subclasses
     #as the type of object or result can differ based on the verb used.
-    
+
     app = models.ForeignKey(App)
 
     #This should be a foreign key to Group-Institute hierarchy, but that hasn't
     #been implemented yet.
     group = models.ForeignKey(Group)
-    
+
     timestamp = models.DateTimeField(default=timezone.now)
     stored = models.DateTimeField(auto_now_add=True)
 
@@ -64,7 +65,7 @@ class Event(models.Model):
                 'group': str(self.group),
                 'app': str(self.app)
                 }
-    
+
     def create(app, group, user, verb, obj, result=None, timestamp=None):    
         try:
             _verb = Verb.objects.get(key=verb)
@@ -83,23 +84,25 @@ class Event(models.Model):
         subclass = ContentType.objects.get(app_label='events',
                 model=_verb.event_class.lower())
         instance = subclass.model_class().create(kwargs, obj, result)
-        
+
         #If creation of the instance with these kwargs failed
         if instance == None:
             raise AttributeError()
-        
+
         #Generic event instance with a pointer to the specific instance
         GenericEvent.objects.create(content_type=subclass,
                 object_id=instance.pk, verb_instance=instance, **kwargs)
-        
+
+
 class GenericEvent(Event):
     content_type = models.ForeignKey(ContentType)
     object_id = models.UUIDField()
     verb_instance = GenericForeignKey('content_type', 'object_id')
 
+
 class ReadEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
-    
+
     def __str__(self):
         return super(ReadEvent, self).__str__() + self.article.title
 
@@ -122,6 +125,7 @@ class ReadEvent(Event):
         except (ObjectDoesNotExist, ValueError):
             return None
         return ReadEvent.objects.create(article=article, **kwargs)
+
 
 class RatedEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
@@ -152,6 +156,7 @@ class RatedEvent(Event):
             return None
         return RatedEvent.objects.create(article=article, rating=rating, **kwargs)
 
+
 class ScoredEvent(Event):
     article = models.ForeignKey(TimestampedArticle)
     rating = models.IntegerField()
@@ -180,6 +185,7 @@ class ScoredEvent(Event):
         except (ObjectDoesNotExist, ValueError):
             return None
         return ScoredEvent.objects.create(article=article, rating=rating, **kwargs)
+
 
 class ClickedEvent(Event):
     article = models.ForeignKey(TimestampedArticle)

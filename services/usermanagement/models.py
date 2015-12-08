@@ -12,7 +12,7 @@ class UserProfile(models.Model):
     groups = models.ManyToManyField('Group', through='Membership', 
             through_fields=('user', 'group'), related_name='users')
     institute = models.ForeignKey('Institute', related_name='users')
-    
+
     #User specific additions to permissions, outside of group or role
     #permission. UserPermissions specifies the app for which this addition applies
     permissions = models.ManyToManyField('Permission', through='UserPermission',
@@ -20,7 +20,7 @@ class UserProfile(models.Model):
     #A list of all permissions a user has, computed from the user's group(s),
     #role(s) and user permissions. Should never be updated directly!
     flat_permissions = models.ManyToManyField('Permission', related_name='+')
-   
+
     #Iff a Setting has default==null: the user may further restrict the
     #collection for that setting. Else: He must choice a default value.
     setting_restrictions = models.ManyToManyField('SettingValue',
@@ -48,16 +48,16 @@ class UserProfile(models.Model):
                     settings_string += '&'+ code +'='+ default.settingVal.value
                     #Remove the setting from dict, so new value cannot be set
                     settings.pop(code)
-            
+
             #Find group-level defaults for setttings that have not been set yet
             for default in GroupDefault.objects.filter(group=group, setting__app=app):
                 code = default.setting.code
                 if code in settings and settings[code] == None:
                     settings[code] = default.settingVal.value
-            
+
             #Move up to next group in the hierarchy
             group = group.parent
-        
+
         #Add all group defaults that had no user defaults
         for code, value in settings.iteritems():
             if value == None:
@@ -86,15 +86,17 @@ class UserProfile(models.Model):
         #User permissions require app context
         #self.flat_permissions.add(*self.permissions.all())
 
+
 class UserProfileProxy(UserProfile):
     class Meta:
         proxy = True
         verbose_name = 'User profile: Admin view'
 
+
 class Group(models.Model):
     title = models.CharField(max_length=255)
     code = models.CharField(max_length=255, blank=True)
-    
+
     apps = models.ManyToManyField(App)
 
     parent = models.ForeignKey('Group', blank=True, null=True,
@@ -109,7 +111,7 @@ class Group(models.Model):
     setting_defaults = models.ManyToManyField('SettingValue',
             through='GroupDefault', through_fields=('group', 'settingVal'),
             related_name='group_defaults')
-    
+
     def __str__(self):
         return self.title
 
@@ -143,6 +145,7 @@ class Group(models.Model):
         for group in self.subgroups.all():
             group._update_flat_permissions(action, pk_set)
 
+
 class Institute(models.Model):
     title = models.CharField(max_length=255)
     #The apps an institute (client) has access to, OS-level setting
@@ -162,9 +165,9 @@ class Membership(models.Model):
     def __str__(self):
         return str(self.user) +' as '+ str(self.role) +' in '+ str(self.group)
 
+
 class Role(models.Model):
     role = models.CharField(max_length=31)
-    
     permissions = models.ManyToManyField('Permission')
 
     def __str__(self):
@@ -188,28 +191,26 @@ class UserPermission(models.Model):
 class GroupRestriction(models.Model):
     group = models.ForeignKey('Group')
     settingVal = models.ForeignKey('SettingValue')
-    
     setting = models.ForeignKey('Setting')
 
 
 class GroupDefault(models.Model):
     group = models.ForeignKey('Group')
     settingVal = models.ForeignKey('SettingValue')
-    
     setting = models.ForeignKey('Setting', related_name='group_defaults')
+
 
 class UserRestriction(models.Model):
     user = models.ForeignKey('UserProfile')
     settingVal = models.ForeignKey('SettingValue')
-    
     setting = models.ForeignKey('Setting')
     #Group context is required to resolve the setting
     group = models.ForeignKey('Group')
 
+
 class UserDefault(models.Model):
     user = models.ForeignKey('UserProfile')
     settingVal = models.ForeignKey('SettingValue')
-    
     setting = models.ForeignKey('Setting', related_name='user_defaults')
     #Group context is required to resolve the setting
     group = models.ForeignKey('Group', related_name='user_defaults')
@@ -219,19 +220,19 @@ class UserDefault(models.Model):
 class Permission(models.Model):
     code = models.CharField(max_length=31, primary_key=True)
     name = models.CharField(max_length=255)
-   
+
     def __str__(self):
         return self.name
 
 class Setting(models.Model):
     code = models.CharField(max_length=31, primary_key=True)
     description = models.TextField()
-    
+
     #Default Value for this Setting. Iff null: the setting should resolve to
     #a collection of values instead of a single choice.
     default = models.OneToOneField('SettingValue', blank=True, null=True,
             related_name='+')
-    
+
     #Indicates if the setting is simple enough to add to the request query dict
     #TODO: Reconsider the way this is implemented in loader.views._local_routing
     compact = models.BooleanField(default=True)
@@ -251,15 +252,17 @@ class Setting(models.Model):
     def __repr__(self):
         return "Setting(%s)" % (self,)
 
+
 class SettingValue(models.Model):
     value = models.CharField(max_length=255)    
     setting = models.ForeignKey(Setting, related_name='values')
 
     def __str__(self):
         return self.value
-    
+
     def __repr__(self):
         return "Value(%s)" % (self,)
+
 
 class CompactSettings(models.Model):
     #The string containing all compact (added to the request) settings for the
@@ -272,6 +275,3 @@ class CompactSettings(models.Model):
 
     class Meta:
         verbose_name_plural = 'Compact settings'
-
-
-
