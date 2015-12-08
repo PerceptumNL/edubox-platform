@@ -51,19 +51,19 @@ remote request / remote response
     belonging to the communication between the router and the remote server the
     request is routed to.
 """
+import re
+from datetime import datetime
+from urllib.parse import urlsplit, urlunsplit, quote, unquote
+
 from django.http import HttpResponse, Http404
 from django.conf import settings
-from django.core.urlresolvers import reverse, RegexURLResolver, Resolver404
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+import requests
+import subdomains
 from bs4 import BeautifulSoup
 
-from copy import copy
-from datetime import datetime
-from urllib.parse import urlsplit, urlunsplit
-import subdomains
-import requests
-import re
-
-class Router(object):
+class BaseRouter():
     """
     Generic base class for all router classes.
 
@@ -79,6 +79,7 @@ class Router(object):
 
     def __init__(self, remote_domain):
         self.remote_domain = remote_domain
+        self.remote_session = requests.Session()
 
     def debug(self, msg):
         """
@@ -93,6 +94,7 @@ class Router(object):
         print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
 
     @classmethod
+    @xframe_options_exempt
     def route_path_by_subdomain(cls, request, domain):
         router = cls(domain)
         return router.route_request(request)
@@ -105,7 +107,7 @@ class Router(object):
 
         :rtype: tuple of regex strings
         """
-        return (r"(?P<domain>.+)\.rtr",)
+        raise NotImplementedError()
 
     @classmethod
     def get_subdomain_routing_mapping(cls, map_to_function=True):
@@ -145,11 +147,11 @@ class Router(object):
             return parts.path
         else:
             return urlunsplit((
-                    parts.scheme or self.request.scheme,
-                    self.get_routed_domain(url),
-                    parts.path,
-                    parts.query,
-                    parts.fragment))
+                parts.scheme or self.request.scheme,
+                self.get_routed_domain(url),
+                parts.path,
+                parts.query,
+                parts.fragment))
 
     def get_routed_domain(self, url):
         """
@@ -160,7 +162,7 @@ class Router(object):
         """
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
-        return "%s.rtr.%s" % (parts.netloc, subdomains.utils.get_domain())
+        return "%s.rtr.%s" % (netloc, subdomains.utils.get_domain())
 
     def get_unrouted_domain_by_match(self, **kwargs):
         """
@@ -200,12 +202,13 @@ class Router(object):
             domain = subdomains.utils.get_domain()
 
         return urlunsplit((
-                self.get_remote_request_scheme(),
-                domain,
-                parts.path,
-                parts.query,
-                parts.fragment))
+            self.get_remote_request_scheme(),
+            domain,
+            parts.path,
+            parts.query,
+            parts.fragment))
 
+    @xframe_options_exempt
     def route_request(self, request):
         """
         Route the request to the remote server.
@@ -228,18 +231,17 @@ class Router(object):
         """
         Send the request to the remote domain and return the response.
         """
-        self.remote_session = requests.Session()
         self.remote_session.cookies = self.get_remote_request_cookiejar()
-        url = "%s://%s%s" % (self.get_remote_request_scheme(),
-                self.get_remote_request_host(), self.get_remote_request_path())
+        url = "%s://%s%s" % (
+            self.get_remote_request_scheme(),
+            self.get_remote_request_host(), self.get_remote_request_path())
         self.debug("%s: %s %s" % ("Remote request", self.request.method, url))
         return self.remote_session.request(
-                method=self.get_remote_request_method(),
-                allow_redirects=False,
-                data=self.get_remote_request_body(),
-                headers=self.get_remote_request_headers(),
-                url=url,
-                params=self.request.GET)
+            method=self.get_remote_request_method(),
+            allow_redirects=False,
+            data=self.get_remote_request_body(),
+            headers=self.get_remote_request_headers(),
+            url=url)
 
     def get_remote_request_method(self):
         method = self.request.method
@@ -252,8 +254,8 @@ class Router(object):
         return scheme
 
     def get_remote_request_host(self):
-        return urlsplit(self.get_unrouted_url("%s://%s" % (
-            self.request.scheme, self.request.get_host()),
+        return urlsplit(self.get_unrouted_url(
+            "%s://%s" % (self.request.scheme, self.request.get_host()),
             path_only=False)).netloc
 
     def get_remote_request_path(self):
@@ -280,8 +282,15 @@ class Router(object):
             elif header == "HTTP_REFERER":
                 value = self.get_unrouted_url(value, path_only=False)
                 headers[convert_fn(header[5:])] = value
-            elif header == "HTTP_X_REQUESTED_WITH":
+            elif header == "HTTP_ACCEPT_ENCODING" and value != "*":
+                if "gzip" not in value and "deflate" not in value:
+                    value = "gzip, deflate, %s" % (value,)
                 headers[convert_fn(header[5:])] = value
+            elif header[:5] == "HTTP_":
+                headers[convert_fn(header[5:])] = value
+
+        if 'accept-encoding' not in headers:
+            headers['accept-encoding'] = "gzip, deflate"
 
         self.debug("Remote request headers: %s" % (headers,))
         return headers
@@ -293,10 +302,12 @@ class Router(object):
 
     def get_response(self, remote_response):
         response_content = self.get_response_content(remote_response)
-        self.alter_response_content(response_content, remote_response)
-        response = HttpResponse(self.get_response_body(response_content),
-                status=remote_response.status_code,
-                content_type=remote_response.headers.get('content-type'))
+        response_content = self.alter_response_content(
+            response_content, remote_response)
+        response = HttpResponse(
+            self.get_response_body(response_content),
+            status=remote_response.status_code,
+            content_type=remote_response.headers.get('content-type'))
         self.alter_response(response, remote_response)
         return response
 
@@ -304,19 +315,23 @@ class Router(object):
         content_type = remote_response.headers.get('content-type', '')
         if "html" in content_type:
             return BeautifulSoup(remote_response.text, 'lxml')
-        elif "image" in content_type:
-            return remote_response.content
-        else:
+        elif "text" in content_type or "javascript" in content_type:
             return remote_response.text
+        elif "json" in content_type:
+            return remote_response.text
+        else:
+            return remote_response.content
 
     def get_response_body(self, response_content):
         if isinstance(response_content, BeautifulSoup):
             return response_content.prettify()
+        elif isinstance(response_content, bytes):
+            return response_content
         else:
             return str(response_content)
 
     def alter_response_content(self, response_content, remote_response):
-        pass
+        return response_content
 
     def alter_response(self, response, remote_response):
         self.alter_response_cookies(response, remote_response)
@@ -325,15 +340,22 @@ class Router(object):
 
     def get_response_headers(self, remote_response):
         headers = {}
+        ignore_list = ["x-frame-options"]
         for header, value in remote_response.headers.items():
             header = header.lower()
-            #TODO: Extend list
-            if header == "content-type":
-                headers[header.title()] = value
-            elif header == "location":
+            if header == "location":
                 value = self.get_routed_url(value, path_only=False)
                 headers[header.title()] = value
                 self.debug("Redirecting to %s" % (value,))
+            elif header == "content-encoding" and value in ["gzip", "deflate"]:
+                # Content compressed in gzip or deflate is automatically
+                # unpacked by the requests libary. For it to be packed
+                # later on, this header must not be already set.
+                continue
+            elif header in ignore_list:
+                continue
+            else:
+                headers[header.title()] = value
         return headers
 
     def alter_response_cookies(self, response, remote_response):
@@ -344,10 +366,117 @@ class Router(object):
             else:
                 expires = None
             response.set_cookie(
-                    cookie.name,
-                    cookie.value,
-                    expires=expires,
-                    path=self.get_routed_url(cookie.path, path_only=True))
+                cookie.name,
+                cookie.value,
+                expires=expires,
+                path=self.get_routed_url(cookie.path, path_only=True))
+
+
+class GoogleMixin():
+
+    def get_remote_request_path(self):
+        path = super().get_remote_request_path()
+
+        if self.remote_domain == "accounts.google.com" and \
+                self.request.path_info == "/o/oauth2/postmessageRelay":
+            routed_url = unquote(self.request.GET.get("parent", ''))
+            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
+            self.debug("Swapping %s with %s" % (
+                quote(routed_url, safe=""),
+                quote(unrouted_url, safe="")))
+            return re.sub(
+                quote(routed_url, safe=""), quote(unrouted_url, safe=""), path)
+        elif self.remote_domain == "accounts.google.com" and \
+                self.request.path_info == "/o/oauth2/auth":
+            routed_url = unquote(self.request.GET.get("origin", ''))
+            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
+            self.debug("Swapping %s with %s" % (
+                quote(routed_url, safe=""),
+                quote(unrouted_url, safe="")))
+            return re.sub(
+                quote(routed_url, safe=""), quote(unrouted_url, safe=""), path)
+        elif self.remote_domain == "accounts.google.com" and \
+                self.request.path_info == "/ServiceLogin":
+            unrouted_url = unquote(self.request.GET.get("continue", ''))
+            if unrouted_url == "":
+                return path
+            routed_url = self.get_routed_url(unrouted_url, path_only=False)
+            self.debug("Swapping %s with %s" % (
+                quote(unrouted_url, safe=""),
+                quote(routed_url, safe="")))
+            return re.sub(
+                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
+        elif self.remote_domain == "accounts.google.com" and \
+                self.request.path_info == "/LoginVerification":
+            unrouted_url = unquote(self.request.GET.get("continue", ''))
+            if unrouted_url == "":
+                return path
+            routed_url = self.get_routed_url(unrouted_url, path_only=False)
+            self.debug("Swapping %s with %s" % (
+                quote(unrouted_url, safe=""),
+                quote(routed_url, safe="")))
+            return re.sub(
+                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
+        elif self.remote_domain == "appengine.google.com" and \
+                self.request.path_info == "/_ah/conflogin":
+            unrouted_url = unquote(self.request.GET.get("continue", ''))
+            if unrouted_url == "":
+                return path
+            routed_url = self.get_routed_url(unrouted_url, path_only=False)
+            self.debug("Swapping %s with %s" % (
+                quote(unrouted_url, safe=""),
+                quote(routed_url, safe="")))
+            return re.sub(
+                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
+        else:
+            return path
+
+    def alter_response_content(self, response_content, remote_response):
+        response_content = super().alter_response_content(
+            response_content, remote_response)
+        if self.remote_domain == "apis.google.com" and \
+                "javascript" in remote_response.headers.get('content-type', ''):
+            pattern = r"(['\"])https://accounts.google.com/o/([^'\"]+)['\"]"
+            domain = self.get_routed_domain("https://accounts.google.com")
+            replacement = r"\1https://%s/o/\2\1" % (domain,)
+            response_content = re.sub(pattern, replacement, response_content)
+        elif self.remote_domain == "accounts.google.com" and \
+                self.request.method == "GET":
+            if not isinstance(response_content, BeautifulSoup):
+                return response_content
+            for form in response_content.find_all('form'):
+                if 'action' not in form.attrs:
+                    continue
+                form['action'] = self.get_routed_url(
+                    form['action'],
+                    path_only=False)
+            for link in response_content.find_all('a'):
+                if 'href' not in link.attrs:
+                    continue
+                link['href'] = self.get_routed_url(link['href'])
+        elif isinstance(response_content, BeautifulSoup):
+            pattern_gapis = r"(['\"])https://apis.google.com/js/([^'\"]+)['\"]"
+            domain = self.get_routed_domain("https://apis.google.com")
+            replacement_gapis = r"\1https://%s/js/\2\1" % (domain,)
+            for script in response_content.find_all('script'):
+                script.string = re.sub(
+                    pattern_gapis, replacement_gapis, str(script.string))
+
+        return response_content
+
+
+class Router(GoogleMixin, BaseRouter):
+
+    @classmethod
+    def get_subdomain_patterns(cls):
+        """
+        Return a tuple of subdomain pattern strings that should be handled by
+        this router class.
+
+        :rtype: tuple of regex strings
+        """
+        return (r"(?P<domain>.+)\.rtr",)
+
 
 class AppRouter(Router):
     """
@@ -363,6 +492,7 @@ class AppRouter(Router):
         super().__init__(*args, **kwargs)
 
     @classmethod
+    @xframe_options_exempt
     def route_path_by_subdomain(cls, request, domain):
         from .models import App
         try:
@@ -370,7 +500,7 @@ class AppRouter(Router):
         except App.DoesNotExist:
             for app in App.objects.exclude(identical_urls=""):
                 if re.match(app.identical_urls, domain):
-                    break;
+                    break
             else:
                 app = None
 
@@ -379,6 +509,10 @@ class AppRouter(Router):
         else:
             router = cls(app)
             return router.route_request(request)
+
+    @classmethod
+    def get_subdomain_patterns(cls):
+        return (r"(?P<domain>.+)\.app",)
 
     def get_routed_domain(self, url):
         """
@@ -389,11 +523,14 @@ class AppRouter(Router):
         """
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
-        return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+        if re.match(self.app.identical_urls, netloc):
+            return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+        else:
+            return super().get_routed_domain(url)
+
+
+class DuolingoAppRouter(AppRouter):
 
     @classmethod
     def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+)\.app",)
-
-    def alter_response_content(self, response_content, remote_response):
-        pass
+        return (r"(?P<domain>.+\.duolingo\.com)\.app",)

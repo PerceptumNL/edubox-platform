@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from uuid import uuid4
 
-from loader.models import App
+from router.models import App
 from services.usermanagement.models import Group
 from apps.news.models import TimestampedArticle
 
