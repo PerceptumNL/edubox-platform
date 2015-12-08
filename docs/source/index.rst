@@ -14,7 +14,7 @@ Contents:
    introduction
    apps
    services
-   loader
+   router
    settings
    api
    reference

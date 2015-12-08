@@ -15,8 +15,6 @@ import requests
 
 from .models import *
 from services.events.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
-from loader.models import App
-from loader.helpers import dispatch_service_request, get_current_app_id
 
 def update_feeds(request):
     for feed in ContentFeed.objects.all():
@@ -177,6 +175,8 @@ def article(request, identifier):
             # If the category was stored in the database
             if category.pk is not None:
                 # Store read event in the Event store
+                #TODO: update to new form
+                """
                 response = dispatch_service_request(request,
                         method="POST",
                         url="service:events/api/",
@@ -187,6 +187,8 @@ def article(request, identifier):
                             'verb': 'read',
                             'obj': identifier
                         })
+                """
+                pass
 
         return render(request, 'article_page.html', {
             "article": article,

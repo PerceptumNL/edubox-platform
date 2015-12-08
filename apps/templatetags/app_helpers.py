@@ -2,7 +2,6 @@ from django import template
 from django.template.loader import get_template
 from django.template.defaultfilters import stringfilter
 from django.core.urlresolvers import reverse
-from loader.helpers import get_current_app_id
 
 import uuid
 import re
@@ -118,30 +117,4 @@ def expand_location(request, location):
      service. Service paths can also contain an additional path that starts at
      the base of the service location (e.g. service:echo/path/to.script).
     """
-    # Check if location already contains a protocol
-    fqd_match = re.match(r'[a-z:]*//', location)
-    if fqd_match:
-        # Location is probably located at different server, keep it as-is.
-        return location
-
-    # Check if location contains a reference to a service
-    service_match = re.search(r'^service:([^/]+)(/.+)?$', location)
-    if service_match:
-        # Extract service
-        service = service_match.group(1)
-        path = service_match.group(2) or "/"
-        return reverse('service_routing', args=(service, path))
-
-    app = get_current_app_id(request)
-    if app is not None:
-        if location[:1] == "/":
-            return reverse('app_routing', args=(app, location))
-        else:
-            root = request.outer_resolver_match.kwargs['path']
-            if root == "":
-                root = "/"
-            elif root[-1] != "/":
-                root = "/"+"/".join(root.split("/")[:-1])
-            return reverse('app_routing', args=(app, root+location))
-    else:
-        return location or "/"
+    raise Exception("This interface is no longer supported.")

@@ -1,17 +1,17 @@
 Reference
 =========
 
-Loader
+Router
 ------
 
-loader.middleware
+router.middleware
 ^^^^^^^^^^^^^^^^^
-.. automodule:: loader.middleware
+.. automodule:: router.middleware
 
-loader.models
+router.models
 ^^^^^^^^^^^^^
-.. automodule:: loader.models
+.. automodule:: router.models
 
-loader.routers
+router
 ^^^^^^^^^^^^^^
-.. automodule:: loader.routers
+.. automodule:: router

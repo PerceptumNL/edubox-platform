@@ -41,7 +41,7 @@ INSTALLED_APPS = (
     'django_summernote',
     'rest_framework',
     'compressor',
-    'loader',
+    'router',
     'apps',
     'apps.helloworld',
     'apps.news',
@@ -53,7 +53,7 @@ INSTALLED_APPS = (
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'loader.middleware.SubdomainAppRoutingMiddleware',
+    'router.middleware.SubdomainAppRoutingMiddleware',
     'services.events.middleware.ContextTokenProcessingMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -67,7 +67,7 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'edubox.urls'
 
-from loader.routers import Router
+from router import Router
 SUBDOMAIN_ROUTING = { None: "edubox.urls" }
 SUBDOMAIN_ROUTING.update(Router.get_subdomain_routing_mapping())
 
