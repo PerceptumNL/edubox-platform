@@ -73,7 +73,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'edubox.urls'
 
 from router import Router
-SUBDOMAIN_ROUTING = { None: "edubox.urls" }
+SUBDOMAIN_ROUTING = { None: "edubox.urls", "accounts": "allauth.urls" }
 SUBDOMAIN_ROUTING.update(Router.get_subdomain_routing_mapping())
 
 TEMPLATES = [
