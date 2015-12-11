@@ -360,7 +360,6 @@ class BaseRouter():
 
     def alter_response_cookies(self, response, remote_response):
         for cookie in self.remote_session.cookies:
-            # TODO: Update server-stored cookiejar for this user
             if cookie.expires is not None:
                 expires = datetime.fromtimestamp(cookie.expires)
             else:
@@ -527,6 +526,31 @@ class AppRouter(Router):
             return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
         else:
             return super().get_routed_domain(url)
+
+
+    def get_remote_request_cookiejar(self):
+        for name in self.app.persistent_cookies.split(","):
+            if name not in self.request.COOKIES:
+                try:
+                    value = PersistentCookie.objects.get(
+                        app=self.app,
+                        user=self.request.user,
+                        name=name).values("value")[0]
+                except PersistentCookie.DoesNotExist:
+                    continue
+                else:
+                    self.request.COOKIES[name] = value
+        return super().get_remote_request_cookiejar()
+
+    def alter_response_cookies(self, response, remote_response):
+        persistent_cookies = self.app.persistent_cookies.split(",")
+        for cookie in self.remote_session.cookies:
+            if cookie.name in persistent_cookies:
+                PersistentCookie.objects.update_or_create(
+                    app=self.app,
+                    user=self.request.user,
+                    name=name,
+                    defaults={"value":value})
 
 
 class DuolingoAppRouter(AppRouter):

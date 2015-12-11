@@ -2,6 +2,12 @@ from django.db import models
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
+class PersistentCookie(models.Model):
+    app = models.ForeignKey("App")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    name = models.CharField(max_length=100)
+    value = models.CharField(max_length=4096)
+
 class LocalOrRemoteResource(models.Model):
     """
     Class for local or remote resources.
@@ -33,6 +39,8 @@ class App(LocalOrRemoteResource):
     # The users of this application
     users = models.ManyToManyField(settings.AUTH_USER_MODEL,
             related_name="apps")
+    persistent_cookies = models.CharField(max_length=255, blank=True)
+    """Comma-separated list of cookie names that should persist."""
 
     @property
     def load_url(self):
