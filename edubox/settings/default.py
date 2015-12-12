@@ -38,11 +38,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.openid',
     'django_summernote',
     'rest_framework',
     'compressor',
@@ -53,7 +48,13 @@ INSTALLED_APPS = (
     'apps.main',
     'services',
     'services.events',
-    'services.usermanagement'
+    'services.usermanagement',
+    'accounts',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.openid',
 )
 
 MIDDLEWARE_CLASSES = (
