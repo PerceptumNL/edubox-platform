@@ -2,42 +2,12 @@
 
 {% load i18n %}
 {% load account socialaccount %}
+{% load staticfiles %}
 
 {% block content %}
-<style>
-	body {
-		background: #f1f1f1;
-		font-family: Roboto, Arial;
-	}
-
-	.brand-header {
-		margin-left: auto;
-		margin-right: auto;
-		height: 100px;
-		width: 320px;
-		padding-top: 70px;
-		font-family: Dosis, Arial;
-		font-size: 4em;
-	}
-
-	.mdl-card {
-		width: 320px;
-		height: 320px;
-		margin-left: auto;
-		margin-right: auto;
-	}
-
-	.mdl-card .mdl-button--raised {
-		margin: 5px;
-
-	}
-
-	.mdl-card__title {
-		background: #351697;
-		color: #fff;
-	}
-</style>
-<div class='brand-header'>{% trans "eduraam" %}</div>
+<div class='brand-header'>
+	<img src="{% static 'accounts/images/logo_eduraam_transparant.png' %}" />
+</div>
 <div class="mdl-card mdl-shadow--2dp">
   <div class="mdl-card__title">
 	<h2 class="mdl-card__title-text">{% trans "Log In" %}</h2>
