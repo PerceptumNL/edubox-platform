@@ -14,13 +14,12 @@ from services.usermanagement.models import Group
 from apps.news.models import TimestampedArticle
 
 class Verb(models.Model):
-    key = models.CharField(max_length=255)
     event_class = models.CharField(max_length=255)
     iri = models.URLField()
     description = models.TextField()
 
     def __str__(self):
-        return str(self.key) +": "+ str(self.iri)
+        return str(self.iri)
 
     def __repr__(self):
         return str(self)
@@ -30,7 +29,8 @@ class Event(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid4, editable=False)
 
     user = models.ForeignKey(User)
-    verb = models.ForeignKey(Verb)
+    verb = models.URLField(max_length=255)
+    obj = models.URLField(max_length=255)
 
     #The object and result properties are set in the verb-specific subclasses
     #as the type of object or result can differ based on the verb used.
@@ -54,23 +54,26 @@ class Event(models.Model):
     def __str__(self):
         return ('at '+ formats.date_format(timezone.localtime(self.timestamp),
                 'DATETIME_FORMAT') +' in '+ self.app.title +' : '+
-                self.user.username +' '+ self.verb.key +' ')
+                self.user.username +' '+ self.verb +' '+ self.obj +' ')
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
-        return {'date': formats.date_format(
+        return {'user': str(self.user.username),
+                'verb': str(self.verb),
+                'obj': str(self.obj),
+                'group': str(self.group),
+                'app': str(self.app),
+                'date': formats.date_format(
                     timezone.localtime(self.timestamp),
                     "DATETIME_FORMAT"),
-                'user': str(self.user.username),
-                'group': str(self.group),
-                'app': str(self.app)
                 }
 
     def create(app, group, user, verb, obj, result=None, timestamp=None):    
         try:
-            _verb = Verb.objects.get(key=verb)
+            _verb = Verb.objects.get(iri=verb)
             kwargs = {'user': User.objects.get(pk=user),
-                      'verb': _verb,
+                      'verb': verb,
+                      'obj': obj,
                       'group': Group.objects.get(pk=group),
                       'app': App.objects.get(pk=app)
                       }
@@ -83,7 +86,7 @@ class Event(models.Model):
         #Create a verb-specific subclass instance
         subclass = ContentType.objects.get(app_label='events',
                 model=_verb.event_class.lower())
-        instance = subclass.model_class().create(kwargs, obj, result)
+        instance = subclass.model_class().create(kwargs, result)
 
         #If creation of the instance with these kwargs failed
         if instance == None:
@@ -101,117 +104,72 @@ class GenericEvent(Event):
 
 
 class ReadEvent(Event):
-    article = models.ForeignKey(TimestampedArticle)
-
-    def __str__(self):
-        return super(ReadEvent, self).__str__() + self.article.title
-
-    def describe(self):
-        """Return a dictionary-like object with key properties."""
-        desc = super(ReadEvent, self).describe()
-        desc = {} if desc is None else desc
-        desc.update({
-            'verb': 'read',
-            'article': {
-                'url': reverse('article', args=(self.article.id,)),
-                'title': str(self.article)
-                }
-            })
-        return desc
-
-    def create(kwargs, obj, res):
+    
+    def create(kwargs, res=None):
         try:
-            article = TimestampedArticle.objects.get(pk=obj)
-        except (ObjectDoesNotExist, ValueError):
+            return ReadEvent.objects.create(**kwargs)
+        except ValueError:
             return None
-        return ReadEvent.objects.create(article=article, **kwargs)
-
 
 class RatedEvent(Event):
-    article = models.ForeignKey(TimestampedArticle)
     rating = models.IntegerField()
 
     def __str__(self):
-        return super(RatedEvent, self).__str__() + self.article.title
+        return super(RatedEvent, self).__str__() + self.rating
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
         desc = super(RatedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'verb': 'rated',
-            'rating': str(self.rating),
-            'article': {
-                'url': reverse('article', args=(self.article.id,)),
-                'title': str(self.article)
-                }
-            })
+            'rating': str(self.rating)})
         return desc
 
-    def create(kwargs, obj, res):
+    def create(kwargs, res):
         try:
-            article = TimestampedArticle.objects.get(pk=obj)
-            rating = int(res)
-        except (ObjectDoesNotExist, ValueError):
+            return RatedEvent.objects.create(rating=int(res), **kwargs)
+        except ValueError:
             return None
-        return RatedEvent.objects.create(article=article, rating=rating, **kwargs)
 
 
 class ScoredEvent(Event):
-    article = models.ForeignKey(TimestampedArticle)
     rating = models.IntegerField()
 
     def __str__(self):
-        return super(ScoredEvent, self).__str__() + self.article.title
+        return super(ScoredEvent, self).__str__() + self.rating
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
         desc = super(ScoredEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'verb': 'scored',
-            'rating': str(self.rating),
-            'article': {
-                'url': reverse('article', args=(self.article.id,)),
-                'title': str(self.article)
-                }
-            })
+            'rating': str(self.rating)})
         return desc
 
-    def create(kwargs, obj, res):
+    def create(kwargs, res):
         try:
-            article = TimestampedArticle.objects.get(pk=obj)
-            rating = int(res)
-        except (ObjectDoesNotExist, ValueError):
+            return ScoredEvent.objects.create(rating=int(res), **kwargs)
+        except ValueError:
             return None
-        return ScoredEvent.objects.create(article=article, rating=rating, **kwargs)
 
 
 class ClickedEvent(Event):
-    article = models.ForeignKey(TimestampedArticle)
-    word = models.CharField(max_length=255)
+    page = models.URLField(max_length=255)
 
     def __str__(self):
-        return super(ClickedEvent, self).__str__() + self.word
+        return super(ClickedEvent, self).__str__() + str(self.page)
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
         desc = super(ClickedEvent, self).describe()
         desc = {} if desc is None else desc
         desc.update({
-            'verb': 'clicked',
-            'word': str(self.word),
-            'article': {
-                'url': reverse('article', args=(self.article.id,)),
-                'title': str(self.article)
-                }
-            })
+            'page': str(self.word)})
         return desc
 
-    def create(kwargs, obj, res):
+    def create(kwargs, res):
         try:
-            article = TimestampedArticle.objects.get(pk=obj)
-        except (ObjectDoesNotExist, ValueError):
+            return RatedEvent.objects.create(page=str(res), **kwargs)
+        except ValueError:
             return None
-        return RatedEvent.objects.create(article=article, word=str(res), **kwargs)
 

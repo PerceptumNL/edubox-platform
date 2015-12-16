@@ -42,7 +42,7 @@ def app_view_list(request):
         parents = [parent.title for parent in parents[::-1]]
         for app in apps:
             context.append({'name': app.title, 'icon': app.icon, 'path': parents,
-                'token': create_token(user=request.user.pk, group=group.pk,
+                'app-token': create_token(user=request.user.pk, group=group.pk,
                 app=app.pk).decode('utf-8')})
 
         app_view[group.title] = context
@@ -206,8 +206,8 @@ def set_settings(request, setting_id, value_id, setting_type):
     return HttpResponse(status=201)
 
 def _parse_params(query, user, setting):
-    if 'token' in query:
-        context = unpack_token(query.get('token'))
+    if 'app-token' in query:
+        context = unpack_token(query.get('app-token'))
         if context == None or str(setting.app.pk) != context['app']:
             return None
 

@@ -14,8 +14,7 @@ class ContextTokenProcessingMiddleware():
         The token is retrieved from the 'app-token' url parameter.
         The unpacked user, group and app are stored in request.context as JSON
         """
-        #Only unpack for POST methods to the LRS
-        if request.method == 'POST' and request.resolver_match.url_name == 'api':
+        if 'app-token' in request.GET:
             #Retrieve the token
             token = request.GET.get('app-token')
             if token == None:
