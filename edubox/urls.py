@@ -17,6 +17,8 @@ from django.conf.urls import include, url
 from django.views.generic.base import RedirectView
 from django.contrib import admin
 
+from kb.apps.views import app_list
+
 urlpatterns = [
     url(r'^$', RedirectView.as_view(url="/admin"), name='redirect_to_admin'),
     url(r'^admin/', include(admin.site.urls)),
@@ -25,5 +27,6 @@ urlpatterns = [
     url(r'^_apps/news/', include('apps.news.urls')),
     url(r'^_apps/main/', include('apps.main.urls')),
     url(r'^events/', include('services.events.urls')),
+    url(r'^api/apps/', app_list),
     url(r'^api/', include('services.usermanagement.urls'), name='api')
 ]

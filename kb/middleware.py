@@ -7,7 +7,7 @@ import json
 
 class ContextTokenProcessingMiddleware():
     
-    def process_view(self, request, view_func, view_args, view_kwargs):
+    def process_request(self, request):
         """
         Middleware for unpacking the app-context token
         

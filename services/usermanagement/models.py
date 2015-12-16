@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 
-from router.models import App
+from kb import App
 from .helpers import *
 
 class UserProfile(models.Model):

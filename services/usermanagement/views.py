@@ -8,48 +8,14 @@ from django.contrib.auth.models import User
 
 from .forms import *
 from .models import *
-from services.events.helpers import *
 
 from collections import defaultdict
+
+import json
 
 models = {'user': User, 'group': Group,
         'option': GroupRestriction, 'option_user': UserRestriction,
         'value': GroupDefault, 'value_user': UserDefault}
-
-def app_view_list(request):
-    if not request.user.is_authenticated():
-        return HttpResponse(status=401)
-    groups = request.user.userprofile.groups.all()
-    group_contexts = {}
-    parent_counts = defaultdict(int)
-    for group in groups:
-        parent = group
-        parents = []
-        while parent != None:
-            parents.append(parent)
-            parent_counts[parent] += 1
-            parent = parent.parent
-
-        group_contexts[group] = (group.apps.all(), parents)
-
-    group_count = len(group_contexts)
-    for parent, count in parent_counts.items():
-        if count == group_count:
-            for context in group_contexts.values():
-                context[1].remove(parent)
-
-    app_view = {}
-    for group, (apps, parents) in group_contexts.items():
-        context = []
-        parents = [parent.title for parent in parents[::-1]]
-        for app in apps:
-            context.append({'name': app.title, 'icon': app.icon, 'path': parents,
-                'app-token': create_token(user=request.user.pk, group=group.pk,
-                app=app.pk).decode('utf-8')})
-
-        app_view[group.title] = context
-
-    return JsonResponse({'groups':app_view})
 
 @csrf_exempt
 def get_settings(request, setting_id):
@@ -57,12 +23,13 @@ def get_settings(request, setting_id):
         setting = Setting.objects.get(code=setting_id)
     except (ObjectDoesNotExist, ValueError):
         return HttpResponse(status=400)
-
+    
+    print(setting)
     #Parse and validate the request parameters
-    context = _parse_params(request.GET, request.user, setting)
+    context = _parse_params(request, setting)
     if context == None:
         return HttpResponse(status=400)
-
+    print(context)
     context['setting'] = setting
 
     values = {'value': _compute_setting_value(**context)}
@@ -178,7 +145,7 @@ def set_settings(request, setting_id, value_id, setting_type):
         return HttpResponse(status=400)
 
     #Parse and validate the request parameters
-    context = _parse_params(request.GET, request.user, setting)
+    context = _parse_params(request, setting)
     if context == None:
         return HttpResponse(status=400)
 
@@ -207,18 +174,18 @@ def set_settings(request, setting_id, value_id, setting_type):
 
     return HttpResponse(status=201)
 
-def _parse_params(query, user, setting):
-    if 'app-token' in query:
-        context = unpack_token(query.get('app-token'))
+def _parse_params(request, setting):
+    if 'app-token' in request.GET:
+        context = json.loads(request.context)
         if context == None or str(setting.app.pk) != context['app']:
             return None
 
         del context['app']
-    elif 'group' in query:
-        context = {'group': query.get('group')}
+    elif 'group' in request.GET:
+        context = {'group': request.GET.get('group')}
 
-        if 'user' in query:
-            context['user'] = query.get('user')
+        if 'user' in request.GET:
+            context['user'] = request.GET.get('user')
     else:
         return None
 
@@ -228,7 +195,7 @@ def _parse_params(query, user, setting):
         except (ObjectDoesNotExist, ValueError):
             return None
 
-    if 'group' in query and not _user_can_edit_group(user.userprofile, context['group']):
+    if 'group' in request.GET and not _user_can_edit_group(request.user.userprofile, context['group']):
         return None
 
     if 'user' in context:
