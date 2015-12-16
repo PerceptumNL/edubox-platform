@@ -42,6 +42,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'compressor',
     'router',
+    'corsheaders',
     'apps',
     'apps.helloworld',
     'apps.news',
@@ -60,6 +61,7 @@ INSTALLED_APPS = (
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'router.middleware.SubdomainAppRoutingMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'services.events.middleware.ContextTokenProcessingMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
