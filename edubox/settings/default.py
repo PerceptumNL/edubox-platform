@@ -104,8 +104,6 @@ AUTHENTICATION_BACKENDS = (
 ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
 LOGIN_REDIRECT_URL = '/'
 
-SESSION_COOKIE_DOMAIN = ".eduraam.nl"
-
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',

@@ -10,6 +10,4 @@ DATABASES = {
 STATIC_URL = '/static/'
 STATIC_ROOT = 'staticfiles'
 
-SESSION_COOKIE_DOMAIN = None
-
 SITE_ID = 1
