@@ -17,6 +17,8 @@ models = {'user': User, 'group': Group,
         'value': GroupDefault, 'value_user': UserDefault}
 
 def app_view_list(request):
+    if not request.user.is_authenticated():
+        return HttpResponse(status=401)
     groups = request.user.userprofile.groups.all()
     group_contexts = {}
     parent_counts = defaultdict(int)
@@ -47,7 +49,7 @@ def app_view_list(request):
 
         app_view[group.title] = context
 
-    return JsonResponse(app_view)
+    return JsonResponse({'groups':app_view})
 
 @csrf_exempt
 def get_settings(request, setting_id):
