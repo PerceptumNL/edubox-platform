@@ -10,6 +10,7 @@ DATABASES = {
 STATIC_URL = '/static/'
 STATIC_ROOT = 'staticfiles'
 
-SESSION_COOKIE_DOMAIN = None
-
 SITE_ID = 1
+
+CORS_ORIGIN_WHITELIST = ('localhost:8000','localhost:9000')
+CORS_ALLOW_CREDENTIALS = True
