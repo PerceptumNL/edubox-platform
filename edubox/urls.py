@@ -27,7 +27,6 @@ urlpatterns = [
     url(r'^_apps/news/', include('apps.news.urls')),
     url(r'^_apps/main/', include('apps.main.urls')),
     url(r'^api/', include('kb.urls')),
-    url(r'^events/', include('services.events.urls')),
     url(r'^api_old/', include('services.usermanagement.urls')),
 ]
 

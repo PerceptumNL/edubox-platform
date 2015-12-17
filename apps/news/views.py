@@ -14,7 +14,7 @@ import json
 import requests
 
 from .models import *
-from services.events.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
+from kb.events.models import Event, ReadEvent, RatedEvent, ScoredEvent, ClickedEvent
 
 def update_feeds(request):
     for feed in ContentFeed.objects.all():
