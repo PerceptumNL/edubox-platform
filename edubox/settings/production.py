@@ -34,7 +34,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_PASSWORD = os.environ['SENDGRID_PASSWORD']
 SERVER_EMAIL = 'edbx@perceptum.nl'
 
-CORS_ORIGIN_WHITELIST = ('frontend.eduraam.nl',)
+CORS_ORIGIN_WHITELIST = ('platform.eduraam.nl',)
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_DOMAIN = ".eduraam.nl"
