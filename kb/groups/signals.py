@@ -2,6 +2,9 @@ from django.db.models.signals import post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 
 from .models import *
+from kb.permissions.models import Permission
+from kb.settings.models import UserDefault, GroupDefault
+
 
 #Flat permissions computed based on changes in groups a user belongs to or
 #roles in that group. 

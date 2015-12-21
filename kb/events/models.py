@@ -9,8 +9,8 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from uuid import uuid4
 
-from kb import App
-from services.usermanagement.models import Group
+from kb.models import App
+from kb.groups.models import Group
 
 class Verb(models.Model):
     event_class = models.CharField(max_length=255)
