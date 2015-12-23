@@ -8,21 +8,21 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('apps', '0001_initial'),
-        ('kb', '__first__'),
+        ('kb', '0001_initial'),
     ]
 
     operations = [
         migrations.CreateModel(
             name='Permission',
             fields=[
-                ('code', models.CharField(primary_key=True, max_length=31, serialize=False)),
+                ('code', models.CharField(serialize=False, primary_key=True, max_length=31)),
                 ('name', models.CharField(max_length=255)),
             ],
         ),
         migrations.CreateModel(
             name='UserPermission',
             fields=[
-                ('id', models.AutoField(primary_key=True, auto_created=True, serialize=False, verbose_name='ID')),
+                ('id', models.AutoField(serialize=False, verbose_name='ID', auto_created=True, primary_key=True)),
                 ('app', models.ForeignKey(to='apps.App')),
                 ('permission', models.ForeignKey(to='permissions.Permission')),
                 ('user', models.ForeignKey(to='kb.UserProfile')),
