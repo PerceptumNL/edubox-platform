@@ -1,6 +1,6 @@
 [
     {
-        "model": "usermanagement.Institute",
+        "model": "groups.Institute",
         "pk": 1,
         "fields": {
             "title": "Perceptum",
@@ -8,7 +8,7 @@
         }
     },
     {
-        "model": "usermanagement.Group",
+        "model": "groups.Group",
         "pk": 1,
         "fields": {
             "title": "Perceptum",

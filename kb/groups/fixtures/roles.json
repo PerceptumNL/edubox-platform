@@ -1,6 +1,6 @@
 [
     {
-        "model": "usermanagement.Role",
+        "model": "groups.Role",
         "pk": 1,
         "fields": {
             "role": "Student",
@@ -8,7 +8,7 @@
         }
     },
     {
-        "model": "usermanagement.Role",
+        "model": "groups.Role",
         "pk": 2,
         "fields": {
             "role": "Teacher",
@@ -17,7 +17,7 @@
         }
     },
     {
-        "model": "usermanagement.Role",
+        "model": "groups.Role",
         "pk": 3,
         "fields": {
             "role": "Mentor",
@@ -26,7 +26,7 @@
         }
     },
     {
-        "model": "usermanagement.Role",
+        "model": "groups.Role",
         "pk": 4,
         "fields": {
             "role": "Executive",
