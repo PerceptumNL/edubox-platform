@@ -81,7 +81,7 @@ from router import Router
 SUBDOMAIN_ROUTING = {
     None: "eduraam.urls",
     "accounts": "allauth.urls",
-    "api": "services.usermanagement.urls"
+    "api": "kb.urls"
 }
 SUBDOMAIN_ROUTING.update(Router.get_subdomain_routing_mapping())
 
