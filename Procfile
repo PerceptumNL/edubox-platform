@@ -1,1 +1,1 @@
-web: gunicorn edubox.wsgi --log-file -
+web: gunicorn eduraam.wsgi --log-file -
