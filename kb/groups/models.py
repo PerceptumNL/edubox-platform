@@ -27,6 +27,9 @@ class Group(models.Model):
             through_fields=('group', 'settingVal'),
             related_name='group_defaults')
 
+    class Meta:
+        app_label = "groups"
+
     def __str__(self):
         return self.title
 
@@ -66,6 +69,9 @@ class Institute(models.Model):
     #The apps an institute (client) has access to, OS-level setting
     apps = models.ManyToManyField(App)
 
+    class Meta:
+        app_label = "groups"
+
     def __str__(self):
         return self.title
 
@@ -75,6 +81,9 @@ class Membership(models.Model):
 
     role = models.ForeignKey('Role', related_name='members')
 
+    class Meta:
+        app_label = "groups"
+
     def __str__(self):
         return str(self.user) +' as '+ str(self.role) +' in '+ str(self.group)
 
@@ -82,6 +91,9 @@ class Membership(models.Model):
 class Role(models.Model):
     role = models.CharField(max_length=31)
     permissions = models.ManyToManyField(Permission)
+
+    class Meta:
+        app_label = "groups"
 
     def __str__(self):
         return self.role

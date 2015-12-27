@@ -21,6 +21,9 @@ class App(models.Model):
     users = models.ManyToManyField(settings.AUTH_USER_MODEL,
             related_name="apps")
 
+    class Meta:
+        app_label = "apps"
+
     @property
     def scheme(self):
         return 'https' if self.secure else 'http'

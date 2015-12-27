@@ -7,7 +7,7 @@ from kb.permissions.models import *
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, unique=True)
-   
+
     #Member specifies the role the user has in the group
     groups = models.ManyToManyField(Group, through=Membership, 
             through_fields=('user', 'group'), related_name='users')
@@ -29,6 +29,9 @@ class UserProfile(models.Model):
     setting_defaults = models.ManyToManyField(SettingValue,
             through=UserDefault, through_fields=('user', 'settingVal'),
             related_name='user_defaults')
+
+    class Meta:
+        app_label = "kb"
 
     def __str__(self):
         return str(self.user)

@@ -20,6 +20,9 @@ class Setting(models.Model):
 
     app = models.ForeignKey(App, blank=True, null=True)
 
+    class Meta:
+        app_label = "settings"
+
     @property
     def single(self):
         return self.default != None
@@ -35,6 +38,9 @@ class SettingValue(models.Model):
     value = models.CharField(max_length=255)    
     setting = models.ForeignKey(Setting, related_name='values')
 
+    class Meta:
+        app_label = "settings"
+
     def __str__(self):
         return self.value
 
@@ -47,11 +53,17 @@ class GroupRestriction(models.Model):
     settingVal = models.ForeignKey(SettingValue)
     setting = models.ForeignKey(Setting)
 
+    class Meta:
+        app_label = "settings"
+
 
 class GroupDefault(models.Model):
     group = models.ForeignKey('groups.Group')
     settingVal = models.ForeignKey(SettingValue)
     setting = models.ForeignKey(Setting, related_name='group_defaults')
+
+    class Meta:
+        app_label = "settings"
 
 
 class UserRestriction(models.Model):
@@ -61,6 +73,9 @@ class UserRestriction(models.Model):
     #Group context is required to resolve the setting
     group = models.ForeignKey('groups.Group')
 
+    class Meta:
+        app_label = "settings"
+
 
 class UserDefault(models.Model):
     user = models.ForeignKey('kb.UserProfile')
@@ -68,6 +83,9 @@ class UserDefault(models.Model):
     setting = models.ForeignKey(Setting, related_name='user_defaults')
     #Group context is required to resolve the setting
     group = models.ForeignKey('groups.Group', related_name='user_defaults')
+
+    class Meta:
+        app_label = "settings"
 
 
 class CompactSettings(models.Model):
@@ -80,5 +98,6 @@ class CompactSettings(models.Model):
     app = models.ForeignKey(App)
 
     class Meta:
+        app_label = "settings"
         verbose_name_plural = 'Compact settings'
 
