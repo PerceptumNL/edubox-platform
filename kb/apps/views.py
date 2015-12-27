@@ -6,12 +6,10 @@ from kb.helpers import create_token
 from collections import defaultdict
 
 def app_list(request):
-    #TODO: Ugly one-liner only for testing purposes, commented code should be used
-    groups = User.objects.get(pk=__import__('json').loads(request.context)['user']).userprofile.groups.all()
-    """if not request.user.is_authenticated():
+    if not request.user.is_authenticated():
         return HttpResponse(status=401)
-    groups = request.user.userprofile.groups.all()"""
-    
+    groups = request.user.userprofile.groups.all()
+
     group_contexts = {}
     parent_counts = defaultdict(int)
     for group in groups:
