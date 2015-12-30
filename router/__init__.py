@@ -494,7 +494,7 @@ class AppRouter(Router):
     @classmethod
     @xframe_options_exempt
     def route_path_by_subdomain(cls, request, domain):
-        from .models import App
+        from kb.apps.models import App
         try:
             app = App.objects.get(root=domain)
         except App.DoesNotExist:
