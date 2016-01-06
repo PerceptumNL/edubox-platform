@@ -33,9 +33,14 @@ def app_list(request):
         context = []
         parents = [parent.title for parent in parents[::-1]]
         for app in apps:
-            context.append({'name': app.title, 'icon': app.icon, 'path': parents,
-                'token': create_token(user=request.user.pk, group=group.pk,
-                app=app.pk).decode('utf-8')})
+            context.append({'name': app.title,
+                            'icon': app.icon,
+                            'path': parents,
+                            'location': app.root,
+                            'token': create_token(
+                                user=request.user.pk,
+                                group=group.pk,
+                                app=app.pk).decode('utf-8')})
 
         app_view[group.title] = context
 

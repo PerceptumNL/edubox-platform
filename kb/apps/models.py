@@ -27,7 +27,7 @@ class App(models.Model):
     @property
     def scheme(self):
         return 'https' if self.secure else 'http'
-    
+
     @property
     def load_url(self):
         return reverse('app_routing', args=(self.pk, '/'))
