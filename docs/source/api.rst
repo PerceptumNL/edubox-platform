@@ -4,11 +4,11 @@ App List API
 .. http:get:: /api/apps/
 
     A listing of all possible contexts for the currently logged-in user
-    
+
     **Example request**:
 
     .. sourcecode:: http
-        
+
         GET /api/apps/ HTTP/1.1
         Host: platform.eduraam.nl
         Authorization:
@@ -28,14 +28,16 @@ App List API
                             {
                                 "name": "LeestMeer",
                                 "icon": "leestmeer.png",
-                                "path": ["HAVO-5"]
-                                "token": "0123456789ABCDEF" 
+                                "path": ["HAVO-5"],
+                                "location": "http://platform.leestmeer.nl",
+                                "token": "0123456789ABCDEF"
                             },
                             {
                                 "name": "Duolingo",
                                 "icon": "duolingo-en.png",
+                                "location": "https://www.duolingo.com",
                                 "path": ["HAVO-5"]
-                                "token": "ABCDEF0123456789" 
+                                "token": "ABCDEF0123456789"
                             }
                         ],
                     "Frans-4":
@@ -43,8 +45,9 @@ App List API
                             {
                                 "name": "LeestMeer",
                                 "icon": "leestmeer.png",
+                                "location": "http://platform.leestmeer.nl",
                                 "path": ["HAVO-4"]
-                                "token": "FEDCBA9876543210" 
+                                "token": "FEDCBA9876543210"
                             }
                         ]
                 }
