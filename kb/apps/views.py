@@ -44,7 +44,8 @@ def app_list(request):
             context.append({'name': app.title,
                             'icon': app.icon,
                             'path': parents,
-                            'location': AppRouter(app).get_routed_url(app.root),
+                            'location': AppRouter.get_routed_app_root(
+                                request, app),
                             'token': create_token(
                                 user=request.user.pk,
                                 group=group.pk,

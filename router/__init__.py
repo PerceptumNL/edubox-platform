@@ -488,8 +488,15 @@ class AppRouter(Router):
 
     def __init__(self, app, *args, **kwargs):
         self.app = app
-        kwargs['remote_domain'] = self.app.root
+        kwargs['remote_domain'] = urlsplit(self.app.root).netloc
         super().__init__(*args, **kwargs)
+
+    @classmethod
+    def get_routed_app_root(cls, request, app):
+        router = cls(app)
+        router.request = request
+        return router.get_routed_url(
+            "%s://%s" % (app.scheme, app.root), path_only=False)
 
     @classmethod
     @xframe_options_exempt
