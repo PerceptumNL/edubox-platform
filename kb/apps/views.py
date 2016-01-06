@@ -2,6 +2,7 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib.auth.models import User
 
 from kb.helpers import create_token
+from router import AppRouter
 
 from collections import defaultdict
 
@@ -43,7 +44,7 @@ def app_list(request):
             context.append({'name': app.title,
                             'icon': app.icon,
                             'path': parents,
-                            'location': app.root,
+                            'location': AppRouter(app).get_routed_url(app.root),
                             'token': create_token(
                                 user=request.user.pk,
                                 group=group.pk,
