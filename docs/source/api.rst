@@ -1,7 +1,65 @@
+App List API
+============
+
+.. http:get:: /api/apps/
+
+    A listing of all possible contexts for the currently logged-in user
+    
+    **Example request**:
+
+    .. sourcecode:: http
+        
+        GET /api/apps/ HTTP/1.1
+        Host: platform.eduraam.nl
+        Authorization:
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: text/javascript
+
+        {
+            "groups":
+                {
+                    "Engels-5":
+                        [
+                            {
+                                "name": "LeestMeer",
+                                "icon": "leestmeer.png",
+                                "path": ["HAVO-5"]
+                                "token": "0123456789ABCDEF" 
+                            },
+                            {
+                                "name": "Duolingo",
+                                "icon": "duolingo-en.png",
+                                "path": ["HAVO-5"]
+                                "token": "ABCDEF0123456789" 
+                            }
+                        ],
+                    "Frans-4":
+                        [
+                            {
+                                "name": "LeestMeer",
+                                "icon": "leestmeer.png",
+                                "path": ["HAVO-4"]
+                                "token": "FEDCBA9876543210" 
+                            }
+                        ]
+                }
+        }
+    
+    :reqheader Authorization: required OAuth token to authenticate
+    
+    :statuscode 200: no error
+    :statuscode 401: no authenticated user
+
+
 Event Store API
 ===============
 
-.. module:: services.events.models
+.. module:: kb.events.models
 
 .. class:: ReadEvent(user, app, group, timestamp, article)
 
@@ -11,7 +69,7 @@ Event Store API
 
 .. class:: ClickedEvent(user, app, group, timestamp, article, word)
 
-.. module:: services.events.views
+.. module:: kb.events.views
 
 .. automethod:: API.get
 
