@@ -16,7 +16,7 @@ class API(View):
     def get(self, request):
         if 'verb' in request.GET:
             try:
-                verb = Verb.objects.get(key=request.GET.get('verb'))
+                verb = Verb.objects.get(iri=request.GET.get('verb'))
             except Verb.DoesNotExist:
                 return HttpResponse(status=400)
 
