@@ -221,3 +221,131 @@ Verb Object
 Verb Result
     `word`;the word the user clicked in the article
 
+
+
+Settings API
+============
+
+.. http:get:: /api/settings/(string:setting_code)
+
+    Returns the value(s) for the setting (defined by the `setting_code`) for the
+    current context. The context can be provided by a query parameter 
+    `app-token`, or by query parameters `user` and `group`; in both cases the
+    setting is resolved for the user-group combination. If only the parameter
+    `group` is passed, then the setting is value(s) for the group are returned.
+    
+    If a setting has a default value, then the it will always resolve to a 
+    single value. If not, then it will resolve to a list of values (e.g. a list
+    of rss-feeds to include in a news feed).
+
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+        GET /api/settings/language HTTP/1.1
+        Host: platform.eduraam.nl
+        Authorization:
+        app-token: 0123456789ABCDEF
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+        HTTP/1.1 200 OK
+        Content-Type: text/javascript
+
+        {
+            "value": "nl"
+        }
+    
+    :query app-token: The app token describing the user-group context for which
+        the setting should be returned. Optional, but not including means at 
+        least the `group` parameter is required in order to resolve the setting.
+
+    :query group: The group for which this setting should be returned. Optional, 
+        but not including it means the `app-token` parameter is required in 
+        order to resolve the setting.
+    :query user: The user for which this setting should be returned. Optional; 
+        however when included does require the `group` parameter in order to be
+        correctly resolved.
+    
+    :query meta: Including this parameter adds `desc` and `single` fields to the
+        returned object.
+    :query full: Including this parameter adds the `options` field to to the 
+        returned object. 
+    
+    :reqheader Authorization: required OAuth token to authenticate
+    
+    :statuscode 200: No error
+    :statuscode 400: Invalid group-user context or setting does not exist
+
+    :>json value: The value(s) of the setting; a list if the setting resolves 
+        to multiple values (only possbile if the setting has no default)
+    :>json desc: Desciption of the setting. Requires the `meta` parameter.
+    :>json single: A boolean indicating if the setting resolves to a single 
+        value (true) or a list of values (false). Requires the `meta` parameter.
+    :>json options: In the case of a single value, this is a list of the 
+        possible defaults that could be chosen. In the case of a list it
+        contains the removed values that can be re-added to the list. Requires 
+        the `full` parameter.
+
+
+.. http:put:: /api/settings/(string:setting_code)/(string:setting_type)/(string:value)
+
+    If the `setting_type` is "option", the `value` is added to the list of 
+    setting values for that setting (defined by `setting_code`) in the provided
+    context.
+
+    If the `setting_type` is "value", the `value` becomes the default value for
+    that setting in the provided context.
+
+    Context can be provided in the same manner as for the `GET`, either using
+    the `app-token` parameter or the `group` and `user` parameters.
+
+
+    :query app-token: The app token describing the user-group context for which
+        the setting should be returned. Optional, but not including means at 
+        least the `group` parameter is required in order to resolve the setting.
+
+    :query group: The group for which this setting should be returned. Optional, 
+        but not including it means the `app-token` parameter is required in 
+        order to resolve the setting.
+    :query user: The user for which this setting should be returned. Optional; 
+        however when included does require the `group` parameter in order to be
+        correctly resolved.
+    
+    :reqheader Authorization: required OAuth token to authenticate
+    
+    :statuscode 200: No error
+    :statuscode 400: Invalid group-user context or setting does not exist
+
+.. http:delete:: /api/settings/(string:setting_code)/(string:setting_type)/(string:value)
+
+    If the `setting_type` is "option", the `value` is removed from the list of 
+    setting values for that setting (defined by `setting_code`) in the provided
+    context.
+
+    If the `setting_type` is "value", the `value` is removed as default for
+    that setting in the provided context.
+
+    Context can be provided in the same manner as for the `GET`, either using
+    the `app-token` parameter or the `group` and `user` parameters.
+
+    
+    :query app-token: The app token describing the user-group context for which
+        the setting should be returned. Optional, but not including means at 
+        least the `group` parameter is required in order to resolve the setting.
+
+    :query group: The group for which this setting should be returned. Optional, 
+        but not including it means the `app-token` parameter is required in 
+        order to resolve the setting.
+    :query user: The user for which this setting should be returned. Optional; 
+        however when included does require the `group` parameter in order to be
+        correctly resolved.
+    
+    :reqheader Authorization: required OAuth token to authenticate
+    
+    :statuscode 200: No error
+    :statuscode 400: Invalid group-user context or setting does not exist
+
