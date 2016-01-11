@@ -34,14 +34,15 @@ def app_list(request):
             for context in group_contexts.values():
                 context[1].remove(parent)
     
-    #For each possible app-group context store the name, icon, trimmed-path
-    # and the computed context token, stored seperately for each group
+    #For each possible app-group context store the name, description, icon, 
+    # trimmed-path and the computed context token, stored seperately for each group
     app_view = {}
     for group, (apps, parents) in group_contexts.items():
         context = []
         parents = [parent.title for parent in parents[::-1]]
         for app in apps:
             context.append({'name': app.title,
+                            'desc': app.description,
                             'icon': app.icon,
                             'path': parents,
                             'location': AppRouter.get_routed_app_root(

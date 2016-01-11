@@ -15,6 +15,8 @@ class App(models.Model):
     
     # Title of the application
     title = models.CharField(max_length=255)
+    # Description of the applicaiont
+    description = models.TextField()
     # Link to the application icon
     icon = models.URLField(null=True, blank=True)
     # The users of this application
