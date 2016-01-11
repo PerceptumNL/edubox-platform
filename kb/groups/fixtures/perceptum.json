@@ -4,6 +4,7 @@
         "pk": 1,
         "fields": {
             "title": "Perceptum",
+            "email_domain": "perceptum.nl",
             "apps": [1, 2, 3, 4]
         }
     },
