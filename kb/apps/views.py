@@ -33,7 +33,7 @@ def app_list(request):
         if count == group_count:
             for context in group_contexts.values():
                 context[1].remove(parent)
-    
+
     #For each possible app-group context store the name, description, icon, 
     # trimmed-path and the computed context token, stored seperately for each group
     app_view = {}
@@ -45,14 +45,8 @@ def app_list(request):
                             'desc': app.description,
                             'icon': app.icon,
                             'path': parents,
-                            'location': AppRouter.get_routed_app_root(
-                                request, app),
-                            'token': create_token(
-                                user=request.user.pk,
-                                group=group.pk,
-                                app=app.pk).decode('utf-8')})
-
-        app_view[group.title] = context
+                            'id': app.pk})
+            app_view[group.title] = {'id': group.pk, 'apps': context }
 
     return JsonResponse({'groups':app_view})
 
