@@ -36,17 +36,18 @@ def app_list(request):
 
     #For each possible app-group context store the name, description, icon, 
     # trimmed-path and the computed context token, stored seperately for each group
-    app_view = {}
+    app_groups = []
     for group, (apps, parents) in group_contexts.items():
-        context = []
+        app_views = []
         parents = [parent.title for parent in parents[::-1]]
         for app in apps:
-            context.append({'name': app.title,
+            app_views.append({'name': app.title,
                             'desc': app.description,
                             'icon': app.icon,
                             'path': parents,
                             'id': app.pk})
-            app_view[group.title] = {'id': group.pk, 'apps': context }
+        app_groups.append({'id': group.pk, 'title': group.title,
+            'apps': app_views})
 
-    return JsonResponse({'groups':app_view})
+    return JsonResponse({'groups':app_groups})
 
