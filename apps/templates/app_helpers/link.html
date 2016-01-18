@@ -1,8 +1,0 @@
-<a id="{{ link_id}}" {{ attr }}>{{ text }}</a>
-<script>
-    $(function(){
-        $("#{{ link_id }}").click(function(e){
-            $.get("{{ url }}", Environment.render);
-        });
-    });
-</script>
