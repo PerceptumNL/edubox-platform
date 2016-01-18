@@ -103,9 +103,9 @@ Event Store API
     :query user: Username of the user to filter on
     :query group: Name of the group to filter on
     :query app: Name of the app to filter on
-    :query before: Datetime before which to filter, 
-    :query after: Datetime after which to filter, formated as ISO 8601
-    :query detail: One of 'simple', 'full'. Default is full
+    :query before: Datetime before which to filter, formated as ISO 8601.
+    :query after: Datetime after which to filter, formated as ISO 8601.
+    :query detail: Either "simple" or "full". Default is full.
 
     :reqheader Authorization: required OAuth token to authenticate
     
