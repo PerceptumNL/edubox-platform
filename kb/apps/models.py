@@ -19,9 +19,6 @@ class App(models.Model):
     description = models.TextField()
     # Link to the application icon
     icon = models.URLField(null=True, blank=True)
-    # The users of this application
-    users = models.ManyToManyField(settings.AUTH_USER_MODEL,
-            related_name="apps")
 
     class Meta:
         app_label = "apps"
