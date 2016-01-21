@@ -23,9 +23,6 @@ urlpatterns = [
     url(r'^$', RedirectView.as_view(url="/admin"), name='redirect_to_admin'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^accounts/', include('allauth.urls')),
-    url(r'^_apps/helloworld/', include('apps.helloworld.urls')),
-    url(r'^_apps/news/', include('apps.news.urls')),
-    url(r'^_apps/main/', include('apps.main.urls')),
     url(r'^api/', include('kb.urls')),
     url(r'^launch/', include('launch.urls')),
 ]
