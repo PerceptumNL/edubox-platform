@@ -52,16 +52,17 @@ remote request / remote response
     request is routed to.
 """
 import re
+import requests
+import subdomains
 from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
+from bs4 import BeautifulSoup
 
 from django.http import HttpResponse, Http404
 from django.conf import settings
 from django.views.decorators.clickjacking import xframe_options_exempt
 
-import requests
-import subdomains
-from bs4 import BeautifulSoup
+from .models import ServerCookie
 
 class BaseRouter():
     """
