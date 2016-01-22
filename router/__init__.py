@@ -268,7 +268,7 @@ class BaseRouter():
 
     def get_remote_request_cookiejar(self):
         self.debug("Retrieving server cookies with params (%s,%s)" % (
-            self.remote_domain, self.request.user.pk)
+            self.remote_domain, self.request.user.pk))
         server_cookies = ServerCookie.objects.filter(
             domain=self.remote_domain,
             user__pk=self.request.user.pk)
