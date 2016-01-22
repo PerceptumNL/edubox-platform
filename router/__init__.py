@@ -496,7 +496,7 @@ class AppRouter(Router):
 
     def __init__(self, app, *args, **kwargs):
         self.app = app
-        kwargs['remote_domain'] = urlsplit(self.app.root).netloc
+        kwargs['remote_domain'] = urlsplit('http://'+self.app.root).netloc
         super().__init__(*args, **kwargs)
 
     @classmethod
