@@ -60,7 +60,6 @@ INSTALLED_APPS = (
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'router.middleware.SubdomainAppRoutingMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'kb.middleware.ContextTokenProcessingMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -71,6 +70,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'router.middleware.SubdomainAppRoutingMiddleware',
 )
 
 ROOT_URLCONF = 'eduraam.urls'
