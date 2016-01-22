@@ -267,9 +267,11 @@ class BaseRouter():
         return path
 
     def get_remote_request_cookiejar(self):
+        self.debug("Retrieving server cookies with params (%s,%s)" % (
+            self.remote_domain, self.request.user.pk)
         server_cookies = ServerCookie.objects.filter(
             domain=self.remote_domain,
-            user=self.request.user)
+            user__pk=self.request.user.pk)
         for server_cookie in server_cookies:
             self.request.COOKIES[server_cookie.name] = server_cookie.value
         cookiejar = requests.utils.cookiejar_from_dict(self.request.COOKIES)
