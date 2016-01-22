@@ -1,8 +1,8 @@
 from django.db import models
 from django.conf import settings
+from kb.apps.models import App
 
-class ServerCookie(models.Model):
-    name = models.CharField(max_length=255)
-    value = models.CharField(max_length=2049)
+class ServerCookiejar(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+')
-    domain = models.CharField(max_length=255)
+    # TODO: Convert contents into a JSONField?
+    contents = models.TextField(default='{}', blank=True)

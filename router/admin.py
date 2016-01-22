@@ -1,4 +1,4 @@
 from django.contrib import admin
-from .models import ServerCookie
+from .models import ServerCookiejar
 
-admin.site.register(ServerCookie)
+admin.site.register(ServerCookiejar)

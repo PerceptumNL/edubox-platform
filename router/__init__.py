@@ -52,17 +52,18 @@ remote request / remote response
     request is routed to.
 """
 import re
+import json
 import requests
 import subdomains
+from bs4 import BeautifulSoup
 from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
-from bs4 import BeautifulSoup
 
-from django.http import HttpResponse, Http404
 from django.conf import settings
+from django.http import HttpResponse, Http404
 from django.views.decorators.clickjacking import xframe_options_exempt
 
-from .models import ServerCookie
+from .models import ServerCookiejar
 
 class BaseRouter():
     """
@@ -267,14 +268,9 @@ class BaseRouter():
         return path
 
     def get_remote_request_cookiejar(self):
-        self.debug("Retrieving server cookies with params (%s,%s)" % (
-            self.remote_domain, self.request.user.pk))
-        server_cookies = ServerCookie.objects.filter(
-            domain=self.remote_domain,
-            user__pk=self.request.user.pk)
-        for server_cookie in server_cookies:
-            self.request.COOKIES[server_cookie.name] = server_cookie.value
-        cookiejar = requests.utils.cookiejar_from_dict(self.request.COOKIES)
+        from requests.utils import cookiejar_from_dict
+        server_cj, _ = ServerCookiejar.objects.get_or_create(user=request.user)
+        cookiejar = cookiejar_from_dict(json.loads(server_cj.contents))
         self.debug("Remote request cookiejar: %s" % (cookiejar,))
         return cookiejar
 
@@ -367,17 +363,17 @@ class BaseRouter():
         return headers
 
     def alter_response_cookies(self, response, remote_response):
-        for cookie in self.remote_session.cookies:
-            # TODO: Update server-stored cookiejar for this user
-            if cookie.expires is not None:
-                expires = datetime.fromtimestamp(cookie.expires)
-            else:
-                expires = None
-            response.set_cookie(
-                cookie.name,
-                cookie.value,
-                expires=expires,
-                path=self.get_routed_url(cookie.path, path_only=True))
+        """
+        Alter the response send back to the user by setting cookies, if any.
+        """
+        from requests.utils import dict_from_cookiejar
+        # Cookies beloning to this user are kept at the server.
+        # Since this will also be the last moment we'll need it in this request,
+        # let's store the changes in the server cookiejar.
+        server_cj, _ = ServerCookiejar.objects.get_or_create(user=request.user)
+        server_cj.contents = json.dumps(
+            dict_from_cookiejar(self.remote_session.cookies))
+        server_cj.save()
 
 
 class GoogleMixin():
