@@ -75,14 +75,12 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'eduraam.urls'
 
-from router import Router
 SUBDOMAIN_ROUTING = {
     None: "eduraam.urls",
     "accounts": "allauth.urls",
     "api": "kb.urls",
     "launch": "launch.urls"
 }
-SUBDOMAIN_ROUTING.update(Router.get_subdomain_routing_mapping())
 
 TEMPLATES = [
     {
