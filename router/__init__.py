@@ -370,6 +370,8 @@ class BaseRouter():
         Alter the response send back to the user by setting cookies, if any.
         """
         from requests.utils import dict_from_cookiejar
+        self.debug("Cookies retrieved from remote: %s" % (
+                self.remote_session.cookies))
         # Cookies beloning to this user are kept at the server.
         # Since this will also be the last moment we'll need it in this request,
         # let's store the changes in the server cookiejar.
