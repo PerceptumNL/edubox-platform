@@ -269,7 +269,8 @@ class BaseRouter():
 
     def get_remote_request_cookiejar(self):
         from requests.utils import cookiejar_from_dict
-        server_cj, _ = ServerCookiejar.objects.get_or_create(user=request.user)
+        server_cj, _ = ServerCookiejar.objects.get_or_create(
+            user=self.request.user)
         cookiejar = cookiejar_from_dict(json.loads(server_cj.contents))
         self.debug("Remote request cookiejar: %s" % (cookiejar,))
         return cookiejar
@@ -370,7 +371,8 @@ class BaseRouter():
         # Cookies beloning to this user are kept at the server.
         # Since this will also be the last moment we'll need it in this request,
         # let's store the changes in the server cookiejar.
-        server_cj, _ = ServerCookiejar.objects.get_or_create(user=request.user)
+        server_cj, _ = ServerCookiejar.objects.get_or_create(
+            user=self.request.user)
         server_cj.contents = json.dumps(
             dict_from_cookiejar(self.remote_session.cookies))
         server_cj.save()
