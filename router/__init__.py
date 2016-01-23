@@ -52,7 +52,7 @@ remote request / remote response
     request is routed to.
 """
 import re
-import json
+import pickle
 import requests
 import subdomains
 from bs4 import BeautifulSoup
@@ -271,7 +271,7 @@ class BaseRouter():
         from requests.utils import cookiejar_from_dict
         server_cj, _ = ServerCookiejar.objects.get_or_create(
             user=self.request.user)
-        cookiejar = cookiejar_from_dict(json.loads(server_cj.contents))
+        cookiejar = pickle.loads(server_cj.contents)
         self.debug("Remote request cookiejar: %s" % (cookiejar,))
         return cookiejar
 
@@ -379,8 +379,7 @@ class BaseRouter():
         # let's store the changes in the server cookiejar.
         server_cj, _ = ServerCookiejar.objects.get_or_create(
             user=self.request.user)
-        server_cj.contents = json.dumps(
-            dict_from_cookiejar(self.remote_session.cookies))
+        server_cj.contents = pickle.dumps(self.remote_session.cookies)
         server_cj.save()
 
 
