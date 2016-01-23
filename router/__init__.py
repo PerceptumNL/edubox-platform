@@ -353,7 +353,7 @@ class BaseRouter():
 
     def get_response_headers(self, remote_response):
         headers = {}
-        ignore_list = ["x-frame-options"]
+        ignore_list = ["x-frame-options", "set-cookie"]
         for header, value in remote_response.headers.items():
             header = header.lower()
             if header == "location":
