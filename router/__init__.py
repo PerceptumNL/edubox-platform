@@ -315,15 +315,9 @@ class BaseRouter():
             self.get_response_body(response_content),
             status=remote_response.status_code,
             content_type=remote_response.headers.get('content-type'))
-        if response.has_header('Set-Cookie'):
-            self.debug("Response Cookies (before alter): %s" % (response['Set-Cookie'],))
-        else:
-            self.debug("No Response Cookies (before alter)")
         self.alter_response(response, remote_response)
         if response.has_header('Set-Cookie'):
             self.debug("Response Cookies (after alter): %s" % (response['Set-Cookie'],))
-        else:
-            self.debug("No Response Cookies (after alter)")
         return response
 
     def get_response_content(self, remote_response):
