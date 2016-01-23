@@ -268,10 +268,13 @@ class BaseRouter():
         return path
 
     def get_remote_request_cookiejar(self):
-        from requests.utils import cookiejar_from_dict
-        server_cj, _ = ServerCookiejar.objects.get_or_create(
+        server_cj, created = ServerCookiejar.objects.get_or_create(
             user=self.request.user)
-        cookiejar = pickle.loads(server_cj.contents)
+        if created:
+            from requests.utils import cookiejar_from_dict
+            cookiejar = cookiejar_from_dict({})
+        else:
+            cookiejar = pickle.loads(server_cj.contents)
         self.debug("Remote request cookiejar: %s" % (cookiejar,))
         return cookiejar
 
@@ -371,7 +374,6 @@ class BaseRouter():
         """
         Alter the response send back to the user by setting cookies, if any.
         """
-        from requests.utils import dict_from_cookiejar
         self.debug("Cookies retrieved from remote: %s" % (
                 self.remote_session.cookies))
         # Cookies beloning to this user are kept at the server.
