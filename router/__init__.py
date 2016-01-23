@@ -279,7 +279,9 @@ class BaseRouter():
         headers = {}
         convert_fn = lambda s: s.replace("_", "-").lower()
         for header, value in self.request.META.items():
-            if header == "CONTENT_TYPE":
+            if header == 'HTTP_COOKIE':
+                pass
+            elif header == "CONTENT_TYPE":
                 headers[convert_fn(header)] = value
             elif header == "HTTP_HOST":
                 value = self.get_remote_request_host()
