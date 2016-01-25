@@ -76,7 +76,7 @@ class BaseRouter():
     """Incoming request object to be routed."""
     remote_domain = None
     """The remote domain the request must be routed to."""
-    remote_sesssion = None
+    remote_session = None
     """The :py:class:`requests.Session` object used for all remote requests."""
 
     def __init__(self, remote_domain):
@@ -547,6 +547,96 @@ class AppRouter(Router):
             return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
         else:
             return super().get_routed_domain(url)
+
+    def app_login_needed(self):
+        config = self.app.login_config
+        if 'check' not in config or 'method' not in config['check']:
+            return False
+        if config['check']['method'] == 'PING_REDIRECT':
+            if 'url' not in config['check']:
+                return False
+            response = self.remote_session.request(method="HEAD",
+                                                   url=config['check']['url'],
+                                                   allow_redirect=False)
+            return response.status_code == 302
+        else:
+            return False
+
+    def app_login(self):
+        """
+        Perform automatic app login based on login script.
+        """
+        config = self.app.login_config
+        cookiejar = self.remote_session.cookies
+        if 'login' not in config or 'post' not in config['login']:
+            return False
+        else:
+            self.debug("Executing login script for app.")
+        # Execute login script
+        login_document = None
+        login_url = "%s://%s%s" % (
+            self.app.scheme, self.app.root, config['login'])
+        login_variables = {}
+        login_payload = {}
+        login_headers = {}
+        # Retrieve user credentials
+        from .models import ServerCredentials
+        try:
+            credentials = ServerCredentials.objects.get(
+                app=self.app, user=self.request.user)
+        except ServerCredentials.DoesNotExist:
+            self.debug("No credentials found for this app.")
+        else:
+            login_variables['username'] = credentials.username
+            login_variables['password'] = credentials.password
+
+        if 'vars' in config['login']:
+            for name, value in config['login']['vars'].items():
+                if value[:7] == "cookie:" and value[7:] in cookiejar:
+                    login_variables[name] = cookiejar[value[7:]]
+                elif value[:6] == "field:":
+                    if login_document is None:
+                        response = requests.get(login_url)
+                        if response.status_code != 200:
+                            continue
+                        login_document = BeautifulSoup(response.text)
+                    field = login_document.find('input',
+                                                attrs={"name": value[6:]})
+                    if field is not None and field.has_attr('value'):
+                        login_variables[name] = field['value']
+                else:
+                    login_variables[name] = value
+        self.debug("[App login] vars: %s" % (
+            login_variables.replace(credentials.password, "****"),))
+        if 'payload' in config['login']:
+            for name, value in config['login']['payload'].items():
+                if value[0] == "$" and value[1:] in login_variables:
+                    login_payload[name] = login_variables[value[1:]]
+                else:
+                    login_payload[name] = value
+        self.debug("[App login] payload: %s" % (
+            login_payload.replace(credentials.password, "****",)))
+        if 'headers' in config['login']:
+            for name, value in config['login']['headers'].items():
+                if value[0] == "$" and value[1:] in login_variables:
+                    login_headers[name] = login_variables[value[1:]]
+                else:
+                    login_headers[name] = value
+        self.debug("[App login] headers: %s" % (
+            login_headers.replace(credentials.password, "****",)))
+        # Execute login request
+        response = self.remote_session.request(
+            method="POST",
+            allow_redirects=False,
+            data=login_payload,
+            headers=login_headers,
+            url=login_url)
+        self.debug("[App login] Response code from login: %d"  % (
+            response.status_code,))
+        if response.status_code == 302:
+            return True
+        else:
+            return self.app_login_needed()
 
 
 class DuolingoAppRouter(AppRouter):
