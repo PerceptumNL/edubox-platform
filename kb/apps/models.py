@@ -37,7 +37,7 @@ class App(models.Model):
 
     @property
     def login_config(self):
-        json.loads(self.login_config_json)
+        return json.loads(self.login_config_json)
 
     def __str__(self):
         return self.title
