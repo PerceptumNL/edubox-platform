@@ -615,24 +615,24 @@ class AppRouter(Router):
                         login_variables[name] = field['value']
                 else:
                     login_variables[name] = value
-        self.debug("[App login] vars: %s" % (
-            login_variables,).replace(credentials.password, "****"))
+        self.debug(("[App login] vars: %s" % (
+            login_variables,)).replace(credentials.password, "****"))
         if 'payload' in config['login']:
             for name, value in config['login']['payload'].items():
                 if value[0] == "$" and value[1:] in login_variables:
                     login_payload[name] = login_variables[value[1:]]
                 else:
                     login_payload[name] = value
-        self.debug("[App login] payload: %s" % (
-            login_payload,).replace(credentials.password, "****"))
+        self.debug(("[App login] payload: %s" % (
+            login_payload,)).replace(credentials.password, "****"))
         if 'headers' in config['login']:
             for name, value in config['login']['headers'].items():
                 if value[0] == "$" and value[1:] in login_variables:
                     login_headers[name] = login_variables[value[1:]]
                 else:
                     login_headers[name] = value
-        self.debug("[App login] headers: %s" % (
-            login_headers,).replace(credentials.password, "****"))
+        self.debug(("[App login] headers: %s" % (
+            login_headers,)).replace(credentials.password, "****"))
         # Execute login request
         response = self.remote_session.request(
             method="POST",
