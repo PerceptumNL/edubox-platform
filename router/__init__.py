@@ -584,7 +584,7 @@ class AppRouter(Router):
         # Execute login script
         login_document = None
         login_url = "%s://%s%s" % (
-            self.app.scheme, self.app.root, config['login'])
+            self.app.scheme, self.app.root, config['login']['post'])
         login_variables = {}
         login_payload = {}
         login_headers = {}
