@@ -534,6 +534,21 @@ class AppRouter(Router):
     def get_subdomain_patterns(cls):
         return (r"(?P<domain>.+)\.app",)
 
+    @xframe_options_exempt
+    def route_request(self, request):
+        """
+        Route the request to the remote server.
+
+        :param request: Incoming request to route
+        :type request: :py:class:`django.http.HttpRequest`
+        :return: The routed response
+        :rtype: :py:class:`django.http.HttpResponse`
+        """
+        if self.app_login_needed:
+            status = self.app_login()
+            self.debug("Login was successful: %s" % (status,))
+        return super().route_request(request)
+
     def get_routed_domain(self, url):
         """
         Return a routed version of the domain in ``url``.
