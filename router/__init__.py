@@ -568,14 +568,14 @@ class AppRouter(Router):
                     (self.remote_session.cookies,))
             response = self.remote_session.request(method="HEAD",
                                                    url=config['check']['url'],
-                                                   allow_redirect=False)
+                                                   allow_redirects=False)
             return response.status_code == 302
         else:
             return False
 
     def app_login(self):
         """
-        Perform automatic app login based on login script.
+        Perform automatic app login based on login cript.
         """
         config = self.app.login_config
         cookiejar = self.remote_session.cookies
