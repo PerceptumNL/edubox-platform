@@ -82,6 +82,7 @@ class BaseRouter():
     def __init__(self, remote_domain):
         self.remote_domain = remote_domain
         self.remote_session = requests.Session()
+        self.remote_session.cookies = self.get_remote_request_cookiejar()
 
     def debug(self, msg):
         """
@@ -233,7 +234,6 @@ class BaseRouter():
         """
         Send the request to the remote domain and return the response.
         """
-        self.remote_session.cookies = self.get_remote_request_cookiejar()
         url = "%s://%s%s" % (
             self.get_remote_request_scheme(),
             self.get_remote_request_host(), self.get_remote_request_path())
@@ -534,20 +534,14 @@ class AppRouter(Router):
     def get_subdomain_patterns(cls):
         return (r"(?P<domain>.+)\.app",)
 
-    @xframe_options_exempt
-    def route_request(self, request):
+    def get_remote_response(self):
         """
-        Route the request to the remote server.
-
-        :param request: Incoming request to route
-        :type request: :py:class:`django.http.HttpRequest`
-        :return: The routed response
-        :rtype: :py:class:`django.http.HttpResponse`
+        Send the request to the remote domain and return the response.
         """
         if self.app_login_needed:
             status = self.app_login()
             self.debug("Login was successful: %s" % (status,))
-        return super().route_request(request)
+        return super().get_remote_response(request)
 
     def get_routed_domain(self, url):
         """
