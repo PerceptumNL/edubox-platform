@@ -621,7 +621,9 @@ class AppRouter(Router):
             login_variables,)).replace(credentials.password, "****"))
         if 'payload' in config['login']:
             for name, value in config['login']['payload'].items():
-                if value[0] == "$" and value[1:] in login_variables:
+                if value == "":
+                    login_payload[name] = ""
+                elif value[0] == "$" and value[1:] in login_variables:
                     login_payload[name] = login_variables[value[1:]]
                 else:
                     login_payload[name] = value
