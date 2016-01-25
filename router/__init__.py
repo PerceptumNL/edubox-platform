@@ -82,7 +82,6 @@ class BaseRouter():
     def __init__(self, remote_domain):
         self.remote_domain = remote_domain
         self.remote_session = requests.Session()
-        self.remote_session.cookies = self.get_remote_request_cookiejar()
 
     def debug(self, msg):
         """
@@ -224,6 +223,7 @@ class BaseRouter():
         self.request = request
         self.debug("Incoming request: %s %s://%s%s" % (
             request.method, request.scheme, request.get_host(), request.path_info))
+        self.remote_session.cookies = self.get_remote_request_cookiejar()
         remote_response = self.get_remote_response()
         response = self.get_response(remote_response)
         self.debug("Response: HTTP %d, Content-length: %d" % (
