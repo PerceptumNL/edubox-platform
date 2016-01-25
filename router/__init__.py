@@ -538,7 +538,7 @@ class AppRouter(Router):
         """
         Send the request to the remote domain and return the response.
         """
-        if self.app_login_needed:
+        if self.app_login_needed():
             status = self.app_login()
             self.debug("Login was successful: %s" % (status,))
         return super().get_remote_response()
