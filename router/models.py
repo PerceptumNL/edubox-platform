@@ -19,3 +19,4 @@ class ServerCredentials(models.Model):
 
     class Meta:
         app_label = "router"
+        verbose_name_plural = "server credentials"
