@@ -541,7 +541,7 @@ class AppRouter(Router):
         if self.app_login_needed:
             status = self.app_login()
             self.debug("Login was successful: %s" % (status,))
-        return super().get_remote_response(request)
+        return super().get_remote_response()
 
     def get_routed_domain(self, url):
         """
