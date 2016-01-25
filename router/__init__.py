@@ -564,6 +564,8 @@ class AppRouter(Router):
         if config['check']['method'] == 'PING_REDIRECT':
             if 'url' not in config['check']:
                 return False
+            self.debug("[App login] check with cookies %s" %
+                    (self.remote_session.cookies,))
             response = self.remote_session.request(method="HEAD",
                                                    url=config['check']['url'],
                                                    allow_redirect=False)
