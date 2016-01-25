@@ -589,7 +589,7 @@ class AppRouter(Router):
             self.app.scheme, self.app.root, config['login']['post'])
         login_variables = {}
         login_payload = {}
-        login_headers = {}
+        login_headers = {'content-type':'application/x-www-form-urlencoded'}
         # Retrieve user credentials
         from .models import ServerCredentials
         try:
