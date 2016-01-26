@@ -573,6 +573,7 @@ class AppRouter(Router):
             response = self.remote_session.request(method="HEAD",
                                                    url=config['check']['url'],
                                                    allow_redirects=False)
+            self.debug("[App login] Return code: %d" % (response.status_code,))
             return response.status_code == 302
         else:
             return False
