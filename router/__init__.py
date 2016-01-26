@@ -644,9 +644,10 @@ class AppRouter(Router):
             data=login_payload,
             headers=login_headers,
             url=login_url)
-        self.debug("[App login] Request:\n%s %s\n\n%s" % (
+        self.debug("[App login] Request:\n%s %s\n%s\n\n%s" % (
             response.request.method,
             response.request.url,
+            response.request.headers,
             response.request.body.replace(credentials.password, "****")))
         self.debug("[App login] Response code from login: %d"  % (
             response.status_code,))
