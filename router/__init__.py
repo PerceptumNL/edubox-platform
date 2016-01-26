@@ -274,7 +274,11 @@ class BaseRouter():
             from requests.utils import cookiejar_from_dict
             cookiejar = cookiejar_from_dict({})
         else:
-            cookiejar = pickle.loads(server_cj.contents)
+            try:
+                cookiejar = pickle.loads(server_cj.contents)
+            except EOFError:
+                from requests.utils import cookiejar_from_dict
+                cookiejar = cookiejar_from_dict({})
         self.debug("Remote request cookiejar: %s" % (cookiejar,))
         return cookiejar
 
