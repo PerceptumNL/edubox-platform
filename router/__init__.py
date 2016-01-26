@@ -677,7 +677,7 @@ class AppRouter(Router):
                 response.request.method,
                 response.request.url,
                 response.request.headers,
-                response.request.body)
+                response.request.body))
         self.debug("[App login] Response code from login: %d"  % (
             response.status_code,))
         if response.status_code == 302:
