@@ -601,6 +601,7 @@ class AppRouter(Router):
                 app=self.app, user=self.request.user)
         except ServerCredentials.DoesNotExist:
             self.debug("No credentials found for this app.")
+            credentials = None
         else:
             login_variables['username'] = credentials.username
             login_variables['password'] = credentials.password
@@ -621,8 +622,13 @@ class AppRouter(Router):
                         login_variables[name] = field['value']
                 else:
                     login_variables[name] = value
-        self.debug(("[App login] vars: %s" % (
-            login_variables,)).replace(credentials.password, "****"))
+        if credentials is not None:
+            self.debug(("[App login] vars: %s" % (
+                login_variables,)).replace(credentials.password, "****"))
+        else:
+            self.debug("[App login] vars: %s" % (
+                login_variables,))
+
         if 'payload' in config['login']:
             for name, value in config['login']['payload'].items():
                 if value == "":
@@ -631,16 +637,28 @@ class AppRouter(Router):
                     login_payload[name] = login_variables[value[1:]]
                 else:
                     login_payload[name] = value
-        self.debug(("[App login] payload: %s" % (
-            login_payload,)).replace(credentials.password, "****"))
+
+        if credentials is not None:
+            self.debug(("[App login] payload: %s" % (
+                login_payload,)).replace(credentials.password, "****"))
+        else:
+            self.debug("[App login] payload: %s" % (
+                login_payload,))
+
         if 'headers' in config['login']:
             for name, value in config['login']['headers'].items():
                 if value[0] == "$" and value[1:] in login_variables:
                     login_headers[name] = login_variables[value[1:]]
                 else:
                     login_headers[name] = value
-        self.debug(("[App login] headers: %s" % (
-            login_headers,)).replace(credentials.password, "****"))
+
+        if credentials is not None:
+            self.debug(("[App login] headers: %s" % (
+                login_headers,)).replace(credentials.password, "****"))
+        else:
+            self.debug("[App login] headers: %s" % (
+                login_headers,))
+
         # Execute login request
         response = self.remote_session.request(
             method="POST",
