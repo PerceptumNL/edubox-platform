@@ -689,12 +689,21 @@ class AppRouter(Router):
                 login_headers,))
 
         # Execute login request
-        response = self.remote_session.request(
-            method="POST",
-            allow_redirects=False,
-            data=login_payload,
-            headers=login_headers,
-            url=login_url)
+        if 'Content-Type' in login_headers and \
+                login_headers['Content-Type'] == "application/json":
+            response = self.remote_session.request(
+                method="POST",
+                allow_redirects=False,
+                json=login_payload,
+                headers=login_headers,
+                url=login_url)
+        else:
+            response = self.remote_session.request(
+                method="POST",
+                allow_redirects=False,
+                data=login_payload,
+                headers=login_headers,
+                url=login_url)
         if credentials is not None:
             self.debug("[App login] Request:\n%s %s\n%s\n\n%s" % (
                 response.request.method,
