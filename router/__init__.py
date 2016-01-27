@@ -630,7 +630,11 @@ class AppRouter(Router):
 
         # Retrieve the head of the login page for cookies
         login_document_response = self.remote_session.request(
-            url=login_url, method="HEAD")
+            url=login_url, method="GET")
+
+        if 'heads' in config['login']:
+            for url in config['login']:
+                self.remote_session.request(url=url, method="HEAD")
 
         if 'vars' in config['login']:
             for name, value in config['login']['vars'].items():
