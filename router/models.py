@@ -10,6 +10,9 @@ class ServerCookiejar(models.Model):
     class Meta:
         app_label = "router"
 
+    def __str__(self):
+        return "Cookiejar of %s" % (self.user,)
+
 
 class ServerCredentials(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+')
@@ -20,3 +23,6 @@ class ServerCredentials(models.Model):
     class Meta:
         app_label = "router"
         verbose_name_plural = "server credentials"
+
+    def __str__(self):
+        return "Credentials of %s for %s" % (self.user, self.app)
