@@ -9,6 +9,11 @@ def sim_login(request, app_id):
     router = AppRouter(app)
     router.request = request
     t1 = datetime.now()
-    router.app_login()
+    success = router.app_login()
     dt = datetime.now() - t1
-    return HttpResponse('Simulating login in %s done in %s' % (app, dt))
+    if success:
+        return HttpResponse(
+            'Simulating login in %s succeeded in %s' % (app, dt))
+    else:
+        return HttpResponse(
+            'Simulating login in %s failed in %s' % (app, dt))
