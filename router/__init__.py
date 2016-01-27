@@ -621,6 +621,16 @@ class AppRouter(Router):
                     label='Login check request')
             self.debug_http_package(response, label='Login check response')
             return response.status_code == 302
+        elif config['check']['method'] == 'FETCH_AND_SEARCH':
+            if 'url' not in config['check'] or 'search' not in config['check']:
+                return False
+            response = self.remote_session.request(method="GET",
+                                                   url=config['check']['url'])
+            # Debug the interaction
+            self.debug_http_package(response.request,
+                    label='Login check request')
+            self.debug_http_package(response, label='Login check response')
+            return config['check']['search'] in response.text
         else:
             return False
 
