@@ -372,9 +372,8 @@ class BaseRouter():
                 if 'frame-ancestors' in value:
                     value = value.replace(
                         "frame-ancestors",
-                        "frame-ancestors %s://%s" % (
-                            self.request.scheme,
-                            self.request.META['HTTP_REFERER']))
+                        "frame-ancestors %s" % (
+                            self.request.META['HTTP_REFERER'],))
                 headers[header.title()] = value
             elif header in ignore_list:
                 continue
