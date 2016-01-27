@@ -374,7 +374,7 @@ class BaseRouter():
                         "frame-ancestors",
                         "frame-ancestors %s://%s" % (
                             self.request.scheme,
-                            self.request.META['HTTP_HOST']))
+                            self.request.META['HTTP_REFERER']))
                 headers[header.title()] = value
             elif header in ignore_list:
                 continue
