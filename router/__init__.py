@@ -557,6 +557,11 @@ class AppRouter(Router):
             self.debug("[App Login] Successful?: %s" % (status,))
         return super().get_remote_response()
 
+    def get_remote_request_scheme(self):
+        scheme = self.app.scheme
+        self.debug("Remote request scheme: %s" % (scheme,))
+        return scheme
+
     def get_routed_domain(self, url):
         """
         Return a routed version of the domain in ``url``.
