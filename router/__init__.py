@@ -95,6 +95,35 @@ class BaseRouter():
             return
         print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
 
+    def debug_http_package(self, http_package, label=None, secret_body_values=None):
+        if not settings.DEBUG:
+            return
+        label = label or 'HTTP Package'
+        output_lines = [label+':']
+        if isinstance(http_package, requests.Request) or \
+            isinstance(http_package, requests.PreparedRequest):
+            output_lines.append("%s %s HTTP/1.1" % (
+                http_package.method, http_package.path_url))
+            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
+            for header, value in headers:
+                output_lines.append("%s: %s" % (header.title(), value))
+            if http_package.body is not None:
+                output_lines.append("")
+                body = http_package.body
+                if secret_body_values is not None:
+                    for secret in secret_body_values:
+                        body = body.replace(secret, "****")
+                output_lines.append(body)
+        elif isinstance(http_package, requests.Response):
+            output_lines.append("HTTP %s %s" % (
+                http_package.status_code, http_package.reason))
+            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
+            for header, value in headers:
+                output_lines.append("%s: %s" % (header.title(), value))
+        else:
+            output_lines.append("Unknown http_package: %s" % (http_package,))
+        self.debug("\n".join(output_lines))
+
     @classmethod
     @xframe_options_exempt
     def route_path_by_subdomain(cls, request, domain):
@@ -583,12 +612,14 @@ class AppRouter(Router):
         if config['check']['method'] == 'PING_REDIRECT':
             if 'url' not in config['check']:
                 return False
-            self.debug("[App login] check with cookies %s" %
-                    (self.remote_session.cookies,))
             response = self.remote_session.request(method="HEAD",
                                                    url=config['check']['url'],
                                                    allow_redirects=False)
-            self.debug("[App login] Return code: %d" % (response.status_code,))
+
+            # Debug the interaction
+            self.debug_http_package(response.request,
+                    label='Login check request')
+            self.debug_http_package(response, label='Login check response')
             return response.status_code == 302
         else:
             return False
@@ -601,8 +632,6 @@ class AppRouter(Router):
         cookiejar = self.remote_session.cookies
         if 'login' not in config or 'post' not in config['login']:
             return False
-        else:
-            self.debug("Executing login script for app.")
         # Execute login script
         login_document = None
         login_url = "%s://%s%s" % (
@@ -624,9 +653,11 @@ class AppRouter(Router):
         except ServerCredentials.DoesNotExist:
             self.debug("No credentials found for this app.")
             credentials = None
+            secret_body_values = None
         else:
             login_variables['username'] = credentials.username
             login_variables['password'] = credentials.password
+            secret_body_values = [credentials.username, credentials.password]
 
         # Retrieve the head of the login page for cookies
         login_document_response = self.remote_session.request(
@@ -655,12 +686,6 @@ class AppRouter(Router):
                         login_variables[name] = field['value']
                 else:
                     login_variables[name] = value
-        if credentials is not None:
-            self.debug(("[App login] vars: %s" % (
-                login_variables,)).replace(credentials.password, "****"))
-        else:
-            self.debug("[App login] vars: %s" % (
-                login_variables,))
 
         if 'payload' in config['login']:
             for name, value in config['login']['payload'].items():
@@ -672,13 +697,6 @@ class AppRouter(Router):
                 else:
                     login_payload[name] = value
 
-        if credentials is not None:
-            self.debug(("[App login] payload: %s" % (
-                login_payload,)).replace(credentials.password, "****"))
-        else:
-            self.debug("[App login] payload: %s" % (
-                login_payload,))
-
         if 'headers' in config['login']:
             for name, value in config['login']['headers'].items():
                 if isinstance(value, str) and value[0] == "$" \
@@ -687,43 +705,23 @@ class AppRouter(Router):
                 else:
                     login_headers[name] = value
 
-        if credentials is not None:
-            self.debug(("[App login] headers: %s" % (
-                login_headers,)).replace(credentials.password, "****"))
-        else:
-            self.debug("[App login] headers: %s" % (
-                login_headers,))
-
-        # Execute login request
+        # Construct and execute login request
+        request_params = {
+            "method":"POST",
+            "allow_redirects":False,
+            "headers":login_headers,
+            "url":login_url}
         if 'Content-Type' in login_headers and \
                 login_headers['Content-Type'] == "application/json":
-            response = self.remote_session.request(
-                method="POST",
-                allow_redirects=False,
-                json=login_payload,
-                headers=login_headers,
-                url=login_url)
+            request_params['json'] = login_payload
         else:
-            response = self.remote_session.request(
-                method="POST",
-                allow_redirects=False,
-                data=login_payload,
-                headers=login_headers,
-                url=login_url)
-        if credentials is not None:
-            self.debug("[App login] Request:\n%s %s\n%s\n\n%s" % (
-                response.request.method,
-                response.request.url,
-                response.request.headers,
-                response.request.body.replace(credentials.password, "****")))
-        else:
-            self.debug("[App login] Request:\n%s %s\n%s\n\n%s" % (
-                response.request.method,
-                response.request.url,
-                response.request.headers,
-                response.request.body))
-        self.debug("[App login] Response code from login: %d"  % (
-            response.status_code,))
+            request_params['data'] = login_payload
+        response = self.remote_session.request(**request_params)
+
+        # Debug the interaction
+        self.debug_http_package(response.request, label='Login request',
+                secret_body_values=secret_body_values)
+        self.debug_http_package(response, label='Login response')
         if response.status_code == 302:
             return True
         else:
