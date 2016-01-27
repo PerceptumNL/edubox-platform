@@ -553,9 +553,9 @@ class AppRouter(Router):
         if self.get_remote_request_host() == app_root.netloc \
                 and self.get_remote_request_path() == app_root.path \
                 and self.app_login_needed():
-            self.debug("Starting login procedure")
+            self.debug("[App Login] Starting login procedure")
             status = self.app_login()
-            self.debug("Login was successful?: %s" % (status,))
+            self.debug("[App Login] Successful?: %s" % (status,))
         return super().get_remote_response()
 
     def get_routed_domain(self, url):
