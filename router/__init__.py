@@ -633,7 +633,7 @@ class AppRouter(Router):
             url=login_url, method="GET")
 
         if 'heads' in config['login']:
-            for url in config['login']:
+            for url in config['login']['heads']:
                 self.remote_session.request(url=url, method="HEAD")
 
         if 'vars' in config['login']:
