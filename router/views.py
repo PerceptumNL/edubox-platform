@@ -1,11 +1,14 @@
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from router import AppRouter
 from kb.apps.models import App
+from datetime import datetime
 
-def sim1(request):
-    app = App.objects.get(root="scratch.mit.edu")
+def sim_login(request, app_id):
+    app = get_object_or_404(App, pk=app_id)
     router = AppRouter(app)
     router.request = request
-    status = router.app_login()
-    return HttpResponse('Success: '+str(status))
-
+    t1 = datetime.now()
+    router.app_login()
+    dt = datetime.now() - t1
+    return HttpResponse('Simulating login in %s done in %s' % (app, dt))
