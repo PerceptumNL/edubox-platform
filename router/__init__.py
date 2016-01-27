@@ -676,7 +676,8 @@ class AppRouter(Router):
 
         if 'headers' in config['login']:
             for name, value in config['login']['headers'].items():
-                if value[0] == "$" and value[1:] in login_variables:
+                if isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in login_variables:
                     login_headers[name] = login_variables[value[1:]]
                 else:
                     login_headers[name] = value
