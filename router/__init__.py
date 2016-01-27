@@ -662,7 +662,8 @@ class AppRouter(Router):
             for name, value in config['login']['payload'].items():
                 if value == "":
                     login_payload[name] = ""
-                elif value[0] == "$" and value[1:] in login_variables:
+                elif isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in login_variables:
                     login_payload[name] = login_variables[value[1:]]
                 else:
                     login_payload[name] = value
