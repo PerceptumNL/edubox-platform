@@ -368,6 +368,13 @@ class BaseRouter():
                 # unpacked by the requests libary. For it to be packed
                 # later on, this header must not be already set.
                 continue
+            elif header == "content-security-policy":
+                if 'frame-ancestors' in value:
+                    value = value.replace(
+                        "frame-ancestors",
+                        "frame-ancestors %s" % (self.request.META['HTTP_HOST'],)
+                    )
+                headers[header.title()] = value
             elif header in ignore_list:
                 continue
             else:

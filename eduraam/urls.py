@@ -25,5 +25,6 @@ urlpatterns = [
     url(r'^accounts/', include('allauth.urls')),
     url(r'^api/', include('kb.urls')),
     url(r'^launch/', include('launch.urls')),
+    url(r'^router/test/', 'router.views.test'),
 ]
 
