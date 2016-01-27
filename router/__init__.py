@@ -549,9 +549,8 @@ class AppRouter(Router):
         """
         Send the request to the remote domain and return the response.
         """
-        app_root = urlsplit('http://'+self.app.root)
-        if self.get_remote_request_host() == app_root.netloc \
-                and self.get_remote_request_path() == app_root.path \
+        app_root = urlsplit('http://'+self.app.root+'/')
+        if self.request.path_info == app_root.path \
                 and self.app_login_needed():
             self.debug("[App Login] Starting login procedure")
             status = self.app_login()
