@@ -628,29 +628,29 @@ class AppRouter(Router):
             login_variables['username'] = credentials.username
             login_variables['password'] = credentials.password
 
+        # Retrieve the head of the login page for cookies
+        login_document_response = self.remote_session.request(
+            url=login_url, method="HEAD")
+
         if 'vars' in config['login']:
             for name, value in config['login']['vars'].items():
                 if value[:7] == "cookie:" and value[7:] in cookiejar:
                     login_variables[name] = cookiejar[value[7:]]
                 elif value[:6] == "field:":
                     if login_document is None:
-                        response = self.remote_session.request(
-                            url=login_url, method="GET")
-                        if response.status_code != 200:
+                        if login_document_response.status_code != 200:
                             self.debug(
                                 "Retrieving login document for field"
                                 "retrieval failed.")
                             continue
-                        login_document = BeautifulSoup(response.text)
+                        login_document = BeautifulSoup(
+                            login_document_response.text)
                     field = login_document.find('input',
                                                 attrs={"name": value[6:]})
                     if field is not None and field.has_attr('value'):
                         login_variables[name] = field['value']
                 else:
                     login_variables[name] = value
-        if login_document is None:
-            response = self.remote_session.request(
-                url=login_url, method="HEAD")
         if credentials is not None:
             self.debug(("[App login] vars: %s" % (
                 login_variables,)).replace(credentials.password, "****"))
