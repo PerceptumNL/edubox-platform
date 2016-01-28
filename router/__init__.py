@@ -426,6 +426,7 @@ class StaticFileMixin():
             url = "%s://%s%s" % (
                 self.get_remote_request_scheme(),
                 self.get_remote_request_host(), self.get_remote_request_path())
+            self.debug("Redirecting request to remote host.")
             return HttpResponseRedirect(url)
         return super().route_request(request)
 
