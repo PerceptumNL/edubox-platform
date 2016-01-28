@@ -60,7 +60,7 @@ from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
 
 from django.conf import settings
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpRequestRedirect
 from django.views.decorators.clickjacking import xframe_options_exempt
 
 from .models import ServerCookiejar
@@ -416,100 +416,21 @@ class BaseRouter():
         server_cj.save()
 
 
-class GoogleMixin():
+class StaticFileMixin():
 
-    def get_remote_request_path(self):
-        path = super().get_remote_request_path()
-
-        if self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/o/oauth2/postmessageRelay":
-            routed_url = unquote(self.request.GET.get("parent", ''))
-            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(routed_url, safe=""),
-                quote(unrouted_url, safe="")))
-            return re.sub(
-                quote(routed_url, safe=""), quote(unrouted_url, safe=""), path)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/o/oauth2/auth":
-            routed_url = unquote(self.request.GET.get("origin", ''))
-            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(routed_url, safe=""),
-                quote(unrouted_url, safe="")))
-            return re.sub(
-                quote(routed_url, safe=""), quote(unrouted_url, safe=""), path)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/ServiceLogin":
-            unrouted_url = unquote(self.request.GET.get("continue", ''))
-            if unrouted_url == "":
-                return path
-            routed_url = self.get_routed_url(unrouted_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(unrouted_url, safe=""),
-                quote(routed_url, safe="")))
-            return re.sub(
-                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/LoginVerification":
-            unrouted_url = unquote(self.request.GET.get("continue", ''))
-            if unrouted_url == "":
-                return path
-            routed_url = self.get_routed_url(unrouted_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(unrouted_url, safe=""),
-                quote(routed_url, safe="")))
-            return re.sub(
-                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
-        elif self.remote_domain == "appengine.google.com" and \
-                self.request.path_info == "/_ah/conflogin":
-            unrouted_url = unquote(self.request.GET.get("continue", ''))
-            if unrouted_url == "":
-                return path
-            routed_url = self.get_routed_url(unrouted_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(unrouted_url, safe=""),
-                quote(routed_url, safe="")))
-            return re.sub(
-                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
-        else:
-            return path
-
-    def alter_response_content(self, response_content, remote_response):
-        response_content = super().alter_response_content(
-            response_content, remote_response)
-        if self.remote_domain == "apis.google.com" and \
-                "javascript" in remote_response.headers.get('content-type', ''):
-            pattern = r"(['\"])https://accounts.google.com/o/([^'\"]+)['\"]"
-            domain = self.get_routed_domain("https://accounts.google.com")
-            replacement = r"\1https://%s/o/\2\1" % (domain,)
-            response_content = re.sub(pattern, replacement, response_content)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.method == "GET":
-            if not isinstance(response_content, BeautifulSoup):
-                return response_content
-            for form in response_content.find_all('form'):
-                if 'action' not in form.attrs:
-                    continue
-                form['action'] = self.get_routed_url(
-                    form['action'],
-                    path_only=False)
-            for link in response_content.find_all('a'):
-                if 'href' not in link.attrs:
-                    continue
-                link['href'] = self.get_routed_url(link['href'])
-        elif isinstance(response_content, BeautifulSoup):
-            pattern_gapis = r"(['\"])https://apis.google.com/js/([^'\"]+)['\"]"
-            domain = self.get_routed_domain("https://apis.google.com")
-            replacement_gapis = r"\1https://%s/js/\2\1" % (domain,)
-            for script in response_content.find_all('script'):
-                script.string = re.sub(
-                    pattern_gapis, replacement_gapis, str(script.string))
-
-        return response_content
+    def route_request(self, request):
+        static_extensions = ['jpg','png','css','jpeg','gif']
+        filename_parts = request.path_info.split('.')
+        if filename_parts and filename_parts[-1] in static_extensions:
+            self.request = request
+            url = "%s://%s%s" % (
+                self.get_remote_request_scheme(),
+                self.get_remote_request_host(), self.get_remote_request_path())
+            return HttpResponseRedirect(url)
+        return super().route_request(request)
 
 
-class Router(GoogleMixin, BaseRouter):
+class Router(StaticFileMixin, BaseRouter):
 
     @classmethod
     def get_subdomain_patterns(cls):
