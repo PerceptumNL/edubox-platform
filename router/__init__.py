@@ -399,10 +399,11 @@ class BaseRouter():
                 continue
             elif header == "content-security-policy":
                 if 'frame-ancestors' in value:
-                    value = value.replace(
-                        "frame-ancestors",
-                        "frame-ancestors %s" % (
-                            self.request.META['HTTP_REFERER'],))
+                    if 'HTTP_REFERER' in self.request.META:
+                        value = value.replace(
+                            "frame-ancestors",
+                            "frame-ancestors %s" % (
+                                self.request.META['HTTP_REFERER'],))
                 headers[header.title()] = value
             elif header in ignore_list:
                 continue
