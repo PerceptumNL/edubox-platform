@@ -60,7 +60,7 @@ from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
 
 from django.conf import settings
-from django.http import HttpResponse, Http404, HttpRequestRedirect
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.views.decorators.clickjacking import xframe_options_exempt
 
 from .models import ServerCookiejar
