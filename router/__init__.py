@@ -255,8 +255,6 @@ class BaseRouter():
         self.remote_session.cookies = self.get_remote_request_cookiejar()
         remote_response = self.get_remote_response()
         response = self.get_response(remote_response)
-        self.debug("Response: HTTP %d, Content-length: %d" % (
-            response.status_code, len(response.content)))
         return response
 
     def get_remote_response(self):
@@ -266,22 +264,22 @@ class BaseRouter():
         url = "%s://%s%s" % (
             self.get_remote_request_scheme(),
             self.get_remote_request_host(), self.get_remote_request_path())
-        self.debug("%s: %s %s" % ("Remote request", self.request.method, url))
-        return self.remote_session.request(
+        response = self.remote_session.request(
             method=self.get_remote_request_method(),
             allow_redirects=False,
             data=self.get_remote_request_body(),
             headers=self.get_remote_request_headers(),
             url=url)
+        self.debug_http_package(response.request, label='Remote request.')
+        self.debug_http_package(response, label='Remote response.')
+        return response
 
     def get_remote_request_method(self):
         method = self.request.method
-        self.debug("Remote request method: %s" % (method,))
         return method
 
     def get_remote_request_scheme(self):
         scheme = self.request.scheme
-        self.debug("Remote request scheme: %s" % (scheme,))
         return scheme
 
     def get_remote_request_host(self):
@@ -293,7 +291,6 @@ class BaseRouter():
         path = self.request.path_info
         if self.request.META.get("QUERY_STRING", "") != "":
             path = "%s?%s" % (path, self.request.META["QUERY_STRING"])
-        self.debug("Remote request path: %s" % (path,))
         return path
 
     def get_remote_request_cookiejar(self):
@@ -308,7 +305,6 @@ class BaseRouter():
             except EOFError:
                 from requests.utils import cookiejar_from_dict
                 cookiejar = cookiejar_from_dict({})
-        self.debug("Remote request cookiejar: %s" % (cookiejar,))
         return cookiejar
 
     def get_remote_request_headers(self):
@@ -335,12 +331,10 @@ class BaseRouter():
         if 'accept-encoding' not in headers:
             headers['accept-encoding'] = "gzip, deflate"
 
-        self.debug("Remote request headers: %s" % (headers,))
         return headers
 
     def get_remote_request_body(self):
         body = self.request.body
-        self.debug("Remote request body: %s..." % (body[:20],))
         return body
 
     def get_response(self, remote_response):
@@ -352,8 +346,6 @@ class BaseRouter():
             status=remote_response.status_code,
             content_type=remote_response.headers.get('content-type'))
         self.alter_response(response, remote_response)
-        if response.has_header('Set-Cookie'):
-            self.debug("Response Cookies (after alter): %s" % (response['Set-Cookie'],))
         return response
 
     def get_response_content(self, remote_response):
@@ -415,8 +407,6 @@ class BaseRouter():
         """
         Alter the response send back to the user by setting cookies, if any.
         """
-        self.debug("Cookies retrieved from remote: %s" % (
-                self.remote_session.cookies))
         # Cookies beloning to this user are kept at the server.
         # Since this will also be the last moment we'll need it in this request,
         # let's store the changes in the server cookiejar.
@@ -589,7 +579,6 @@ class AppRouter(Router):
 
     def get_remote_request_scheme(self):
         scheme = self.app.scheme
-        self.debug("Remote request scheme: %s" % (scheme,))
         return scheme
 
     def get_routed_domain(self, url):
