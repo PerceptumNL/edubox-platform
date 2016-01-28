@@ -124,6 +124,9 @@ class BaseRouter():
             output_lines.append("Unknown http_package: %s" % (http_package,))
         self.debug("\n".join(output_lines))
 
+    def event(self, event_type, **kwargs):
+        pass
+
     @classmethod
     @xframe_options_exempt
     def route_path_by_subdomain(cls, request, domain):
@@ -270,6 +273,12 @@ class BaseRouter():
             data=self.get_remote_request_body(),
             headers=self.get_remote_request_headers(),
             url=url)
+        self.event(
+            'remote_request',
+            method=response.request.method,
+            url=response.request.url,
+            headers=response.request.headers,
+            data=response.request.data)
         self.debug_http_package(response.request, label='Remote request.')
         self.debug_http_package(response, label='Remote response.')
         return response
@@ -655,3 +664,17 @@ class DuolingoAppRouter(AppRouter):
     @classmethod
     def get_subdomain_patterns(cls):
         return (r"(?P<domain>.+\.duolingo\.com)\.app",)
+
+
+class CodeOrgAppRouter(AppRouter):
+
+    @classmethod
+    def get_subdomain_patterns(cls):
+        return (r"(?P<domain>studio\.code\.org)\.app",)
+
+    def event(self, event_type, **kwargs):
+        if event_type == "remote_request" and kwargs['method'] == "POST":
+            re_milestone_url = \
+                    r'https://studio.code.org/milestone/[0-9]+/[0-9]+'
+            if re.match(re_milestone_url, kwargs['url']):
+                self.debug('Code.org milestone!')
