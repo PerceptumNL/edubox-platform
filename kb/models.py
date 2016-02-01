@@ -1,12 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 from kb.groups.models import *
 from kb.settings.models import *
 from kb.permissions.models import *
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, unique=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, unique=True)
 
     #Member specifies the role the user has in the group
     groups = models.ManyToManyField(Group, through=Membership, 

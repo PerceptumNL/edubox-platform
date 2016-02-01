@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.core.urlresolvers import reverse
+import json
 
 class App(models.Model):
     """
@@ -19,6 +20,9 @@ class App(models.Model):
     description = models.TextField()
     # Link to the application icon
     icon = models.URLField(null=True, blank=True)
+    # JSON serialization of login script configuration
+    # (TODO: Change to JSONField)
+    login_config_json = models.TextField(default="{}", blank=True)
 
     class Meta:
         app_label = "apps"
@@ -30,6 +34,10 @@ class App(models.Model):
     @property
     def load_url(self):
         return reverse('app_routing', args=(self.pk, '/'))
+
+    @property
+    def login_config(self):
+        return json.loads(self.login_config_json)
 
     def __str__(self):
         return self.title
