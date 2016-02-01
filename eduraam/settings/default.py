@@ -49,6 +49,7 @@ INSTALLED_APPS = (
     'kb.groups',
     'kb.settings',
     'kb.permissions',
+    'kb.badges',
     'launch',
     'accounts',
     'allauth',
