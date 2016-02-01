@@ -29,26 +29,24 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'polymorphic',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    'django_summernote',
     'rest_framework',
     'compressor',
-    'router',
     'corsheaders',
-    'kb',
     'kb.events',
     'kb.apps',
     'kb.groups',
     'kb.settings',
     'kb.permissions',
+    'kb',
+    'router',
     'launch',
     'accounts',
     'allauth',
@@ -56,9 +54,9 @@ INSTALLED_APPS = (
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.openid',
-)
+]
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'kb.middleware.ContextTokenProcessingMiddleware',
@@ -71,7 +69,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'router.middleware.SubdomainAppRoutingMiddleware',
-)
+]
 
 ROOT_URLCONF = 'eduraam.urls'
 
@@ -98,20 +96,20 @@ TEMPLATES = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
     # Needed to login by username in Django admin, regardless of `allauth`
     'django.contrib.auth.backends.ModelBackend',
     # `allauth` specific authentication methods, such as login by e-mail
     'allauth.account.auth_backends.AuthenticationBackend',
-)
+]
 ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
 LOGIN_REDIRECT_URL = '/'
 
-STATICFILES_FINDERS = (
+STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'compressor.finders.CompressorFinder'
-)
+]
 
 WSGI_APPLICATION = 'eduraam.wsgi.application'
 

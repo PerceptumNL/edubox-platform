@@ -63,8 +63,6 @@ from django.conf import settings
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.views.decorators.clickjacking import xframe_options_exempt
 
-from .models import ServerCookiejar
-
 class BaseRouter():
     """
     Generic base class for all router classes.
@@ -294,6 +292,7 @@ class BaseRouter():
         return path
 
     def get_remote_request_cookiejar(self):
+        from .models import ServerCookiejar
         server_cj, created = ServerCookiejar.objects.get_or_create(
             user=self.request.user)
         if created:
@@ -410,6 +409,7 @@ class BaseRouter():
         # Cookies beloning to this user are kept at the server.
         # Since this will also be the last moment we'll need it in this request,
         # let's store the changes in the server cookiejar.
+        from .models import ServerCookiejar
         server_cj, _ = ServerCookiejar.objects.get_or_create(
             user=self.request.user)
         server_cj.contents = pickle.dumps(self.remote_session.cookies)
