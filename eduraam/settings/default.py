@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'kb.events',
     'kb.apps',
+    'kb.collections',
     'kb.groups',
     'kb.settings',
     'kb.permissions',
