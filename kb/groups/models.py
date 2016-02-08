@@ -27,6 +27,8 @@ class Group(models.Model):
             through_fields=('group', 'settingVal'),
             related_name='group_defaults')
 
+    tags = models.ManyToMany('Tag', blank=True)
+
     class Meta:
         app_label = "groups"
 
@@ -102,4 +104,7 @@ class Role(models.Model):
     def _update_flat_permissions(self, action, pk_set):
         for member in self.members.all():
             member.user._update_flat_permissions(action, pk_set)
+
+class Tag(models.Model):
+    label = models.CharField(max_length=255, unique=True)
 

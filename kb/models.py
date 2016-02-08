@@ -8,6 +8,13 @@ from kb.permissions.models import *
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, unique=True)
 
+    #EdeXML additions
+    alias = models.CharField(max_length=255, unique=True)
+    surname_prefixes = models.CharField(max_length=127, blank=True)
+    initials = models.CharField(max_length=15, blank=True)
+    gender = models.PositiveSmallIntegerField(default=0)
+    date_of_birth = models.DateField(blank=True)
+
     #Member specifies the role the user has in the group
     groups = models.ManyToManyField(Group, through=Membership, 
             through_fields=('user', 'group'), related_name='users')
@@ -33,6 +40,32 @@ class UserProfile(models.Model):
     class Meta:
         app_label = "kb"
 
+    @property
+    def username(self):
+        return self.user.username
+    
+    @property
+    def first_name(self):
+        return self.user.first_name
+
+    @property
+    def last_name(self):
+        return self.user.last_name
+    
+    @property
+    def email(self):
+        return self.user.email
+
+    @property
+    def full_name(self):
+        full = self.first_name +' '
+        
+        if self.prefixes != '':
+            full += self.prexfixes
+        
+        full += self.last_name
+        return full
+    
     def __str__(self):
         return str(self.user)
 
