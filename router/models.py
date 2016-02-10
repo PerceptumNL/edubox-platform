@@ -26,3 +26,19 @@ class ServerCredentials(models.Model):
 
     def __str__(self):
         return "Credentials of %s for %s" % (self.user, self.app)
+
+    @classmethod
+    def generate(cls, app, user, invalid_usernames=None):
+        from strgen import StringGenerator
+        invalid_usernames = invalid_usernames or []
+        username = user.username
+        for c in ['@',':','/']:
+            username = username.replace(c, ".")
+        base_username = username
+        unique_counter = 1
+        while username in invalid_usernames:
+            username = "%s_%d" % (base_username, unique_counter)
+            unique_counter += 1
+        password = StringGenerator("[\w\d]{20}").render()
+        return ServerCredentials(user=user, app=app,
+                username=username, password=password)
