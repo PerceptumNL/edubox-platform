@@ -100,6 +100,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
+ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 LOGIN_REDIRECT_URL = '/'
 
 SESSION_COOKIE_DOMAIN = ".eduraam.nl"
