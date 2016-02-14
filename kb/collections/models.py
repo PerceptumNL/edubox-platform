@@ -6,6 +6,7 @@ from kb.events.models import GenericEvent
 
 class Activity(models.Model):
     label = models.CharField(max_length=255)
+    url = models.URLField(max_length=255)
     completed_by = models.ManyToManyField(UserProfile,
             through='ActivityCompletion', related_name='completed_tasks')
 
