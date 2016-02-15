@@ -9,4 +9,5 @@ urlpatterns = patterns('',
     url(r'^events/', API.as_view()),
     url(r'^settings/', include('kb.settings.urls')),
     url(r'^groups/', include('kb.groups.urls')),
+    url(r'^collections/', include('kb.collections.urls')),
 )
