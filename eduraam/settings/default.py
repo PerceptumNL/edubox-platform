@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'kb.apps',
     'kb.collections',
     'kb.groups',
+    'kb.lvs',
     'kb.settings',
     'kb.permissions',
     'kb',
