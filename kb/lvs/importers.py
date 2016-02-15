@@ -38,7 +38,12 @@ class EdeXmlImporter(object):
         self.last_pw = ''
 
     def parse_all(self):
-        self.institute.xmls.add(XmlDump.objects.create(dump=self.soup))
+        try:
+            xmldump = XmlDump.objects.create(dump=str(self.soup.edex))
+        except Exception:
+            xmldump = XmlDump.objects.create(dump=str(self.soup))
+
+        self.institute.xmls.add(xmldump)
         
         self.parse_school()
         self.parse_groups()
