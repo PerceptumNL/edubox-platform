@@ -5,10 +5,14 @@ from kb.events.models import GenericEvent
 #TODO from kb.badges.models import Badge
 
 class Activity(models.Model):
+    #TODO: Add 'app' relation
     label = models.CharField(max_length=255)
     url = models.URLField(max_length=255)
     completed_by = models.ManyToManyField(UserProfile,
             through='ActivityCompletion', related_name='completed_tasks')
+
+    def __str__(self):
+        return self.label
 
 
 class LearningUnit(models.Model):
@@ -17,6 +21,9 @@ class LearningUnit(models.Model):
     activities = models.ManyToManyField(Activity)
     #TODO dependencies = models.ManyToManyField(Badge)
     #TODO provides = models.ManyToManyField(Badge, through=LearningUnitOutcome)
+
+    def __str__(self):
+        return self.label
 
 
 class Collection(models.Model):
