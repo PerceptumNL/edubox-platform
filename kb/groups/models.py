@@ -5,6 +5,7 @@ from .helpers import *
 from kb.apps.models import App
 from kb.settings.models import *
 from kb.permissions.models import *
+from kb.lvs.models import XmlDump
 
 class Group(models.Model):
     title = models.CharField(max_length=255)
@@ -27,7 +28,8 @@ class Group(models.Model):
             through_fields=('group', 'settingVal'),
             related_name='group_defaults')
 
-    tags = models.ManyToMany('Tag', blank=True)
+    tags = models.ManyToManyField('Tag', blank=True)
+    imported = models.BooleanField(default=False)
 
     class Meta:
         app_label = "groups"
@@ -71,6 +73,7 @@ class Institute(models.Model):
     email_domain = models.CharField(max_length=255)
     #The apps an institute (client) has access to, OS-level setting
     apps = models.ManyToManyField(App)
+    xmls = models.ManyToManyField(XmlDump, blank=True)
 
     class Meta:
         app_label = "groups"
@@ -107,4 +110,7 @@ class Role(models.Model):
 
 class Tag(models.Model):
     label = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.label
 

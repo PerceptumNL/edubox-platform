@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'kb.events',
     'kb.apps',
     'kb.groups',
+    'kb.lvs',
     'kb.settings',
     'kb.permissions',
     'kb',

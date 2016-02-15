@@ -6,14 +6,15 @@ from kb.settings.models import *
 from kb.permissions.models import *
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, unique=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, unique=True,
+            on_delete=models.CASCADE, related_name='profile')
 
     #EdeXML additions
-    alias = models.CharField(max_length=255, unique=True)
+    alias = models.CharField(max_length=255, unique=True, null=True)
     surname_prefixes = models.CharField(max_length=127, blank=True)
     initials = models.CharField(max_length=15, blank=True)
     gender = models.PositiveSmallIntegerField(default=0)
-    date_of_birth = models.DateField(blank=True)
+    date_of_birth = models.DateField(null=True)
 
     #Member specifies the role the user has in the group
     groups = models.ManyToManyField(Group, through=Membership, 
