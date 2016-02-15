@@ -26,7 +26,7 @@ class LearningUnit(models.Model):
         return self.label
 
     def get_next_activity_for_user(self, user):
-        return self.activities.exclude(completed_by=user.userprofile).first()
+        return self.activities.exclude(completed_by=user.profile).first()
 
 
 class LearningUnitItem(models.Model):

@@ -189,11 +189,11 @@ def _parse_params(request, setting):
         except (ObjectDoesNotExist, ValueError):
             return None
 
-    if 'group' in request.GET and not _user_can_edit_group(request.user.userprofile, context['group']):
+    if 'group' in request.GET and not _user_can_edit_group(request.user.profile, context['group']):
         return None
 
     if 'user' in context:
-        context['user'] = context['user'].userprofile
+        context['user'] = context['user'].profile
 
     return context
 

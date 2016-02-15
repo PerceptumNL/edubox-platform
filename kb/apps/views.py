@@ -10,7 +10,7 @@ def app_list(request):
     #If user is authenticated, retrieve all groups he is a member of
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
-    groups = request.user.userprofile.groups.all()
+    groups = request.user.profile.groups.all()
 
     #For each group store all available apps and the complete parent-path
     group_contexts = {}
