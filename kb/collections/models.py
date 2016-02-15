@@ -1,13 +1,14 @@
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 from kb.models import UserProfile
+from kb.apps.models import App
 from kb.events.models import GenericEvent
 #TODO from kb.badges.models import Badge
 
 class Activity(models.Model):
-    #TODO: Add 'app' relation
     label = models.CharField(max_length=255)
-    url = models.URLField(max_length=255)
+    url = models.CharField(max_length=255)
+    app = models.ForeignKey(App)
     completed_by = models.ManyToManyField(UserProfile,
             through='ActivityCompletion', related_name='completed_tasks')
 
@@ -17,13 +18,24 @@ class Activity(models.Model):
 
 class LearningUnit(models.Model):
     label = models.CharField(max_length=255)
-    ordered = models.BooleanField(default=True)
-    activities = models.ManyToManyField(Activity)
+    activities = models.ManyToManyField(Activity, through='LearningUnitItem')
     #TODO dependencies = models.ManyToManyField(Badge)
     #TODO provides = models.ManyToManyField(Badge, through=LearningUnitOutcome)
 
     def __str__(self):
         return self.label
+
+    def get_next_activity_for_user(self, user):
+        return self.activities.exclude(completed_by=user.userprofile).first()
+
+
+class LearningUnitItem(models.Model):
+    learning_unit = models.ForeignKey(LearningUnit)
+    activity = models.ForeignKey(Activity)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ('order',)
 
 
 class Collection(models.Model):

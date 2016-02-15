@@ -458,11 +458,10 @@ class AppRouter(Router):
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def get_routed_app_root(cls, request, app):
+    def get_routed_app_url(cls, request, app, location='/'):
         router = cls(app)
         router.request = request
-        return router.get_routed_url(
-            "%s://%s" % (app.scheme, app.root), path_only=False)
+        return router.get_routed_url(location, path_only=False)
 
     @classmethod
     @xframe_options_exempt
