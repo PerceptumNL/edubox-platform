@@ -523,7 +523,7 @@ class AppRouter(Router):
         except ValueError:
             raise Http404()
 
-        cls.debug("Router matched domain %s of app %d" % (domain, app_id))
+        cls.debug("Router matched domain %s of app %s" % (domain, app_id))
         try:
             app = App.objects.get(pk=app_id)
         except App.DoesNotExist:
