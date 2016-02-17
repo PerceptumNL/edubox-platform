@@ -150,9 +150,9 @@ class EdeXmlImporter(object):
             self.last_pw = self.password
             if self.last_pw == '':
                 self.last_pw = generate_password()
-           
-            user = User.objects.create(username=username,
-                    password=self.last_pw, **user_kwargs)
+
+            user = User.objects.create_user(username, password=self.last_pw,
+                      **user_kwargs)
             profile = UserProfile.objects.create(user=user, 
                     institute=self.institute, **profile_kwargs)
             
