@@ -51,15 +51,19 @@ class SubdomainAppRoutingMiddleware(SubdomainMiddleware):
 
         subdomain = getattr(request, 'subdomain', UNSET)
 
+        from router import Router
+        routing_table = settings.SUBDOMAIN_ROUTING
+        routing_table.update(Router.get_subdomain_routing_mapping())
+
         if subdomain is not UNSET:
-            if subdomain in settings.SUBDOMAIN_ROUTING:
-                routing = settings.SUBDOMAIN_ROUTING.get(subdomain)
+            if subdomain in routing_table:
+                routing = routing_table.get(subdomain)
                 if callable(routing):
                     return routing(request)
                 else:
                     request.urlconf = routing
             else:
-                for pattern, routing in settings.SUBDOMAIN_ROUTING.items():
+                for pattern, routing in routing_table.items():
                     if pattern is None:
                         continue
                     match = re.match(pattern, subdomain)

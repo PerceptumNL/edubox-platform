@@ -1,0 +1,20 @@
+[
+    {
+        "model": "groups.Institute",
+        "pk": 1,
+        "fields": {
+            "title": "Perceptum",
+            "email_domain": "perceptum.nl",
+            "apps": [1, 2, 3, 4]
+        }
+    },
+    {
+        "model": "groups.Group",
+        "pk": 1,
+        "fields": {
+            "title": "Perceptum",
+            "apps": [1, 2, 3, 4],
+            "institute": 1
+        }
+    }
+]

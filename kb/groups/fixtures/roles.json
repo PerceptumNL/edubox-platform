@@ -1,0 +1,37 @@
+[
+    {
+        "model": "groups.Role",
+        "pk": 1,
+        "fields": {
+            "role": "Student",
+            "permissions": []
+        }
+    },
+    {
+        "model": "groups.Role",
+        "pk": 2,
+        "fields": {
+            "role": "Teacher",
+            "permissions": ["add_event", "get_event_aggregate", "get_event_filter",
+                "get_event_detail", "edit_permissions_group", "edit_settings_group"]
+        }
+    },
+    {
+        "model": "groups.Role",
+        "pk": 3,
+        "fields": {
+            "role": "Mentor",
+            "permissions": ["get_event_aggregate", "get_event_filter",
+                "edit_permissions_group", "edit_settings_group"]
+        }
+    },
+    {
+        "model": "groups.Role",
+        "pk": 4,
+        "fields": {
+            "role": "Executive",
+            "permissions": ["get_event_aggregate", "edit_permissions_group",
+                "edit_settings_group"]
+        }
+    }
+]

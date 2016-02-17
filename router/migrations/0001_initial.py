@@ -13,33 +13,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='App',
+            name='ServerCookie',
             fields=[
-                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
-                ('root', models.CharField(max_length=255, verbose_name='URL/URLconf')),
-                ('local', models.BooleanField(default=True)),
-                ('identical_urls', models.CharField(max_length=255, blank=True)),
-                ('secure', models.BooleanField(default=True)),
-                ('title', models.CharField(max_length=255)),
-                ('icon', models.URLField(null=True, blank=True)),
-                ('users', models.ManyToManyField(related_name='apps', to=settings.AUTH_USER_MODEL)),
+                ('id', models.AutoField(auto_created=True, verbose_name='ID', serialize=False, primary_key=True)),
+                ('name', models.CharField(max_length=255)),
+                ('value', models.CharField(max_length=2049)),
+                ('domain', models.CharField(max_length=255)),
+                ('user', models.ForeignKey(related_name='+', to=settings.AUTH_USER_MODEL)),
             ],
-            options={
-                'abstract': False,
-            },
-        ),
-        migrations.CreateModel(
-            name='Service',
-            fields=[
-                ('root', models.CharField(max_length=255, verbose_name='URL/URLconf')),
-                ('local', models.BooleanField(default=True)),
-                ('identical_urls', models.CharField(max_length=255, blank=True)),
-                ('secure', models.BooleanField(default=True)),
-                ('name', models.CharField(max_length=255, serialize=False, primary_key=True)),
-                ('title', models.CharField(max_length=255)),
-            ],
-            options={
-                'abstract': False,
-            },
         ),
     ]

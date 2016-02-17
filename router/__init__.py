@@ -52,16 +52,19 @@ remote request / remote response
     request is routed to.
 """
 import re
+import pickle
+import requests
+import subdomains
+from base64 import b32encode, b32decode
+from binascii import Error as BinASCIIError
+from bs4 import BeautifulSoup
+from Crypto.Cipher import AES
 from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
 
-from django.http import HttpResponse, Http404
 from django.conf import settings
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.views.decorators.clickjacking import xframe_options_exempt
-
-import requests
-import subdomains
-from bs4 import BeautifulSoup
 
 class BaseRouter():
     """
@@ -74,14 +77,15 @@ class BaseRouter():
     """Incoming request object to be routed."""
     remote_domain = None
     """The remote domain the request must be routed to."""
-    remote_sesssion = None
+    remote_session = None
     """The :py:class:`requests.Session` object used for all remote requests."""
 
     def __init__(self, remote_domain):
         self.remote_domain = remote_domain
         self.remote_session = requests.Session()
 
-    def debug(self, msg):
+    @classmethod
+    def debug(cls, msg):
         """
         Prints a debug message when the setting ``DEBUG`` is set to True.
         Each debug message is preprended with the current time provided by
@@ -91,11 +95,78 @@ class BaseRouter():
         """
         if not settings.DEBUG:
             return
-        print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
+        print("[%s] %s - %s" % (datetime.now(), cls.__name__, msg))
+
+    @classmethod
+    def debug_http_package(cls, http_package, label=None, secret_body_values=None):
+        if not settings.DEBUG:
+            return
+        label = label or 'HTTP Package'
+        output_lines = [label+':']
+        if isinstance(http_package, requests.Request) or \
+            isinstance(http_package, requests.PreparedRequest):
+            output_lines.append("%s %s HTTP/1.1" % (
+                http_package.method, http_package.path_url))
+            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
+            for header, value in headers:
+                output_lines.append("%s: %s" % (header.title(), value))
+            if http_package.body is not None:
+                output_lines.append("")
+                body = http_package.body
+                if secret_body_values is not None:
+                    for secret in secret_body_values:
+                        body = body.replace(secret, "****")
+                output_lines.append(body)
+        elif isinstance(http_package, requests.Response):
+            output_lines.append("HTTP %s %s" % (
+                http_package.status_code, http_package.reason))
+            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
+            for header, value in headers:
+                output_lines.append("%s: %s" % (header.title(), value))
+        else:
+            output_lines.append("Unknown http_package: %s" % (http_package,))
+        cls.debug("\n".join(output_lines))
+
+    @staticmethod
+    def pack_secure_params(params, sep='|'):
+        plain = sep.join([str(param) for param in params])
+        pad = (-len(plain) % 16) * '*'
+        plain += pad
+
+        #Use the django settings secret key to encrypt with AES
+        key = settings.SECRET_KEY[:16]
+        crypt = AES.new(key, AES.MODE_ECB)
+        cipher = crypt.encrypt(plain)
+
+        #Encode in base64
+        token = b32encode(cipher).decode('utf-8').replace("=","-")
+        return token
+
+    @staticmethod
+    def unpack_secure_token(token, sep='|'):
+        #Decode from base64
+        token = b32decode(token.replace("-","="), casefold=True)
+
+        #Decrypt AES using settings secret key
+        key = settings.SECRET_KEY[:16]
+        cipher = AES.new(key, AES.MODE_ECB)
+        context = cipher.decrypt(token)
+
+        #Seperate the elements from the string
+        context = context.decode('utf-8')
+        params = context.rstrip('*').split(sep)
+        return params
 
     @classmethod
     @xframe_options_exempt
-    def route_path_by_subdomain(cls, request, domain):
+    def route_path_by_subdomain(cls, request, domain_hash):
+        try:
+            domain, = cls.unpack_secure_token(domain_hash)
+        except ValueError:
+            cls.debug("Router could not unpack domain token")
+            raise Http404()
+
+        cls.debug("Router matched domain %s" % (domain,))
         router = cls(domain)
         return router.route_request(request)
 
@@ -162,7 +233,8 @@ class BaseRouter():
         """
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
-        return "%s.rtr.%s" % (netloc, subdomains.utils.get_domain())
+        return "%s-rtr.%s" % (
+            self.pack_secure_params((netloc,)), subdomains.utils.get_domain())
 
     def get_unrouted_domain_by_match(self, **kwargs):
         """
@@ -177,7 +249,11 @@ class BaseRouter():
                        groups.
         :return: the unrouted domain string or the current domain.
         """
-        return kwargs.get('domain', subdomains.utils.get_domain())
+        domain_hash = kwargs.get('domain_hash', None)
+        if domain_hash is None:
+            return subdomains.utils.get_domain()
+        else:
+            return self.unpack_secure_token(domain_hash)[0]
 
     def get_unrouted_url(self, routed_url, path_only=True):
         """
@@ -221,36 +297,34 @@ class BaseRouter():
         self.request = request
         self.debug("Incoming request: %s %s://%s%s" % (
             request.method, request.scheme, request.get_host(), request.path_info))
+        self.remote_session.cookies = self.get_remote_request_cookiejar()
         remote_response = self.get_remote_response()
         response = self.get_response(remote_response)
-        self.debug("Response: HTTP %d, Content-length: %d" % (
-            response.status_code, len(response.content)))
         return response
 
     def get_remote_response(self):
         """
         Send the request to the remote domain and return the response.
         """
-        self.remote_session.cookies = self.get_remote_request_cookiejar()
         url = "%s://%s%s" % (
             self.get_remote_request_scheme(),
             self.get_remote_request_host(), self.get_remote_request_path())
-        self.debug("%s: %s %s" % ("Remote request", self.request.method, url))
-        return self.remote_session.request(
+        response = self.remote_session.request(
             method=self.get_remote_request_method(),
             allow_redirects=False,
             data=self.get_remote_request_body(),
             headers=self.get_remote_request_headers(),
             url=url)
+        self.debug_http_package(response.request, label='Remote request.')
+        self.debug_http_package(response, label='Remote response.')
+        return response
 
     def get_remote_request_method(self):
         method = self.request.method
-        self.debug("Remote request method: %s" % (method,))
         return method
 
     def get_remote_request_scheme(self):
         scheme = self.request.scheme
-        self.debug("Remote request scheme: %s" % (scheme,))
         return scheme
 
     def get_remote_request_host(self):
@@ -262,19 +336,30 @@ class BaseRouter():
         path = self.request.path_info
         if self.request.META.get("QUERY_STRING", "") != "":
             path = "%s?%s" % (path, self.request.META["QUERY_STRING"])
-        self.debug("Remote request path: %s" % (path,))
         return path
 
     def get_remote_request_cookiejar(self):
-        cookiejar = requests.utils.cookiejar_from_dict(self.request.COOKIES)
-        self.debug("Remote request cookiejar: %s" % (cookiejar,))
+        from .models import ServerCookiejar
+        server_cj, created = ServerCookiejar.objects.get_or_create(
+            user=self.request.user)
+        if created:
+            from requests.utils import cookiejar_from_dict
+            cookiejar = cookiejar_from_dict({})
+        else:
+            try:
+                cookiejar = pickle.loads(server_cj.contents)
+            except EOFError:
+                from requests.utils import cookiejar_from_dict
+                cookiejar = cookiejar_from_dict({})
         return cookiejar
 
     def get_remote_request_headers(self):
         headers = {}
         convert_fn = lambda s: s.replace("_", "-").lower()
         for header, value in self.request.META.items():
-            if header == "CONTENT_TYPE":
+            if header == 'HTTP_COOKIE':
+                pass
+            elif header == "CONTENT_TYPE":
                 headers[convert_fn(header)] = value
             elif header == "HTTP_HOST":
                 value = self.get_remote_request_host()
@@ -292,12 +377,10 @@ class BaseRouter():
         if 'accept-encoding' not in headers:
             headers['accept-encoding'] = "gzip, deflate"
 
-        self.debug("Remote request headers: %s" % (headers,))
         return headers
 
     def get_remote_request_body(self):
         body = self.request.body
-        self.debug("Remote request body: %s..." % (body[:20],))
         return body
 
     def get_response(self, remote_response):
@@ -340,7 +423,7 @@ class BaseRouter():
 
     def get_response_headers(self, remote_response):
         headers = {}
-        ignore_list = ["x-frame-options"]
+        ignore_list = ["x-frame-options", "set-cookie"]
         for header, value in remote_response.headers.items():
             header = header.lower()
             if header == "location":
@@ -352,6 +435,14 @@ class BaseRouter():
                 # unpacked by the requests libary. For it to be packed
                 # later on, this header must not be already set.
                 continue
+            elif header == "content-security-policy":
+                if 'frame-ancestors' in value:
+                    if 'HTTP_REFERER' in self.request.META:
+                        value = value.replace(
+                            "frame-ancestors",
+                            "frame-ancestors %s" % (
+                                self.request.META['HTTP_REFERER'],))
+                headers[header.title()] = value
             elif header in ignore_list:
                 continue
             else:
@@ -359,113 +450,35 @@ class BaseRouter():
         return headers
 
     def alter_response_cookies(self, response, remote_response):
-        for cookie in self.remote_session.cookies:
-            # TODO: Update server-stored cookiejar for this user
-            if cookie.expires is not None:
-                expires = datetime.fromtimestamp(cookie.expires)
-            else:
-                expires = None
-            response.set_cookie(
-                cookie.name,
-                cookie.value,
-                expires=expires,
-                path=self.get_routed_url(cookie.path, path_only=True))
+        """
+        Alter the response send back to the user by setting cookies, if any.
+        """
+        # Cookies beloning to this user are kept at the server.
+        # Since this will also be the last moment we'll need it in this request,
+        # let's store the changes in the server cookiejar.
+        from .models import ServerCookiejar
+        server_cj, _ = ServerCookiejar.objects.get_or_create(
+            user=self.request.user)
+        server_cj.contents = pickle.dumps(self.remote_session.cookies)
+        server_cj.save()
 
 
-class GoogleMixin():
+class StaticFileMixin():
 
-    def get_remote_request_path(self):
-        path = super().get_remote_request_path()
-
-        if self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/o/oauth2/postmessageRelay":
-            routed_url = unquote(self.request.GET.get("parent", ''))
-            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(routed_url, safe=""),
-                quote(unrouted_url, safe="")))
-            return re.sub(
-                quote(routed_url, safe=""), quote(unrouted_url, safe=""), path)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/o/oauth2/auth":
-            routed_url = unquote(self.request.GET.get("origin", ''))
-            unrouted_url = self.get_unrouted_url(routed_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(routed_url, safe=""),
-                quote(unrouted_url, safe="")))
-            return re.sub(
-                quote(routed_url, safe=""), quote(unrouted_url, safe=""), path)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/ServiceLogin":
-            unrouted_url = unquote(self.request.GET.get("continue", ''))
-            if unrouted_url == "":
-                return path
-            routed_url = self.get_routed_url(unrouted_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(unrouted_url, safe=""),
-                quote(routed_url, safe="")))
-            return re.sub(
-                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.path_info == "/LoginVerification":
-            unrouted_url = unquote(self.request.GET.get("continue", ''))
-            if unrouted_url == "":
-                return path
-            routed_url = self.get_routed_url(unrouted_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(unrouted_url, safe=""),
-                quote(routed_url, safe="")))
-            return re.sub(
-                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
-        elif self.remote_domain == "appengine.google.com" and \
-                self.request.path_info == "/_ah/conflogin":
-            unrouted_url = unquote(self.request.GET.get("continue", ''))
-            if unrouted_url == "":
-                return path
-            routed_url = self.get_routed_url(unrouted_url, path_only=False)
-            self.debug("Swapping %s with %s" % (
-                quote(unrouted_url, safe=""),
-                quote(routed_url, safe="")))
-            return re.sub(
-                quote(unrouted_url, safe=""), quote(routed_url, safe=""), path)
-        else:
-            return path
-
-    def alter_response_content(self, response_content, remote_response):
-        response_content = super().alter_response_content(
-            response_content, remote_response)
-        if self.remote_domain == "apis.google.com" and \
-                "javascript" in remote_response.headers.get('content-type', ''):
-            pattern = r"(['\"])https://accounts.google.com/o/([^'\"]+)['\"]"
-            domain = self.get_routed_domain("https://accounts.google.com")
-            replacement = r"\1https://%s/o/\2\1" % (domain,)
-            response_content = re.sub(pattern, replacement, response_content)
-        elif self.remote_domain == "accounts.google.com" and \
-                self.request.method == "GET":
-            if not isinstance(response_content, BeautifulSoup):
-                return response_content
-            for form in response_content.find_all('form'):
-                if 'action' not in form.attrs:
-                    continue
-                form['action'] = self.get_routed_url(
-                    form['action'],
-                    path_only=False)
-            for link in response_content.find_all('a'):
-                if 'href' not in link.attrs:
-                    continue
-                link['href'] = self.get_routed_url(link['href'])
-        elif isinstance(response_content, BeautifulSoup):
-            pattern_gapis = r"(['\"])https://apis.google.com/js/([^'\"]+)['\"]"
-            domain = self.get_routed_domain("https://apis.google.com")
-            replacement_gapis = r"\1https://%s/js/\2\1" % (domain,)
-            for script in response_content.find_all('script'):
-                script.string = re.sub(
-                    pattern_gapis, replacement_gapis, str(script.string))
-
-        return response_content
+    def route_request(self, request):
+        static_extensions = ['jpg','png','css','jpeg','gif', 'svg', 'js']
+        filename_parts = request.path_info.split('.')
+        if filename_parts and filename_parts[-1] in static_extensions:
+            self.request = request
+            url = "%s://%s%s" % (
+                self.get_remote_request_scheme(),
+                self.get_remote_request_host(), self.get_remote_request_path())
+            self.debug("Redirecting request to remote host.")
+            return HttpResponseRedirect(url)
+        return super().route_request(request)
 
 
-class Router(GoogleMixin, BaseRouter):
+class Router(StaticFileMixin, BaseRouter):
 
     @classmethod
     def get_subdomain_patterns(cls):
@@ -475,7 +488,7 @@ class Router(GoogleMixin, BaseRouter):
 
         :rtype: tuple of regex strings
         """
-        return (r"(?P<domain>.+)\.rtr",)
+        return (r"(?P<domain_hash>[A-Za-z2-7-]+)-rtr",)
 
 
 class AppRouter(Router):
@@ -486,33 +499,58 @@ class AppRouter(Router):
     :type app: :py:class:`loader.models.App`
     """
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app, remote_domain=None, *args, **kwargs):
         self.app = app
-        kwargs['remote_domain'] = self.app.root
+        if remote_domain is None:
+            kwargs['remote_domain'] = urlsplit('http://'+self.app.root).netloc
+        else:
+            kwargs['remote_domain'] = remote_domain
         super().__init__(*args, **kwargs)
 
     @classmethod
-    @xframe_options_exempt
-    def route_path_by_subdomain(cls, request, domain):
-        from .models import App
-        try:
-            app = App.objects.get(root=domain)
-        except App.DoesNotExist:
-            for app in App.objects.exclude(identical_urls=""):
-                if re.match(app.identical_urls, domain):
-                    break
-            else:
-                app = None
+    def get_routed_app_url(cls, request, app, location='/'):
+        router = cls(app)
+        router.request = request
+        return router.get_routed_url(location, path_only=False)
 
-        if app is None:
+    @classmethod
+    @xframe_options_exempt
+    def route_path_by_subdomain(cls, request, domain_hash):
+        from kb.apps.models import App
+        try:
+            domain, app_id = cls.unpack_secure_token(domain_hash)
+        except ValueError:
+            cls.debug("Router could not unpack domain token")
+            raise Http404()
+
+        cls.debug("Router matched domain %s of app %s" % (domain, app_id))
+        try:
+            app = App.objects.get(pk=app_id)
+        except App.DoesNotExist:
             raise Http404
         else:
-            router = cls(app)
+            router = cls(app, remote_domain=domain)
             return router.route_request(request)
 
     @classmethod
     def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+)\.app",)
+        return (r"(?P<domain_hash>[A-Za-z2-7-]+)-app",)
+
+    def get_remote_response(self):
+        """
+        Send the request to the remote domain and return the response.
+        """
+        app_root = urlsplit('http://'+self.app.root+'/')
+        if self.request.path_info == app_root.path \
+                and self.app_login_needed():
+            self.debug("[App Login] Starting login procedure")
+            status = self.app_login()
+            self.debug("[App Login] Successful?: %s" % (status,))
+        return super().get_remote_response()
+
+    def get_remote_request_scheme(self):
+        scheme = self.app.scheme
+        return scheme
 
     def get_routed_domain(self, url):
         """
@@ -524,13 +562,140 @@ class AppRouter(Router):
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
         if re.match(self.app.identical_urls, netloc):
-            return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+            return "%s-app.%s" % (
+                self.pack_secure_params((netloc, self.app.pk)),
+                subdomains.utils.get_domain())
         else:
             return super().get_routed_domain(url)
 
+    def app_login_needed(self):
+        config = self.app.login_config
+        if 'check' not in config or 'method' not in config['check']:
+            return False
+        if config['check']['method'] == 'PING_REDIRECT':
+            if 'url' not in config['check']:
+                return False
+            response = self.remote_session.request(method="HEAD",
+                                                   url=config['check']['url'],
+                                                   allow_redirects=False)
 
-class DuolingoAppRouter(AppRouter):
+            # Debug the interaction
+            self.debug_http_package(response.request,
+                    label='Login check request')
+            self.debug_http_package(response, label='Login check response')
+            return response.status_code == 302
+        elif config['check']['method'] == 'FETCH_AND_SEARCH':
+            if 'url' not in config['check'] or 'search' not in config['check']:
+                return False
+            response = self.remote_session.request(method="GET",
+                                                   url=config['check']['url'])
+            # Debug the interaction
+            self.debug_http_package(response.request,
+                    label='Login check request')
+            self.debug_http_package(response, label='Login check response')
+            return config['check']['search'] in response.text
+        else:
+            return False
 
-    @classmethod
-    def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+\.duolingo\.com)\.app",)
+    def app_login(self):
+        """
+        Perform automatic app login based on login script.
+        """
+        config = self.app.login_config
+        cookiejar = self.remote_session.cookies
+        if 'login' not in config or 'post' not in config['login']:
+            return False
+        # Execute login script
+        login_document = None
+        login_url = "%s://%s%s" % (
+            self.app.scheme, self.app.root, config['login']['post'])
+        login_variables = {}
+        login_payload = {}
+        login_headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': '%s://%s' % (self.app.scheme, self.app.root),
+            'User-Agent': (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+                "(KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36"),
+            'Referer': login_url}
+        # Retrieve user credentials
+        from .models import ServerCredentials
+        try:
+            credentials = ServerCredentials.objects.get(
+                app=self.app, user=self.request.user)
+        except ServerCredentials.DoesNotExist:
+            self.debug("No credentials found for this app.")
+            credentials = None
+            secret_body_values = None
+        else:
+            login_variables['username'] = credentials.username
+            login_variables['password'] = credentials.password
+            secret_body_values = [credentials.username, credentials.password]
+
+        # Retrieve the head of the login page for cookies
+        login_document_response = self.remote_session.request(
+            url=login_url, method="GET")
+
+        if 'heads' in config['login']:
+            for url in config['login']['heads']:
+                self.remote_session.request(url=url, method="HEAD")
+
+        if 'vars' in config['login']:
+            for name, value in config['login']['vars'].items():
+                if value[:7] == "cookie:" and value[7:] in cookiejar:
+                    login_variables[name] = cookiejar[value[7:]]
+                elif value[:6] == "field:":
+                    if login_document is None:
+                        if login_document_response.status_code != 200:
+                            self.debug(
+                                "Retrieving login document for field"
+                                "retrieval failed.")
+                            continue
+                        login_document = BeautifulSoup(
+                            login_document_response.text)
+                    field = login_document.find('input',
+                                                attrs={"name": value[6:]})
+                    if field is not None and field.has_attr('value'):
+                        login_variables[name] = field['value']
+                else:
+                    login_variables[name] = value
+
+        if 'payload' in config['login']:
+            for name, value in config['login']['payload'].items():
+                if value == "":
+                    login_payload[name] = ""
+                elif isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in login_variables:
+                    login_payload[name] = login_variables[value[1:]]
+                else:
+                    login_payload[name] = value
+
+        if 'headers' in config['login']:
+            for name, value in config['login']['headers'].items():
+                if isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in login_variables:
+                    login_headers[name] = login_variables[value[1:]]
+                else:
+                    login_headers[name] = value
+
+        # Construct and execute login request
+        request_params = {
+            "method":"POST",
+            "allow_redirects":False,
+            "headers":login_headers,
+            "url":login_url}
+        if 'Content-Type' in login_headers and \
+                login_headers['Content-Type'] == "application/json":
+            request_params['json'] = login_payload
+        else:
+            request_params['data'] = login_payload
+        response = self.remote_session.request(**request_params)
+
+        # Debug the interaction
+        self.debug_http_package(response.request, label='Login request',
+                secret_body_values=secret_body_values)
+        self.debug_http_package(response, label='Login response')
+        if response.status_code == 302:
+            return True
+        else:
+            return not self.app_login_needed()

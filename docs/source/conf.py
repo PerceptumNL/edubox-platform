@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Edubox documentation build configuration file, created by
+# Eduraam documentation build configuration file, created by
 # sphinx-quickstart on Mon Nov  9 18:07:19 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -37,6 +37,7 @@ settings.configure()
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
+    'sphinxcontrib.httpdomain',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -54,7 +55,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'Edubox'
+project = 'Eduraam'
 copyright = '2015, Perceptum'
 author = 'Perceptum'
 
@@ -208,7 +209,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Eduboxdoc'
+htmlhelp_basename = 'Eduraamdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -230,7 +231,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'Edubox.tex', 'Edubox Documentation',
+  (master_doc, 'Eduraam.tex', 'Eduraam Documentation',
    'Perceptum', 'manual'),
 ]
 
@@ -260,7 +261,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'edubox', 'Edubox Documentation',
+    (master_doc, 'eduraam', 'Eduraam Documentation',
      [author], 1)
 ]
 
@@ -274,8 +275,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'Edubox', 'Edubox Documentation',
-   author, 'Edubox', 'One line description of project.',
+  (master_doc, 'Eduraam', 'Eduraam Documentation',
+   author, 'Eduraam', 'One line description of project.',
    'Miscellaneous'),
 ]
 

@@ -1,11 +1,5 @@
 from django.contrib import admin
-from .models import App, Service
+from .models import ServerCookiejar, ServerCredentials
 
-class AppAdmin(admin.ModelAdmin):
-    list_display = ('title', 'local', 'root')
-
-class ServiceAdmin(admin.ModelAdmin):
-    list_display = ('title', 'local', 'root')
-
-admin.site.register(App, AppAdmin)
-admin.site.register(Service, ServiceAdmin)
+admin.site.register(ServerCookiejar)
+admin.site.register(ServerCredentials)
