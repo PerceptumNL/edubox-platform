@@ -519,8 +519,8 @@ class AppRouter(Router):
         from kb.apps.models import App
         try:
             domain, app_id = cls.unpack_secure_token(domain_hash)
-            cls.debug("Router could not unpack domain token")
         except ValueError:
+            cls.debug("Router could not unpack domain token")
             raise Http404()
 
         cls.debug("Router matched domain %s of app %s" % (domain, app_id))
