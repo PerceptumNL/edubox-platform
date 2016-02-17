@@ -1,13 +1,16 @@
-from rest_framework import serializers, viewsets
+from django.http import JsonResponse, HttpResponse
+
 from .models import LearningUnit
 
-class LearningUnitSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = LearningUnit
-        fields = ('id', 'label')
+def learning_units(request):
+    if not request.user.is_authenticated():
+        return HttpResponse(status=401)
 
+    units = []
+    for unit in LearningUnit.objects.all():
+        units.append({
+            'id': unit.pk,
+            'label': unit.label
+        })
 
-class LearningUnitViewSet(viewsets.ModelViewSet):
-    #TODO: extend queryset to filter completed and unreachable.
-    queryset = LearningUnit.objects.all()
-    serializer_class = LearningUnitSerializer
+    return JsonResponse({'units': units})
