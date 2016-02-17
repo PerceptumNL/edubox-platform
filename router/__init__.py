@@ -486,7 +486,7 @@ class Router(StaticFileMixin, BaseRouter):
 
         :rtype: tuple of regex strings
         """
-        return (r"(?P<domain_hash>[A-Z2-7-]+)-rtr",)
+        return (r"(?P<domain_hash>[A-Za-z2-7-]+)-rtr",)
 
 
 class AppRouter(Router):
@@ -532,7 +532,7 @@ class AppRouter(Router):
 
     @classmethod
     def get_subdomain_patterns(cls):
-        return (r"(?P<domain_hash>[A-Z2-7-]+)-app",)
+        return (r"(?P<domain_hash>[A-Za-z2-7-]+)-app",)
 
     def get_remote_response(self):
         """
