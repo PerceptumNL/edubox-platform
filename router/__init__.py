@@ -516,7 +516,7 @@ class AppRouter(Router):
     def route_path_by_subdomain(cls, request, domain_hash):
         from kb.apps.models import App
         try:
-            domain, app_id = unpack_secure_token(domain_hash)
+            domain, app_id = cls.unpack_secure_token(domain_hash)
             self.debug("Router could not unpack domain token")
         except ValueError:
             raise Http404()
