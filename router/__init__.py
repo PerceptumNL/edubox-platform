@@ -84,7 +84,8 @@ class BaseRouter():
         self.remote_domain = remote_domain
         self.remote_session = requests.Session()
 
-    def debug(self, msg):
+    @classmethod
+    def debug(cls, msg):
         """
         Prints a debug message when the setting ``DEBUG`` is set to True.
         Each debug message is preprended with the current time provided by
@@ -94,9 +95,10 @@ class BaseRouter():
         """
         if not settings.DEBUG:
             return
-        print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
+        print("[%s] %s - %s" % (datetime.now(), cls.__name__, msg))
 
-    def debug_http_package(self, http_package, label=None, secret_body_values=None):
+    @classmethod
+    def debug_http_package(cls, http_package, label=None, secret_body_values=None):
         if not settings.DEBUG:
             return
         label = label or 'HTTP Package'
@@ -123,7 +125,7 @@ class BaseRouter():
                 output_lines.append("%s: %s" % (header.title(), value))
         else:
             output_lines.append("Unknown http_package: %s" % (http_package,))
-        self.debug("\n".join(output_lines))
+        cls.debug("\n".join(output_lines))
 
     @staticmethod
     def pack_secure_params(params, sep='|'):
