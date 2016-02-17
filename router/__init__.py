@@ -161,8 +161,10 @@ class BaseRouter():
         try:
             domain, = cls.unpack_secure_token(domain_hash)
         except ValueError:
+            self.debug("Router could not unpack domain token")
             raise Http404()
 
+        self.debug("Router matched domain %s" % (domain,))
         router = cls(domain)
         return router.route_request(request)
 
@@ -515,9 +517,11 @@ class AppRouter(Router):
         from kb.apps.models import App
         try:
             domain, app_id = unpack_secure_token(domain_hash)
+            self.debug("Router could not unpack domain token")
         except ValueError:
             raise Http404()
 
+        self.debug("Router matched domain %s of app %d" % (domain, app_id))
         try:
             app = App.objects.get(pk=app_id)
         except App.DoesNotExist:
