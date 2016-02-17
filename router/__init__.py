@@ -55,7 +55,10 @@ import re
 import pickle
 import requests
 import subdomains
+from base64 import b32encode, b32decode
+from binascii import Error as BinASCIIError
 from bs4 import BeautifulSoup
+from Crypto.Cipher import AES
 from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
 
@@ -122,9 +125,44 @@ class BaseRouter():
             output_lines.append("Unknown http_package: %s" % (http_package,))
         self.debug("\n".join(output_lines))
 
+    @staticmethod
+    def pack_secure_params(params, sep='|'):
+        plain = sep.join([str(param) for param in params])
+        pad = (-len(plain) % 16) * '*'
+        plain += pad
+
+        #Use the django settings secret key to encrypt with AES
+        key = settings.SECRET_KEY[:16]
+        crypt = AES.new(key, AES.MODE_ECB)
+        cipher = crypt.encrypt(plain)
+
+        #Encode in base64
+        token = b32encode(cipher).decode('utf-8').replace("=","-")
+        return token
+
+    @staticmethod
+    def unpack_secure_token(token, sep='|'):
+        #Decode from base64
+        token = b32decode(token.replace("-","="), casefold=True)
+
+        #Decrypt AES using settings secret key
+        key = settings.SECRET_KEY[:16]
+        cipher = AES.new(key, AES.MODE_ECB)
+        context = cipher.decrypt(token)
+
+        #Seperate the elements from the string
+        context = context.decode('utf-8')
+        params = context.rstrip('*').split(sep)
+        return params
+
     @classmethod
     @xframe_options_exempt
-    def route_path_by_subdomain(cls, request, domain):
+    def route_path_by_subdomain(cls, request, domain_hash):
+        try:
+            domain, = cls.unpack_secure_token(domain_hash)
+        except ValueError:
+            raise Http404()
+
         router = cls(domain)
         return router.route_request(request)
 
@@ -191,7 +229,8 @@ class BaseRouter():
         """
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
-        return "%s.rtr.%s" % (netloc, subdomains.utils.get_domain())
+        return "%s-rtr.%s" % (
+            self.pack_secure_params((netloc,)), subdomains.utils.get_domain())
 
     def get_unrouted_domain_by_match(self, **kwargs):
         """
@@ -206,7 +245,11 @@ class BaseRouter():
                        groups.
         :return: the unrouted domain string or the current domain.
         """
-        return kwargs.get('domain', subdomains.utils.get_domain())
+        domain_hash = kwargs.get('domain_hash', None)
+        if domain_hash is None:
+            return subdomains.utils.get_domain()
+        else:
+            return self.unpack_secure_token(domain_hash)[0]
 
     def get_unrouted_url(self, routed_url, path_only=True):
         """
@@ -441,7 +484,7 @@ class Router(StaticFileMixin, BaseRouter):
 
         :rtype: tuple of regex strings
         """
-        return (r"(?P<domain>.+)\.rtr",)
+        return (r"(?P<domain_hash>[A-Z2-7-]+)-rtr",)
 
 
 class AppRouter(Router):
@@ -452,9 +495,12 @@ class AppRouter(Router):
     :type app: :py:class:`loader.models.App`
     """
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app, remote_domain=None, *args, **kwargs):
         self.app = app
-        kwargs['remote_domain'] = urlsplit('http://'+self.app.root).netloc
+        if remote_domain is None:
+            kwargs['remote_domain'] = urlsplit('http://'+self.app.root).netloc
+        else:
+            kwargs['remote_domain'] = remote_domain
         super().__init__(*args, **kwargs)
 
     @classmethod
@@ -465,26 +511,24 @@ class AppRouter(Router):
 
     @classmethod
     @xframe_options_exempt
-    def route_path_by_subdomain(cls, request, domain):
+    def route_path_by_subdomain(cls, request, domain_hash):
         from kb.apps.models import App
         try:
-            app = App.objects.get(root=domain)
-        except App.DoesNotExist:
-            for app in App.objects.exclude(identical_urls=""):
-                if re.match(app.identical_urls, domain):
-                    break
-            else:
-                app = None
+            domain, app_id = unpack_secure_token(domain_hash)
+        except ValueError:
+            raise Http404()
 
-        if app is None:
+        try:
+            app = App.objects.get(pk=app_id)
+        except App.DoesNotExist:
             raise Http404
         else:
-            router = cls(app)
+            router = cls(app, remote_domain=domain)
             return router.route_request(request)
 
     @classmethod
     def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+)\.app",)
+        return (r"(?P<domain_hash>[A-Z2-7-]+)-app",)
 
     def get_remote_response(self):
         """
@@ -512,7 +556,9 @@ class AppRouter(Router):
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
         if re.match(self.app.identical_urls, netloc):
-            return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+            return "%s-app.%s" % (
+                self.pack_secure_params((netloc, self.app.pk)),
+                subdomains.utils.get_domain())
         else:
             return super().get_routed_domain(url)
 
@@ -647,10 +693,3 @@ class AppRouter(Router):
             return True
         else:
             return not self.app_login_needed()
-
-
-class DuolingoAppRouter(AppRouter):
-
-    @classmethod
-    def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+\.duolingo\.com)\.app",)
