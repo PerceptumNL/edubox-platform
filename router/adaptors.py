@@ -165,9 +165,9 @@ class CodeOrgAdaptor(BaseAdaptor):
 
         try:
             credentials = ServerCredentials.objects.get(
-                app=self.app, user=teacher)
+                app=app, user=teacher)
         except ServerCredentials.DoesNotExist:
-            self.debug("Teacher credentials not found for this app.")
+            cls.debug("Teacher credentials not found for this app.")
             return False
 
         return cls.login(credentials, teacher, session)
@@ -180,7 +180,7 @@ class CodeOrgAdaptor(BaseAdaptor):
             teacher_session = cls.create_session()
             # Login as generic teacher
             if not cls.login_as_default_teacher(teacher_session, app):
-                self.debug("Cannot login as default teacher.")
+                cls.debug("Cannot login as default teacher.")
                 return False
             # Check if section is created for institute, else create it
             sections = teacher_session.request(
@@ -242,7 +242,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                         'login_mode': 'class',
                         'section': section_code,
                         'username': account['username']}))
-                self.debug("Created account for %d in code.org" % (user.pk,))
+                cls.debug("Created account for %d in code.org" % (user.pk,))
                 return True
             else:
                 return False
