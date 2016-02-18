@@ -417,6 +417,13 @@ class BaseRouter():
                             "frame-ancestors",
                             "frame-ancestors %s" % (
                                 self.request.META['HTTP_REFERER'],))
+                    else:
+                        from django.contrib.sites.models import Site
+                        current_site = Site.objects.get_current()
+                        value = value.replace(
+                            "frame-ancestors",
+                            "frame-ancestors *.%s" % (
+                                current_site.domain,))
                 headers[header.title()] = value
             elif header in ignore_list:
                 continue
