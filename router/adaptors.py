@@ -211,7 +211,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                     section = teacher_session.request(
                         method='GET',
                         url=section_response.headers['location'],
-                        custom_headers={
+                        headers={
                             'Referer': cls.TEACHER_DASHBOARD_PAGE,
                             'Content-Type': 'application/json;charset=UTF-8',
                             'X-Requested-With': 'XMLHttpRequest'
