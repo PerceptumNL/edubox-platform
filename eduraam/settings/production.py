@@ -38,3 +38,5 @@ CORS_ORIGIN_WHITELIST = ('platform.codecult.nl', 'staging.codecult.nl')
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_DOMAIN = ".codecult.nl"
+
+DEFAULT_CODE_ORG_TEACHER = os.environ.get('DEFAULT_CODE_ORG_TEACHER')

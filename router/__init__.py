@@ -543,7 +543,39 @@ class AppRouter(Router):
         else:
             return super().get_routed_domain(url)
 
+    def get_app_adaptor(self):
+        from importlib import import_module
+        if not self.app.adaptor_class:
+            return None
+
+        adaptor_path = self.app.adaptor_class.split('.')
+        adaptor_module = ".".join(adaptor_path[:-1])
+        if adaptor_module:
+            try:
+                adaptor = getattr(import_module(adaptor_module),
+                    adaptor_path[-1])
+            except ImportError:
+                self.debug('Cannot find adaptor module.')
+                return None
+            except AttributeError:
+                self.debug('Cannot find adaptor class in module.')
+                return None
+        else:
+            try:
+                adaptor = globals()[adaptor_path[-1]]
+            except KeyError:
+                self.debug("Cannot find adaptor class in globals")
+                return None
+        return adaptor
+
     def app_login_needed(self):
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
+            return adaptor.is_logged_in(
+                user=self.request.user,
+                session=self.remote_session,
+                app=self.app)
+
         config = self.app.login_config
         if 'check' not in config or 'method' not in config['check']:
             return False
@@ -572,7 +604,149 @@ class AppRouter(Router):
         else:
             return False
 
-    def app_login(self):
+    def app_signup(self):
+        """
+        Perform automatic app signup based on signup script.
+        """
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
+            return adaptor.signup(
+                user=self.request.user,
+                session=self.remote_session,
+                app=self.app)
+        config = self.app.login_config
+        cookiejar = self.remote_session.cookies
+        if 'signup' not in config or 'post' not in config['signup']:
+            return False
+        # Execute signup script
+        signup_document = None
+        signup_url = "%s://%s%s" % (
+            self.app.scheme, self.app.root, config['signup']['post'])
+        if 'form' in config['signup']:
+            signup_document_url = "%s://%s%s" % (
+                self.app.scheme, self.app.root, config['signup']['form'])
+        else:
+            signup_document_url = signup_url
+        signup_variables = {}
+        signup_payload = {}
+        signup_headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': '%s://%s' % (self.app.scheme, self.app.root),
+            'User-Agent': (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+                "(KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36"),
+            'Referer': signup_url}
+        # Generate user credentials
+        from .models import ServerCredentials
+        if 'check-username' in config['signup']:
+            username_valid = False
+            invalid_usernames = []
+            while not username_valid:
+                credentials = ServerCredentials.generate(
+                    app=self.app,
+                    user=self.request.user,
+                    invalid_usernames=invalid_usernames)
+                check_username = config['signup']['check-username']
+                if check_username['method'] == "GET_EXACT_MATCH":
+                    check_username_result = self.remote_session.request(
+                        method="GET",
+                        url=check_username['url'].replace(
+                            "$username", credentials.username))
+                    check_username_match_value = \
+                            check_username['match'].replace(
+                                "$username", credentials.username)
+                    if check_username_result.text == \
+                            check_username_match_value:
+                        username_valid = True
+                    else:
+                        invalid_usernames.append(credentials.username)
+                else:
+                    break
+
+            signup_variables['username'] = credentials.username
+            signup_variables['password'] = credentials.password
+        else:
+            credentials = ServerCredentials.generate(
+                    app=self.app, user=self.request.user)
+            signup_variables['username'] = credentials.username
+            signup_variables['password'] = credentials.password
+
+        # TODO: Set user fields as signup variables (name, email, birthday, etc)
+        secret_body_values = [credentials.username, credentials.password]
+
+        # Retrieve the head of the signup page for cookies
+        signup_document_response = self.remote_session.request(
+            url=signup_document_url, method="GET")
+
+        if 'heads' in config['signup']:
+            for url in config['signup']['heads']:
+                self.remote_session.request(url=url, method="HEAD")
+
+        if 'vars' in config['signup']:
+            for name, value in config['signup']['vars'].items():
+                if value[:7] == "cookie:" and value[7:] in cookiejar:
+                    signup_variables[name] = cookiejar[value[7:]]
+                elif value[:6] == "field:":
+                    if signup_document is None:
+                        if signup_document_response.status_code != 200:
+                            self.debug(
+                                "Retrieving signup document for field"
+                                "retrieval failed.")
+                            continue
+                        signup_document = BeautifulSoup(
+                            signup_document_response.text)
+                    field = signup_document.find('input',
+                                                attrs={"name": value[6:]})
+                    if field is not None and field.has_attr('value'):
+                        signup_variables[name] = field['value']
+                else:
+                    signup_variables[name] = value
+
+        if 'payload' in config['signup']:
+            for name, value in config['signup']['payload'].items():
+                if value == "":
+                    signup_payload[name] = ""
+                elif isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in signup_variables:
+                    signup_payload[name] = signup_variables[value[1:]]
+                else:
+                    signup_payload[name] = value
+
+        if 'headers' in config['signup']:
+            for name, value in config['signup']['headers'].items():
+                if isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in signup_variables:
+                    signup_headers[name] = signup_variables[value[1:]]
+                else:
+                    signup_headers[name] = value
+
+        # Construct and execute signup request
+        request_params = {
+            "method":"POST",
+            "allow_redirects":False,
+            "headers":signup_headers,
+            "url":signup_url}
+        if 'Content-Type' in signup_headers and \
+                signup_headers['Content-Type'] == "application/json":
+            request_params['json'] = signup_payload
+        else:
+            request_params['data'] = signup_payload
+        response = self.remote_session.request(**request_params)
+
+        # Debug the interaction
+        self.debug_http_package(response.request, label='Signup request',
+                secret_body_values=secret_body_values)
+        self.debug_http_package(response, label='Signup response')
+        if not self.app_login_needed():
+            credentials.save()
+            return True
+        elif self.app_login(credentials=credentials):
+            credentials.save()
+            return True
+        else:
+            return False
+
+    def app_login(self, credentials=None):
         """
         Perform automatic app login based on login script.
         """
@@ -584,30 +758,13 @@ class AppRouter(Router):
             self.debug("No credentials found for this app.")
             credentials = None
 
-        if self.app.adaptor_class:
-            from importlib import import_module
-            adaptor_path = self.app.adaptor_class.split('.')
-            adaptor_module = ".".join(adaptor_path[:-1])
-            if adaptor_module:
-                try:
-                    adaptor = getattr(import_module(adaptor_module),
-                        adaptor_path[-1])
-                except ImportError:
-                    self.debug('Cannot find adaptor module.')
-                    return False
-                except AttributeError:
-                    self.debug('Cannot find adaptor class in module.')
-                    return False
-            else:
-                try:
-                    adaptor = globals()[adaptor_path[-1]]
-                except KeyError:
-                    self.debug("Cannot find adaptor class in globals")
-                    return False
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
             return adaptor.login(
                 credentials=credentials,
                 user=self.request.user,
-                session=self.remote_session)
+                session=self.remote_session,
+                app=self.app)
 
         config = self.app.login_config
         cookiejar = self.remote_session.cookies
@@ -626,6 +783,7 @@ class AppRouter(Router):
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
                 "(KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36"),
             'Referer': login_url}
+
         if credentials is None:
             secret_body_values = None
         else:
