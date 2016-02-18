@@ -66,6 +66,8 @@ from django.conf import settings
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.views.decorators.clickjacking import xframe_options_exempt
 
+from router import utils
+
 class BaseRouter():
     """
     Generic base class for all router classes.
@@ -93,39 +95,12 @@ class BaseRouter():
 
         :param str msg: The debug message to display
         """
-        if not settings.DEBUG:
-            return
-        print("[%s] %s - %s" % (datetime.now(), cls.__name__, msg))
+        utils.debug(msg, category=cls.__name__)
 
     @classmethod
     def debug_http_package(cls, http_package, label=None, secret_body_values=None):
-        if not settings.DEBUG:
-            return
-        label = label or 'HTTP Package'
-        output_lines = [label+':']
-        if isinstance(http_package, requests.Request) or \
-            isinstance(http_package, requests.PreparedRequest):
-            output_lines.append("%s %s HTTP/1.1" % (
-                http_package.method, http_package.path_url))
-            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
-            for header, value in headers:
-                output_lines.append("%s: %s" % (header.title(), value))
-            if http_package.body is not None:
-                output_lines.append("")
-                body = http_package.body
-                if secret_body_values is not None:
-                    for secret in secret_body_values:
-                        body = body.replace(secret, "****")
-                output_lines.append(body)
-        elif isinstance(http_package, requests.Response):
-            output_lines.append("HTTP %s %s" % (
-                http_package.status_code, http_package.reason))
-            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
-            for header, value in headers:
-                output_lines.append("%s: %s" % (header.title(), value))
-        else:
-            output_lines.append("Unknown http_package: %s" % (http_package,))
-        cls.debug("\n".join(output_lines))
+        utils.debug_http_package(http_package, label, secret_body_values,
+            category=cls.__name__)
 
     @staticmethod
     def pack_secure_params(params, sep='|'):
@@ -601,6 +576,39 @@ class AppRouter(Router):
         """
         Perform automatic app login based on login script.
         """
+        from .models import ServerCredentials
+        try:
+            credentials = ServerCredentials.objects.get(
+                app=self.app, user=self.request.user)
+        except ServerCredentials.DoesNotExist:
+            self.debug("No credentials found for this app.")
+            credentials = None
+
+        if self.app.adaptor_class:
+            from importlib import import_module
+            adaptor_path = self.app.adaptor_class.split('.')
+            adaptor_module = ".".join(adaptor_path[:-1])
+            if adaptor_module:
+                try:
+                    adaptor = getattr(import_module(adaptor_module),
+                        adaptor_path[-1])
+                except ImportError:
+                    self.debug('Cannot find adaptor module.')
+                    return False
+                except AttributeError:
+                    self.debug('Cannot find adaptor class in module.')
+                    return False
+            else:
+                try:
+                    adaptor = globals()[adaptor_path[-1]]
+                except KeyError:
+                    self.debug("Cannot find adaptor class in globals")
+                    return False
+            return adaptor.login(
+                credentials=credentials,
+                user=self.request.user,
+                session=self.remote_session)
+
         config = self.app.login_config
         cookiejar = self.remote_session.cookies
         if 'login' not in config or 'post' not in config['login']:
@@ -618,14 +626,7 @@ class AppRouter(Router):
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
                 "(KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36"),
             'Referer': login_url}
-        # Retrieve user credentials
-        from .models import ServerCredentials
-        try:
-            credentials = ServerCredentials.objects.get(
-                app=self.app, user=self.request.user)
-        except ServerCredentials.DoesNotExist:
-            self.debug("No credentials found for this app.")
-            credentials = None
+        if credentials is None:
             secret_body_values = None
         else:
             login_variables['username'] = credentials.username
