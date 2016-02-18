@@ -206,7 +206,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                         'Content-Type': 'application/json;charset=UTF-8',
                         'X-Requested-With': 'XMLHttpRequest'
                     })
-                if not section_response.is_redirect():
+                if not section_response.is_redirect:
                     return False
                 else:
                     section = teacher_session.request(
