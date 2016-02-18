@@ -521,6 +521,15 @@ class AppRouter(Router):
             self.debug("[App Login] Successful?: %s" % (status,))
         return super().get_remote_response()
 
+    def alter_response_content(self, response_content, remote_response):
+        if isinstance(response_content, BeautifulSoup):
+            adaptor = self.get_app_adaptor()
+            if adaptor is not None:
+                app_script = adaptor.get_app_script()
+                if app_script is not None:
+                    response_content.body.append(response_content.new_tag(
+                        'script', scr=app_script))
+
     def get_remote_request_scheme(self):
         scheme = self.app.scheme
         return scheme

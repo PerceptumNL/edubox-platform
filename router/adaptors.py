@@ -41,6 +41,10 @@ class BaseAdaptor():
         raise NotImplementedError()
 
     @classmethod
+    def get_app_script(cls, *args, **kwargs):
+        return none
+
+    @classmethod
     def fetch_and_parse_document(cls, session, url):
         response = session.request(method="GET", url=url)
         return BeautifulSoup(response.text)
@@ -85,6 +89,7 @@ class CodeOrgAdaptor(BaseAdaptor):
     SECTION_INDEX = "https://code.org/v2/sections"
     SECTION_STUDENTS_URL = "https://code.org/v2/sections/%d/students"
     TEACHER_DASHBOARD_PAGE = "https://code.org/teacher-dashboard"
+    APP_SCRIPT_URL = "https://backend.codecult.nl/static/adaptor/code_org.js"
 
     @classmethod
     def is_logged_in(cls, user, session, *args, **kwargs):
@@ -249,3 +254,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 return True
             else:
                 return False
+
+    @classmethod
+    def get_app_script(cls, *args, **kwargs):
+        return cls.APP_SCRIPT_URL
