@@ -232,7 +232,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                     'X-Requested-With': 'XMLHttpRequest'
                 })
             if response.status_code == 200:
-                account = response.json()
+                account = response.json()[0]
                 ServerCredentials.objects.create(
                     user=user,
                     app=app,
