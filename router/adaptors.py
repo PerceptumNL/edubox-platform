@@ -45,6 +45,17 @@ class BaseAdaptor():
         return none
 
     @classmethod
+    def determine_age(cls, user):
+        dob = user.profile.date_of_birth
+        if dob is not None:
+            from datetime import date
+            today = date.today()
+            return ( today.year - dob.year -
+                ((today.month, today.day) < (dob.month, dob.day)) )
+        else:
+            return None
+
+    @classmethod
     def fetch_and_parse_document(cls, session, url):
         response = session.request(method="GET", url=url)
         return BeautifulSoup(response.text)
@@ -225,7 +236,18 @@ class CodeOrgAdaptor(BaseAdaptor):
             section_code = section['code']
             section_id = section['id']
             # Add student
-            payload = [{ "editing": True, "name": user.profile.full_name }]
+            age = cls.determine_age(user)
+            if age is not None:
+                payload = [{
+                    "editing": True,
+                    "name": user.profile.full_name,
+                    "age": '21+' if age > 20 else str(age)
+                }]
+            else:
+                payload = [{
+                    "editing": True,
+                    "name": user.profile.full_name,
+                }]
             response = cls.form_post(
                 session=teacher_session,
                 url=cls.SECTION_STUDENTS_URL % (section_id,),
