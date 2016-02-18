@@ -186,14 +186,14 @@ class CodeOrgAdaptor(BaseAdaptor):
             sections = teacher_session.request(
                 url=cls.SECTION_INDEX, method="GET").json()
             for section in sections:
-                if section['name'] == user.institute.email_domain:
+                if section['name'] == user.profile.institute.email_domain:
                     break
             else:
                 # Create section
                 payload = {
                     "editing": True,
                     "login_type": "word",
-                    "name": user.institute.email_domain,
+                    "name": user.profile.institute.email_domain,
                     "grade":"Other"
                 }
 
