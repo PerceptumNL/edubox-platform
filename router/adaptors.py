@@ -86,7 +86,6 @@ class CodeOrgAdaptor(BaseAdaptor):
     SECTION_STUDENTS_URL = "https://code.org/v2/sections/%d/students"
     TEACHER_DASHBOARD_PAGE = "https://code.org/teacher-dashboard"
 
-
     @classmethod
     def is_logged_in(cls, user, session, *args, **kwargs):
         response = session.request(method="HEAD",
@@ -242,6 +241,10 @@ class CodeOrgAdaptor(BaseAdaptor):
                         'login_mode': 'class',
                         'section': section_code,
                         'username': account['username']}))
+                # Add language cookie to session
+                from requests.cookies import create_cookie
+                session.cookies.set_cookie(
+                    create_cookie('language', 'nl', domain='code.org'))
                 cls.debug("Created account for %d in code.org" % (user.pk,))
                 return True
             else:
