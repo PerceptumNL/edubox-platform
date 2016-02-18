@@ -174,7 +174,7 @@ class CodeOrgAdaptor(BaseAdaptor):
 
     @classmethod
     def signup(cls, user, session, app, *args, **kwargs):
-        if user.is_teacher():
+        if user.profile.is_teacher():
             pass
         else:
             teacher_session = cls.create_session()
