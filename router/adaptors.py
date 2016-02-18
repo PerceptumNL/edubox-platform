@@ -221,7 +221,7 @@ class CodeOrgAdaptor(BaseAdaptor):
             section_code = section['code']
             section_id = section['id']
             # Add student
-            payload = [{ "editing": true, "name": user.profile.full_name }]
+            payload = [{ "editing": True, "name": user.profile.full_name }]
             response = cls.form_post(
                 session=teacher_session,
                 url=cls.SECTION_STUDENTS_URL % (section_id,),
