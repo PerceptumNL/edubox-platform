@@ -89,7 +89,7 @@ class CodeOrgAdaptor(BaseAdaptor):
     SECTION_INDEX = "https://code.org/v2/sections"
     SECTION_STUDENTS_URL = "https://code.org/v2/sections/%d/students"
     TEACHER_DASHBOARD_PAGE = "https://code.org/teacher-dashboard"
-    APP_SCRIPT_URL = "/adaptor/code_org.js"
+    APP_SCRIPT_URL = "adaptor/code_org.js"
 
     @classmethod
     def is_logged_in(cls, user, session, *args, **kwargs):
@@ -258,5 +258,5 @@ class CodeOrgAdaptor(BaseAdaptor):
     @classmethod
     def get_app_script(cls, *args, **kwargs):
         from django.conf import settings
-        return "https://backend.codecult.nl/%s/%s" % (
+        return "https://backend.codecult.nl%s%s" % (
             settings.STATIC_URL, cls.APP_SCRIPT_URL)
