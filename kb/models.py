@@ -66,7 +66,18 @@ class UserProfile(models.Model):
         
         full += self.last_name
         return full
-    
+
+    def is_teacher(self, group=None):
+        if group:
+            return Membership.objects.filter(
+                user=self,
+                group=group,
+                role__role="Teacher").exists()
+        else:
+            return Membership.objects.filter(
+                user=self,
+                role__role="Teacher").exists()
+
     def __str__(self):
         return str(self.user)
 
