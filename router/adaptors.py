@@ -257,5 +257,6 @@ class CodeOrgAdaptor(BaseAdaptor):
 
     @classmethod
     def get_app_script(cls, *args, **kwargs):
-        from django.templatetags.static import static
-        return static(cls.APP_SCRIPT_URL)
+        from django.conf import settings
+        return "https://backend.codecult.nl/%s/%s" % (
+            settings.STATIC_URL, cls.APP_SCRIPT_URL)
