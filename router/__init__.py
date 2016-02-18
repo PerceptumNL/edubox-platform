@@ -529,6 +529,7 @@ class AppRouter(Router):
                 if app_script is not None:
                     response_content.body.append(response_content.new_tag(
                         'script', scr=app_script))
+        return response_content
 
     def get_remote_request_scheme(self):
         scheme = self.app.scheme
