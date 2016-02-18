@@ -244,7 +244,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 # Add language cookie to session
                 from requests.cookies import create_cookie
                 session.cookies.set_cookie(
-                    create_cookie('language', 'nl', domain='code.org'))
+                    create_cookie('language_', 'nl-nl', domain='code.org'))
                 cls.debug("Created account for %d in code.org" % (user.pk,))
                 return True
             else:
