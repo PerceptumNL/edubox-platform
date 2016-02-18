@@ -1,6 +1,9 @@
 from bs4 import BeautifulSoup
 
+import json
+
 from router import utils
+from .models import ServerCredentials
 
 class BaseAdaptor():
 
@@ -19,6 +22,11 @@ class BaseAdaptor():
     def debug_http_package(cls, http_package, label=None, secret_body_values=None):
         utils.debug_http_package(http_package, label, secret_body_values,
             category=cls.__name__)
+
+    @classmethod
+    def create_session(cls):
+        from requests import Session
+        return Session()
 
     @classmethod
     def is_logged_in(cls, user, session, *args, **kwargs):
@@ -61,7 +69,7 @@ class BaseAdaptor():
             "headers": headers,
             "url": url
         }
-        if headers['Content-Type'] == "application/json":
+        if "application/json" in headers['Content-Type']:
             params['json'] = payload
         else:
             params['data'] = payload
@@ -74,6 +82,9 @@ class CodeOrgAdaptor(BaseAdaptor):
     LOGIN_URL = "https://studio.code.org/users/sign_in"
     SECTION_LOGIN_PAGE_URL = "https://studio.code.org/sections/%s"
     SECTION_LOGIN_URL = "https://studio.code.org/sections/%s/log_in"
+    SECTION_INDEX = "https://code.org/v2/sections"
+    SECTION_STUDENTS_URL = "https://code.org/v2/sections/%d/students"
+    TEACHER_DASHBOARD_PAGE = "https://code.org/teacher-dashboard"
 
 
     @classmethod
@@ -138,5 +149,97 @@ class CodeOrgAdaptor(BaseAdaptor):
         return login_response.status_code == 302
 
     @classmethod
-    def signup(cls, user, session, *args, **kwargs):
-        raise NotImplementedError()
+    def login_as_default_teacher(cls, session, app):
+        from django.conf import settings
+        if settings.DEFAULT_CODE_ORG_TEACHER is None:
+            return False
+        else:
+            from django.contrib.auth import get_user_model
+            try:
+                teacher = get_user_model().objects.get(
+                    pk=settings.DEFAULT_CODE_ORG_TEACHER)
+            except get_user_model().DoesNotExist:
+                return False
+
+        try:
+            credentials = ServerCredentials.objects.get(
+                app=self.app, user=teacher)
+        except ServerCredentials.DoesNotExist:
+            self.debug("Teacher credentials not found for this app.")
+            return False
+
+        return cls.login(credentials, teacher, session)
+
+    @classmethod
+    def signup(cls, user, session, app, *args, **kwargs):
+        if user.is_teacher():
+            pass
+        else:
+            teacher_session = cls.create_session()
+            # Login as generic teacher
+            if not cls.login_as_default_teacher(teacher_session, app):
+                self.debug("Cannot login as default teacher.")
+                return False
+            # Check if section is created for institute, else create it
+            sections = teacher_session.request(
+                url=cls.SECTION_INDEX, method="GET").json()
+            for section in sections:
+                if section['name'] == user.institute.email_domain:
+                    break
+            else:
+                # Create section
+                payload = {
+                    "editing": True,
+                    "login_type": "word",
+                    "name": user.institute.email_domain,
+                    "grade":"Other"
+                }
+
+                section_response = cls.form_post(
+                    session=teacher_session,
+                    url=cls.SECTION_INDEX,
+                    payload=payload,
+                    custom_headers={
+                        'Referer': cls.TEACHER_DASHBOARD_PAGE,
+                        'Content-Type': 'application/json;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    })
+                if not section_response.is_redirect():
+                    return False
+                else:
+                    section = teacher_session.request(
+                        method='GET',
+                        url=section_response.headers['location'],
+                        custom_headers={
+                            'Referer': cls.TEACHER_DASHBOARD_PAGE,
+                            'Content-Type': 'application/json;charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }).json()
+
+            section_code = section['code']
+            section_id = section['id']
+            # Add student
+            payload = [{ "editing": true, "name": user.profile.full_name }]
+            response = cls.form_post(
+                session=teacher_session,
+                url=cls.SECTION_STUDENTS_URL % (section_id,),
+                payload=payload,
+                custom_headers={
+                    'Referer': cls.TEACHER_DASHBOARD_PAGE,
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                })
+            if response.status_code == 200:
+                account = response.json()
+                ServerCredentials.objects.create(
+                    user=user,
+                    app=app,
+                    username=account['id'],
+                    password=account['secret_words'],
+                    params=json.dumps({
+                        'login_mode': 'class',
+                        'section': section_code,
+                        'username': account['username']}))
+                return True
+            else:
+                return False

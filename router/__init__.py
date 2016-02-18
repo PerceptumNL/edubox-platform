@@ -543,7 +543,39 @@ class AppRouter(Router):
         else:
             return super().get_routed_domain(url)
 
+    def get_app_adaptor(self):
+        from importlib import import_module
+        if not self.app.adaptor_class:
+            return None
+
+        adaptor_path = self.app.adaptor_class.split('.')
+        adaptor_module = ".".join(adaptor_path[:-1])
+        if adaptor_module:
+            try:
+                adaptor = getattr(import_module(adaptor_module),
+                    adaptor_path[-1])
+            except ImportError:
+                self.debug('Cannot find adaptor module.')
+                return None
+            except AttributeError:
+                self.debug('Cannot find adaptor class in module.')
+                return None
+        else:
+            try:
+                adaptor = globals()[adaptor_path[-1]]
+            except KeyError:
+                self.debug("Cannot find adaptor class in globals")
+                return None
+        return adaptor
+
     def app_login_needed(self):
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
+            return adaptor.is_logged_in(
+                user=self.request.user,
+                session=self.remote_session,
+                app=self.app)
+
         config = self.app.login_config
         if 'check' not in config or 'method' not in config['check']:
             return False
@@ -584,30 +616,13 @@ class AppRouter(Router):
             self.debug("No credentials found for this app.")
             credentials = None
 
-        if self.app.adaptor_class:
-            from importlib import import_module
-            adaptor_path = self.app.adaptor_class.split('.')
-            adaptor_module = ".".join(adaptor_path[:-1])
-            if adaptor_module:
-                try:
-                    adaptor = getattr(import_module(adaptor_module),
-                        adaptor_path[-1])
-                except ImportError:
-                    self.debug('Cannot find adaptor module.')
-                    return False
-                except AttributeError:
-                    self.debug('Cannot find adaptor class in module.')
-                    return False
-            else:
-                try:
-                    adaptor = globals()[adaptor_path[-1]]
-                except KeyError:
-                    self.debug("Cannot find adaptor class in globals")
-                    return False
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
             return adaptor.login(
                 credentials=credentials,
                 user=self.request.user,
-                session=self.remote_session)
+                session=self.remote_session,
+                app=self.app)
 
         config = self.app.login_config
         cookiejar = self.remote_session.cookies
