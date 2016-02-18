@@ -240,6 +240,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                         'login_mode': 'class',
                         'section': section_code,
                         'username': account['username']}))
+                self.debug("Created account for %d in code.org" % (user.pk,))
                 return True
             else:
                 return False

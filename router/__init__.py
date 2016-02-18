@@ -608,6 +608,12 @@ class AppRouter(Router):
         """
         Perform automatic app signup based on signup script.
         """
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
+            return adaptor.signup(
+                user=self.request.user,
+                session=self.remote_session,
+                app=self.app)
         config = self.app.login_config
         cookiejar = self.remote_session.cookies
         if 'signup' not in config or 'post' not in config['signup']:
