@@ -442,7 +442,7 @@ class BaseRouter():
 class StaticFileMixin():
 
     def route_request(self, request):
-        static_extensions = ['jpg','png','css','jpeg','gif', 'svg', 'js']
+        static_extensions = ['jpg','png','jpeg','gif', 'svg', 'js']
         filename_parts = request.path_info.split('.')
         if filename_parts and filename_parts[-1] in static_extensions:
             self.request = request
