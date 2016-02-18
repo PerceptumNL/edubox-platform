@@ -61,8 +61,8 @@ class UserProfile(models.Model):
     def full_name(self):
         full = self.first_name +' '
         
-        if self.prefixes != '':
-            full += self.prexfixes
+        if self.surname_prefixes != '':
+            full += self.surname_prefixes
         
         full += self.last_name
         return full
