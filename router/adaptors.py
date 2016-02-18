@@ -96,6 +96,8 @@ class CodeOrgAdaptor(BaseAdaptor):
 
     @classmethod
     def login(cls, credentials, user, session, *args, **kwargs):
+        if credentials is None:
+            return False
         secret_body_values = [credentials.username, credentials.password]
         params = credentials.parameters or {"login_mode": "normal"}
         if params['login_mode'] == "normal":

@@ -515,9 +515,7 @@ class AppRouter(Router):
         """
         Send the request to the remote domain and return the response.
         """
-        app_root = urlsplit('http://'+self.app.root+'/')
-        if self.request.path_info == app_root.path \
-                and self.app_login_needed():
+        if self.app_login_needed():
             self.debug("[App Login] Starting login procedure")
             status = self.app_login()
             self.debug("[App Login] Successful?: %s" % (status,))
@@ -757,6 +755,16 @@ class AppRouter(Router):
         except ServerCredentials.DoesNotExist:
             self.debug("No credentials found for this app.")
             credentials = None
+
+        if credentials is None:
+            if self.app_signup():
+                self.debug("Retrying credentials after signup")
+                try:
+                    credentials = ServerCredentials.objects.get(
+                        app=self.app, user=self.request.user)
+                except ServerCredentials.DoesNotExist:
+                    self.debug("No credentials found for this app.")
+                    credentials = None
 
         adaptor = self.get_app_adaptor()
         if adaptor is not None:
