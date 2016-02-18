@@ -10,6 +10,12 @@ body {
 	text-align: center;
 }
 
+.brand-header img {
+	height: 100%;
+	max-width: 100%;
+	margin: 0 auto;
+}
+
 .mdl-card {
 	width: 320px;
 	height: 320px;
