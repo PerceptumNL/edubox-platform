@@ -455,7 +455,7 @@ class StaticFileMixin():
             url = "%s://appstatic-eduraam.herokuapp.com/%s%s.%s" % (
                 self.get_remote_request_scheme(),
                 quote(self.get_remote_request_host, safe=''),
-                quote(filename_parts[:-1], safe=''),
+                quote(".".join(filename_parts[:-1]), safe=''),
                 filename_parts[-1])
             self.debug("Redirecting request to app static.")
             return HttpResponseRedirect(url)
