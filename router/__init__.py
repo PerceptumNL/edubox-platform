@@ -442,14 +442,22 @@ class BaseRouter():
 class StaticFileMixin():
 
     def route_request(self, request):
-        static_extensions = ['jpg','png','jpeg','gif', 'svg', 'js']
+        static_extensions = [
+            'css', 'js', 'jpg', 'jpeg', 'gif', 'ico', 'png', 'bmp', 'pict',
+            'csv', 'doc', 'pdf', 'pls', 'ppt', 'tif', 'tiff', 'eps', 'ejs',
+            'swf', 'midi', 'mid', 'ttf', 'eot', 'woff', 'otf', 'svg', 'svgz',
+            'webp', 'docx', 'xlsx', 'xls', 'pptx', 'ps', 'class', 'jar'
+        ]
         filename_parts = request.path_info.split('.')
         if filename_parts and filename_parts[-1] in static_extensions:
+            from urllib.parse import quote
             self.request = request
-            url = "%s://%s%s" % (
+            url = "%s://appstatic-eduraam.herokuapp.com/%s%s.%s" % (
                 self.get_remote_request_scheme(),
-                self.get_remote_request_host(), self.get_remote_request_path())
-            self.debug("Redirecting request to remote host.")
+                quote(self.get_remote_request_host, safe=''),
+                quote(filename_parts[:-1], safe=''),
+                filename_parts[-1])
+            self.debug("Redirecting request to app static.")
             return HttpResponseRedirect(url)
         return super().route_request(request)
 
