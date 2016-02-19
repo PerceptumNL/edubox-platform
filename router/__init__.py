@@ -452,7 +452,7 @@ class StaticFileMixin():
         if filename_parts and filename_parts[-1] in static_extensions:
             from urllib.parse import quote
             self.request = request
-            url = "%s://appstatic-eduraam.herokuapp.com/%s%s.%s" % (
+            url = "%s://eduraam-appstatic.herokuapp.com/%s%s.%s" % (
                 self.get_remote_request_scheme(),
                 quote(self.get_remote_request_host(), safe=''),
                 quote(".".join(filename_parts[:-1]), safe=''),
