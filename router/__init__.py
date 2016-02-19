@@ -457,7 +457,7 @@ class StaticFileMixin():
                     self.get_remote_request_scheme(),
                     quote(self.get_remote_request_host(), safe=''),
                     quote(".".join(filename_parts[:-1]), safe='')
-                ),
+                )),
                 filename_parts[-1])
             self.debug("Redirecting request to app static.")
             return HttpResponseRedirect(url)
