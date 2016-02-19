@@ -28,6 +28,9 @@ if 'SECRET_KEY' in os.environ:
 if 'SITE_ID' in os.environ:
     SITE_ID = int(os.environ.get('SITE_ID'))
 
+if 'APPSTATIC' in os.environ:
+    APPSTATIC = os.environ.get('APPSTATIC')
+
 EMAIL_HOST_USER = os.environ['SENDGRID_USERNAME']
 EMAIL_HOST= 'smtp.sendgrid.net'
 EMAIL_PORT = 587

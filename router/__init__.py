@@ -450,16 +450,25 @@ class StaticFileMixin():
         ]
         filename_parts = request.path_info.split('.')
         if filename_parts and filename_parts[-1] in static_extensions:
-            from urllib.parse import quote
-            self.request = request
-            url = "https://appstatic.codecult.nl/%s.%s" % (
-                quote("%s://%s%s" % (
+            if settings.APPSTATIC is not None:
+                from urllib.parse import quote
+                self.request = request
+                url = "https://appstatic.codecult.nl/%s.%s" % (
+                    quote("%s://%s%s" % (
+                        self.get_remote_request_scheme(),
+                        quote(self.get_remote_request_host(), safe=''),
+                        quote(".".join(filename_parts[:-1]), safe='')
+                    )),
+                    filename_parts[-1])
+                self.debug("Redirecting request to app static.")
+            else:
+                self.request = request
+                url = "%s://%s%s" % (
                     self.get_remote_request_scheme(),
-                    quote(self.get_remote_request_host(), safe=''),
-                    quote(".".join(filename_parts[:-1]), safe='')
-                )),
-                filename_parts[-1])
-            self.debug("Redirecting request to app static.")
+                    self.get_remote_request_host(),
+                    self.get_remote_request_path())
+                self.debug("Redirecting request to remote app.")
+
             return HttpResponseRedirect(url)
         return super().route_request(request)
 

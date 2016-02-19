@@ -112,6 +112,8 @@ STATICFILES_FINDERS = [
     'compressor.finders.CompressorFinder'
 ]
 
+APPSTATIC = None
+
 WSGI_APPLICATION = 'eduraam.wsgi.application'
 
 REST_FRAMEWORK = {
