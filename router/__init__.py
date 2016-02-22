@@ -55,6 +55,7 @@ import re
 import pickle
 import requests
 import subdomains
+import binascii
 from base64 import b32encode, b32decode
 from binascii import Error as BinASCIIError
 from bs4 import BeautifulSoup
