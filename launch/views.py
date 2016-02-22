@@ -18,7 +18,7 @@ def launch_app(request, group_id, app_id):
     location = AppRouter.get_routed_app_url(request, app)
 
     return HttpResponseRedirect(
-            "%s/?token=%s" % (location, token.decode('utf-8')))
+            "%s?token=%s" % (location, token.decode('utf-8')))
 
 def launch_unit(request, group_id, unit_id):
     if not request.user.is_authenticated():
@@ -37,6 +37,6 @@ def launch_unit(request, group_id, unit_id):
                 activity.url)
 
         return HttpResponseRedirect(
-                "%s/?token=%s" % (location, token.decode('utf-8')))
+                "%s?token=%s" % (location, token.decode('utf-8')))
     else:
         return HttpResponseRedirect('/')
