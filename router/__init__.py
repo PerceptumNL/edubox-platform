@@ -208,8 +208,9 @@ class BaseRouter():
         """
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
-        return "%s-rtr.%s" % (
-            self.pack_secure_params((netloc,)), subdomains.utils.get_domain())
+        return "%s.%s" % (
+            binascii.b2a_hex(bytes(netloc, "utf-8")).decode("utf-8"), 
+            subdomains.utils.get_domain())
 
     def get_unrouted_domain_by_match(self, **kwargs):
         """
@@ -554,22 +555,6 @@ class AppRouter(Router):
     def get_remote_request_scheme(self):
         scheme = self.app.scheme
         return scheme
-
-    def get_routed_domain(self, url):
-        """
-        Return a routed version of the domain in ``url``.
-
-        :param str url: The url that contains the domain that will be routed
-        :return: a routed domain string
-        """
-        parts = urlsplit(url)
-        netloc = parts.netloc or self.remote_domain
-        if re.match(self.app.identical_urls, netloc):
-            return "%s-app.%s" % (
-                self.pack_secure_params((netloc, self.app.pk)),
-                subdomains.utils.get_domain())
-        else:
-            return super().get_routed_domain(url)
 
     def get_app_adaptor(self):
         from importlib import import_module
