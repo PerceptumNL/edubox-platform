@@ -1,9 +1,13 @@
 from bs4 import BeautifulSoup
 
 import json
+import requests
+import binascii
 
 from router import utils
 from .models import ServerCredentials
+from kb.helpers import create_token, unpack_token
+from kb.groups.models import Group, Membership, Role
 
 class BaseAdaptor():
 
@@ -24,20 +28,15 @@ class BaseAdaptor():
             category=cls.__name__)
 
     @classmethod
-    def create_session(cls):
-        from requests import Session
-        return Session()
-
-    @classmethod
-    def is_logged_in(cls, user, session, *args, **kwargs):
+    def is_logged_in(cls, token, *args, **kwargs):
         raise NotImplementedError()
 
     @classmethod
-    def login(cls, credentials, user, session, *args, **kwargs):
+    def login(cls, token, credentials, *args, **kwargs):
         raise NotImplementedError()
 
     @classmethod
-    def signup(cls, user, session, *args, **kwargs):
+    def signup(cls, token, *args, **kwargs):
         raise NotImplementedError()
 
     @classmethod
@@ -56,8 +55,8 @@ class BaseAdaptor():
             return None
 
     @classmethod
-    def fetch_and_parse_document(cls, session, url):
-        response = session.request(method="GET", url=url)
+    def fetch_and_parse_document(cls, token, url):
+        response = requests.get(cls.base16_encode(url), params={'token':token})
         return BeautifulSoup(response.text)
 
     @classmethod
@@ -66,7 +65,7 @@ class BaseAdaptor():
         return field['value']
 
     @classmethod
-    def form_post(cls, session, url, payload, custom_headers={}):
+    def form_post(cls, token, url, payload, custom_headers={}):
         from urllib.parse import urlsplit
         urlparts = urlsplit(url)
         headers = {
@@ -79,16 +78,21 @@ class BaseAdaptor():
         }
         headers.update(custom_headers)
         params = {
-            "method":"POST",
+            "params": {'token': token}
             "allow_redirects":False,
             "headers": headers,
-            "url": url
+            "url": cls.base16_encode(url)
         }
         if "application/json" in headers['Content-Type']:
             params['json'] = payload
         else:
             params['data'] = payload
-        return session.request(**params)
+        return requests.post(**params)
+
+    @classmethod
+    def base16_encode(cls, url):
+        return binascii.b2a_hex(bytes(netloc, "utf-8")).decode("utf-8")+
+            ".codecult.nl"
 
 
 class CodeOrgAdaptor(BaseAdaptor):
@@ -103,14 +107,14 @@ class CodeOrgAdaptor(BaseAdaptor):
     APP_SCRIPT_URL = "adaptor/code_org.js"
 
     @classmethod
-    def is_logged_in(cls, user, session, *args, **kwargs):
-        response = session.request(method="HEAD",
-                                   url=cls.LOGIN_CHECK_URL,
-                                   allow_redirects=False)
+    def is_logged_in(cls, token, *args, **kwargs):
+        response = requests.head(cls.base16_encode(cls.LOGIN_CHECK_URL),
+            params={'token': token},
+            allow_redirects=False)
         return response.status_code == 302
 
     @classmethod
-    def login(cls, credentials, user, session, *args, **kwargs):
+    def login(cls, token, credentials, *args, **kwargs):
         if credentials is None:
             return False
         secret_body_values = [credentials.username, credentials.password]
@@ -118,7 +122,7 @@ class CodeOrgAdaptor(BaseAdaptor):
         if params['login_mode'] == "normal":
             cls.debug('Login mode: normal')
             login_document = cls.fetch_and_parse_document(
-                session, cls.LOGIN_PAGE_URL)
+                token, cls.LOGIN_PAGE_URL)
             authenticity_token = cls.get_field_value_from_document(
                 login_document, "authenticity_token")
             payload = {
@@ -130,13 +134,13 @@ class CodeOrgAdaptor(BaseAdaptor):
                 "user[hashed_email]": "",
                 "commit": "Sign in"
             }
-            login_response = cls.form_post(session, cls.LOGIN_URL, payload)
+            login_response = cls.form_post(token, cls.LOGIN_URL, payload)
         elif params['login_mode'] == "class":
             cls.debug('Login mode: class')
             if 'section' not in params:
                 return False
             login_document = cls.fetch_and_parse_document(
-                session, cls.SECTION_LOGIN_PAGE_URL % (params['section'],))
+                token, cls.SECTION_LOGIN_PAGE_URL % (params['section'],))
             authenticity_token = cls.get_field_value_from_document(
                 login_document, "authenticity_token")
             payload = {
@@ -148,7 +152,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 "button": ""
             }
             login_response = cls.form_post(
-                session=session,
+                token=token,
                 url=cls.SECTION_LOGIN_URL % (params['section'],),
                 payload=payload,
                 custom_headers={
@@ -166,40 +170,42 @@ class CodeOrgAdaptor(BaseAdaptor):
         return login_response.status_code == 302
 
     @classmethod
-    def login_as_default_teacher(cls, session, app):
-        from django.conf import settings
-        if settings.DEFAULT_CODE_ORG_TEACHER is None:
-            return False
-        else:
-            from django.contrib.auth import get_user_model
-            try:
-                teacher = get_user_model().objects.get(
-                    pk=settings.DEFAULT_CODE_ORG_TEACHER)
-            except get_user_model().DoesNotExist:
+    def teacher_login(cls, token, user, app):
+        try:
+            credentials = ServerCredentials.objects.get(app=app, user=user)
+        except ServerCredentials.DoesNotExist:
+            if cls.teacher_signup(cls, teacher_token):
+                credentials = ServerCredentials.objects.get(app=user, user=user)
+            else:
                 return False
 
-        try:
-            credentials = ServerCredentials.objects.get(
-                app=app, user=teacher)
-        except ServerCredentials.DoesNotExist:
-            cls.debug("Teacher credentials not found for this app.")
-            return False
-
-        return cls.login(credentials, teacher, session)
+        return cls.login(credentials, token)
+    
+    #TODO: Should sign the teacher up using his email account
+    @classmethod
+    def teacher_signup(cls, token):
+        pass
 
     @classmethod
-    def signup(cls, user, session, app, *args, **kwargs):
+    def signup(cls, token, *args, **kwargs):
+        unpacked = unpack_token(token)
+        user = User.objects.get(pk=unpacked['user'])
         if user.profile.is_teacher():
-            pass
+            cls.teacher_login(token, unpacked['user'], unpacked['app'])
         else:
-            teacher_session = cls.create_session()
-            # Login as generic teacher
-            if not cls.login_as_default_teacher(teacher_session, app):
-                cls.debug("Cannot login as default teacher.")
+            #Get the first teacher of this users group
+            group = Group.objects.get(pk=unpacked['group'])
+            role = Role.objects.get(role='Teacher')
+            teacher = Membership.objects.filter(group=group, role=role).first().user
+            teacher_token = create_token(user=teacher.pk, group=unpacked['group'], 
+                app=unpacked['app'])
+            
+            if not cls.teacher_login(teacher_token, teacher.pk, unpacked['app']):
+                cls.debug("Cannot login as group teacher.")
                 return False
             # Check if section is created for institute, else create it
-            sections = teacher_session.request(
-                url=cls.SECTION_INDEX, method="GET").json()
+            sections = requests.get(cls.base16_encode(cls.SECTION_INDEX)
+                params={'token': teacher_token}).json()
             for section in sections:
                 if section['name'] == user.profile.institute.email_domain:
                     break
@@ -213,7 +219,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 }
 
                 section_response = cls.form_post(
-                    session=teacher_session,
+                    token=teacher_token,
                     url=cls.SECTION_INDEX,
                     payload=payload,
                     custom_headers={
@@ -224,9 +230,9 @@ class CodeOrgAdaptor(BaseAdaptor):
                 if not section_response.is_redirect:
                     return False
                 else:
-                    section = teacher_session.request(
-                        method='GET',
-                        url=section_response.headers['location'],
+                    section = requests.get(
+                        cls.base16_encode(section_response.headers['location']),
+                        params={'token': teacher_token}
                         headers={
                             'Referer': cls.TEACHER_DASHBOARD_PAGE,
                             'Content-Type': 'application/json;charset=UTF-8',
@@ -249,7 +255,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                     "name": user.profile.full_name,
                 }]
             response = cls.form_post(
-                session=teacher_session,
+                token=teacher_token
                 url=cls.SECTION_STUDENTS_URL % (section_id,),
                 payload=payload,
                 custom_headers={
@@ -268,10 +274,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                         'login_mode': 'class',
                         'section': section_code,
                         'username': account['username']}))
-                # Add language cookie to session
-                from requests.cookies import create_cookie
-                session.cookies.set_cookie(
-                    create_cookie('language_', 'nl-nl', domain='code.org'))
+                # TODO: Set language to NL
                 cls.debug("Created account for %d in code.org" % (user.pk,))
                 return True
             else:

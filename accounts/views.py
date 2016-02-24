@@ -1,3 +1,73 @@
-from django.shortcuts import render
+from django.http import HttpResponse
 
-# Create your views here.
+from importlib import import_module
+
+from kb.helpers import unpack_token
+from kb.apps.models import App
+from router.models import ServerCredentials
+
+def log_in(request):
+    token = request.GET.get('token', None)
+    if token is None:
+        return HttpResponse(status=400)
+   
+    unpacked = unpack_token(token)
+    if unpacked is None:
+        return HttpResponse(status=400)
+
+    if unpacked['user'] != request.user:
+        return HttpResponse(status=403)
+    
+    try:
+        app = App.objects.get(pk=app)
+    except App.DoesNotExist:
+        return HttpResponse(status=400)
+    
+    adaptor = get_app_adaptor(app)
+    if adaptor is None:
+        return HttpResponse(status=500)
+    
+    if adaptor.is_logged_in(token=token):
+        return HttpResponse(status=200)
+    
+    credentials = get_app_credentials(unpacked['user'], unpacked['app'])
+    if credentials is None:
+        if not adaptor.signup(token):
+            return HttpResponse(status=503)
+        
+        credentials = get_app_credentials(unpacked['user'], unpacked['app'])
+    
+    adaptor.login(token, credentials) 
+    return HttpResponse(status=200)
+
+
+#MOVE ADAPTORS.PY FOR THIS TO WORK?
+@staticmethod
+def get_app_adaptor(app):
+    if not app.adaptor_class:
+        return None
+
+    adaptor_path = app.adaptor_class.split('.')
+    adaptor_module = ".".join(adaptor_path[:-1])
+    if adaptor_module:
+        try:
+            adaptor = getattr(import_module(adaptor_module),
+                adaptor_path[-1])
+        except ImportError:
+            return None
+        except AttributeError:
+            return None
+    else:
+        try:
+            adaptor = globals()[adaptor_path[-1]]
+        except KeyError:
+            return None
+    return adaptor
+
+@staticmethod
+def get_app_credentials(user, app):
+    try:
+        return ServerCredentials.objects.get(app=app, user=user)
+    except ServerCredentials.DoesNotExist:
+        return None
+
