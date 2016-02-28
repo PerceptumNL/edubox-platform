@@ -78,7 +78,7 @@ class BaseAdaptor():
         }
         headers.update(custom_headers)
         params = {
-            "params": {'token': token}
+            "params": {'token': token},
             "allow_redirects":False,
             "headers": headers,
             "url": cls.base16_encode(url)
@@ -91,7 +91,7 @@ class BaseAdaptor():
 
     @classmethod
     def base16_encode(cls, url):
-        return binascii.b2a_hex(bytes(netloc, "utf-8")).decode("utf-8")+
+        return binascii.b2a_hex(bytes(netloc, "utf-8")).decode("utf-8")+\
             ".codecult.nl"
 
 
@@ -204,7 +204,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 cls.debug("Cannot login as group teacher.")
                 return False
             # Check if section is created for institute, else create it
-            sections = requests.get(cls.base16_encode(cls.SECTION_INDEX)
+            sections = requests.get(cls.base16_encode(cls.SECTION_INDEX),
                 params={'token': teacher_token}).json()
             for section in sections:
                 if section['name'] == user.profile.institute.email_domain:
@@ -232,7 +232,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 else:
                     section = requests.get(
                         cls.base16_encode(section_response.headers['location']),
-                        params={'token': teacher_token}
+                        params={'token': teacher_token},
                         headers={
                             'Referer': cls.TEACHER_DASHBOARD_PAGE,
                             'Content-Type': 'application/json;charset=UTF-8',
@@ -255,7 +255,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                     "name": user.profile.full_name,
                 }]
             response = cls.form_post(
-                token=teacher_token
+                token=teacher_token,
                 url=cls.SECTION_STUDENTS_URL % (section_id,),
                 payload=payload,
                 custom_headers={
