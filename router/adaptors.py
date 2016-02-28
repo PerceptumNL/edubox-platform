@@ -77,7 +77,7 @@ class BaseAdaptor():
 
     @classmethod
     def fetch_and_parse_document(cls, token, url):
-        response = requests.get(cls.base16_encode(url), params={'token':token})
+        response = requests.get(cls.route_url(url), params={'token':token})
         return BeautifulSoup(response.text)
 
     @classmethod
@@ -102,7 +102,7 @@ class BaseAdaptor():
             "params": {'token': token},
             "allow_redirects":False,
             "headers": headers,
-            "url": cls.base16_encode(url)
+            "url": cls.route_url(url)
         }
         if "application/json" in headers['Content-Type']:
             params['json'] = payload
@@ -111,11 +111,11 @@ class BaseAdaptor():
         return requests.post(**params)
 
     @classmethod
-    def base16_encode(cls, url):
+    def route_url(cls, url):
         from urllib.parse import urlsplit
         urlparts = urlsplit(url)
-        return binascii.b2a_hex(bytes(urlparts.netloc, "utf-8"))\
-            .decode("utf-8")+".codecult.nl"
+        return "https://%s.codecult.nl" % (
+            binascii.b2a_hex(bytes(urlparts.netloc, "utf-8")).decode("utf-8"))
 
 
 class CodeOrgAdaptor(BaseAdaptor):
@@ -131,7 +131,7 @@ class CodeOrgAdaptor(BaseAdaptor):
 
     @classmethod
     def is_logged_in(cls, token, *args, **kwargs):
-        response = requests.head(cls.base16_encode(cls.LOGIN_CHECK_URL),
+        response = requests.head(cls.route_url(cls.LOGIN_CHECK_URL),
             params={'token': token},
             allow_redirects=False)
         return response.status_code == 302
@@ -220,7 +220,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 cls.debug("Cannot login as group teacher.")
                 return False
             # Check if section is created for institute, else create it
-            sections = requests.get(cls.base16_encode(cls.SECTION_INDEX),
+            sections = requests.get(cls.route_url(cls.SECTION_INDEX),
                 params={'token': teacher_token}).json()
             for section in sections:
                 if section['name'] == user.profile.institute.email_domain:
@@ -247,7 +247,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                     return False
                 else:
                     section = requests.get(
-                        cls.base16_encode(section_response.headers['location']),
+                        cls.route_url(section_response.headers['location']),
                         params={'token': teacher_token},
                         headers={
                             'Referer': cls.TEACHER_DASHBOARD_PAGE,
