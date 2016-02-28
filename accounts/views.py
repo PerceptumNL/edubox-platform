@@ -30,17 +30,14 @@ def login_user_into_app(request):
     if adaptor.is_logged_in(token=token):
         return HttpResponse(status=200)
 
-    credentials = get_app_credentials(request.user, app)
+    credentials = adaptor.get_or_create_credentials(
+        token, request.user, app.pk)
     if credentials is None:
-        if not adaptor.signup(token):
-            return HttpResponse(status=503)
-
-        credentials = get_app_credentials(request.user, app)
+        return HttpResponse(status=503)
 
     adaptor.login(token, credentials)
     return HttpResponse(status=200)
 
-#MOVE ADAPTORS.PY FOR THIS TO WORK?
 def get_app_adaptor(app):
     if not app.adaptor_class:
         return None
@@ -61,11 +58,3 @@ def get_app_adaptor(app):
         except KeyError:
             return None
     return adaptor
-
-@staticmethod
-def get_app_credentials(user, app):
-    try:
-        return ServerCredentials.objects.get(app=app, user=user)
-    except ServerCredentials.DoesNotExist:
-        return None
-

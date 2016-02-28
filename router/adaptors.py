@@ -36,8 +36,29 @@ class BaseAdaptor():
         raise NotImplementedError()
 
     @classmethod
-    def signup(cls, token, *args, **kwargs):
+    def signup(cls, token, user, *args, **kwargs):
         raise NotImplementedError()
+
+    @classmethod
+    def get_credentials(cls, user, app_pk):
+        try:
+            credentials = ServerCredentials.objects.get(
+                app__pk=app_pk, user=user)
+        except ServerCredentials.DoesNotExist:
+            return None
+        else:
+            return credentials
+
+    @classmethod
+    def get_or_create_credentials(cls, token, user, app_pk):
+        credentials = cls.get_credentials(user, app_pk)
+        if credentials is None:
+            if cls.signup(token, user):
+                return cls.get_credentials(user, app_pk)
+            else:
+                return None
+        else:
+            return credentials
 
     @classmethod
     def get_app_script(cls, *args, **kwargs):
@@ -91,8 +112,10 @@ class BaseAdaptor():
 
     @classmethod
     def base16_encode(cls, url):
-        return binascii.b2a_hex(bytes(netloc, "utf-8")).decode("utf-8")+\
-            ".codecult.nl"
+        from urllib.parse import urlsplit
+        urlparts = urlsplit(url)
+        return binascii.b2a_hex(bytes(urlparts.netloc, "utf-8"))\
+            .decode("utf-8")+".codecult.nl"
 
 
 class CodeOrgAdaptor(BaseAdaptor):
@@ -128,7 +151,7 @@ class CodeOrgAdaptor(BaseAdaptor):
             payload = {
                 "user[login]": credentials.username,
                 "user[password]": credentials.password,
-                "utf8": "\u2713",
+                "utf8": u"\u2713",
                 "authenticity_token": authenticity_token,
                 "user[remember_me]": "1",
                 "user[hashed_email]": "",
@@ -146,7 +169,7 @@ class CodeOrgAdaptor(BaseAdaptor):
             payload = {
                 "user_id": credentials.username,
                 "secret_words": credentials.password,
-                "utf8": "\u2713",
+                "utf8": u"\u2713",
                 "authenticity_token": authenticity_token,
                 "secret_picture_id": "",
                 "button": ""
@@ -170,37 +193,30 @@ class CodeOrgAdaptor(BaseAdaptor):
         return login_response.status_code == 302
 
     @classmethod
-    def teacher_login(cls, token, user, app):
-        try:
-            credentials = ServerCredentials.objects.get(app=app, user=user)
-        except ServerCredentials.DoesNotExist:
-            if cls.teacher_signup(cls, teacher_token):
-                credentials = ServerCredentials.objects.get(app=user, user=user)
-            else:
-                return False
-
-        return cls.login(credentials, token)
-    
-    #TODO: Should sign the teacher up using his email account
-    @classmethod
-    def teacher_signup(cls, token):
-        pass
-
-    @classmethod
-    def signup(cls, token, *args, **kwargs):
+    def signup(cls, token, user, *args, **kwargs):
         unpacked = unpack_token(token)
-        user = User.objects.get(pk=unpacked['user'])
         if user.profile.is_teacher():
-            cls.teacher_login(token, unpacked['user'], unpacked['app'])
+            #TODO: Should signup the teacher using his email account
+            return False
         else:
             #Get the first teacher of this users group
             group = Group.objects.get(pk=unpacked['group'])
             role = Role.objects.get(role='Teacher')
-            teacher = Membership.objects.filter(group=group, role=role).first().user
-            teacher_token = create_token(user=teacher.pk, group=unpacked['group'], 
+            teacher = Membership.objects.filter(
+                group=group, role=role).first().user
+            teacher_token = create_token(
+                user=teacher.pk,
+                group=unpacked['group'],
                 app=unpacked['app'])
-            
-            if not cls.teacher_login(teacher_token, teacher.pk, unpacked['app']):
+
+            credentials = cls.get_or_create_credentials(
+                teacher_token, teacher, unpacked['app'])
+            if credentials is None:
+                cls.debug("Cannot find or create credentials for %s in %s" % (
+                    teacher, str(unpacked['app'])))
+                return False
+
+            if not cls.login(teacher_token, credentials):
                 cls.debug("Cannot login as group teacher.")
                 return False
             # Check if section is created for institute, else create it
@@ -267,7 +283,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 account = response.json()[0]
                 ServerCredentials.objects.create(
                     user=user,
-                    app=app,
+                    app__pk=unpacked['app'],
                     username=account['id'],
                     password=account['secret_words'],
                     params=json.dumps({
