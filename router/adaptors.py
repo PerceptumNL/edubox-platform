@@ -112,10 +112,15 @@ class BaseAdaptor():
 
     @classmethod
     def route_url(cls, url):
-        from urllib.parse import urlsplit
+        from urllib.parse import urlsplit, urlunsplit
         urlparts = urlsplit(url)
-        return "https://%s.codecult.nl" % (
-            binascii.b2a_hex(bytes(urlparts.netloc, "utf-8")).decode("utf-8"))
+        return urlunsplit((
+            urlparts.scheme,
+            "%s.codecult.nl" % ( binascii.b2a_hex(
+                bytes(urlparts.netloc, "utf-8")).decode("utf-8")),
+            urlparts.path,
+            urlparts.query,
+            urlparts.fragment))
 
 
 class CodeOrgAdaptor(BaseAdaptor):
