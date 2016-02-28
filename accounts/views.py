@@ -35,8 +35,10 @@ def login_user_into_app(request):
     if credentials is None:
         return HttpResponse(status=503)
 
-    adaptor.login(token, credentials)
-    return HttpResponse(status=200)
+    if adaptor.login(token, credentials):
+        return HttpResponse(status=200)
+    else:
+        return HttpResponse(status=500)
 
 def get_app_adaptor(app):
     if not app.adaptor_class:
