@@ -38,13 +38,13 @@ def unpack_token(token):
     key = settings.SECRET_KEY[:16]
     cipher = AES.new(key, AES.MODE_ECB)
     context = cipher.decrypt(token)
-    
+
     #Seperate the elements from the string
     context = context.decode('utf-8')
     elements = context.rstrip('*').split(':')
     if len(elements) != 3:
         return None
-   
+
     #Return the unpacked elements in a dict
     return {'user': elements[0], 'group': elements[1], 'app': elements[2]}
 

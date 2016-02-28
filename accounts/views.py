@@ -6,43 +6,41 @@ from kb.helpers import unpack_token
 from kb.apps.models import App
 from router.models import ServerCredentials
 
-def log_in(request):
+def login_user_into_app(request):
     token = request.GET.get('token', None)
     if token is None:
         return HttpResponse(status=400)
-   
+
     unpacked = unpack_token(token)
     if unpacked is None:
         return HttpResponse(status=400)
 
-    if unpacked['user'] != request.user:
+    if int(unpacked['user']) != request.user.pk:
         return HttpResponse(status=403)
-    
+
     try:
-        app = App.objects.get(pk=app)
+        app = App.objects.get(pk=unpacked['app'])
     except App.DoesNotExist:
         return HttpResponse(status=400)
-    
+
     adaptor = get_app_adaptor(app)
     if adaptor is None:
         return HttpResponse(status=500)
-    
+
     if adaptor.is_logged_in(token=token):
         return HttpResponse(status=200)
-    
-    credentials = get_app_credentials(unpacked['user'], unpacked['app'])
+
+    credentials = get_app_credentials(request.user, app)
     if credentials is None:
         if not adaptor.signup(token):
             return HttpResponse(status=503)
-        
-        credentials = get_app_credentials(unpacked['user'], unpacked['app'])
-    
-    adaptor.login(token, credentials) 
+
+        credentials = get_app_credentials(request.user, app)
+
+    adaptor.login(token, credentials)
     return HttpResponse(status=200)
 
-
 #MOVE ADAPTORS.PY FOR THIS TO WORK?
-@staticmethod
 def get_app_adaptor(app):
     if not app.adaptor_class:
         return None
