@@ -82,6 +82,9 @@ class Institute(models.Model):
         return self.title
 
 class Membership(models.Model):
+    #TODO: Should this be a foreign key to User rather than UserProfile?
+    #  (Membership.get(..).user.user seems a bit clunky)
+    # Alternatively call it userprofile or profile
     user = models.ForeignKey('kb.UserProfile')
     group = models.ForeignKey(Group)
 

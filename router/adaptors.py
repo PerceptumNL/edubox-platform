@@ -6,6 +6,7 @@ import binascii
 
 from router import utils
 from .models import ServerCredentials
+from kb.apps.models import App
 from kb.helpers import create_token, unpack_token
 from kb.groups.models import Group, Membership, Role
 
@@ -139,7 +140,7 @@ class CodeOrgAdaptor(BaseAdaptor):
         response = requests.head(cls.route_url(cls.LOGIN_CHECK_URL),
             params={'token': token},
             allow_redirects=False)
-        return response.status_code == 302
+        return response.status_code != 302
 
     @classmethod
     def login(cls, token, credentials, *args, **kwargs):
@@ -208,34 +209,36 @@ class CodeOrgAdaptor(BaseAdaptor):
             group = Group.objects.get(pk=unpacked['group'])
             role = Role.objects.get(role='Teacher')
             teacher = Membership.objects.filter(
-                group=group, role=role).first().user
+                group=group, role=role).first().user.user
             teacher_token = create_token(
                 user=teacher.pk,
                 group=unpacked['group'],
                 app=unpacked['app'])
+            if not cls.is_logged_in(teacher_token):
+                credentials = cls.get_or_create_credentials(
+                    teacher_token, teacher, unpacked['app'])
+                if credentials is None:
+                    cls.debug("Cannot find or create credentials for %s in %s" % (
+                        teacher, str(unpacked['app'])))
+                    return False
 
-            credentials = cls.get_or_create_credentials(
-                teacher_token, teacher, unpacked['app'])
-            if credentials is None:
-                cls.debug("Cannot find or create credentials for %s in %s" % (
-                    teacher, str(unpacked['app'])))
-                return False
-
-            if not cls.login(teacher_token, credentials):
-                cls.debug("Cannot login as group teacher.")
-                return False
+                if not cls.login(teacher_token, credentials):
+                    cls.debug("Cannot login as group teacher.")
+                    return False
             # Check if section is created for institute, else create it
             sections = requests.get(cls.route_url(cls.SECTION_INDEX),
                 params={'token': teacher_token}).json()
+            user_section_name = "%s (%s)" % (
+                group.title, user.profile.institute.email_domain)
             for section in sections:
-                if section['name'] == user.profile.institute.email_domain:
+                if section['name'] == user_section_name:
                     break
             else:
                 # Create section
                 payload = {
                     "editing": True,
                     "login_type": "word",
-                    "name": user.profile.institute.email_domain,
+                    "name": user_section_name,
                     "grade":"Other"
                 }
 
@@ -252,13 +255,12 @@ class CodeOrgAdaptor(BaseAdaptor):
                     return False
                 else:
                     section = requests.get(
-                        cls.route_url(section_response.headers['location']),
-                        params={'token': teacher_token},
+                        section_response.headers['location'],
                         headers={
                             'Referer': cls.TEACHER_DASHBOARD_PAGE,
                             'Content-Type': 'application/json;charset=UTF-8',
                             'X-Requested-With': 'XMLHttpRequest'
-                        }).json()
+                        }).json();
 
             section_code = section['code']
             section_id = section['id']
@@ -288,7 +290,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 account = response.json()[0]
                 ServerCredentials.objects.create(
                     user=user,
-                    app__pk=unpacked['app'],
+                    app=App.objects.get(pk=unpacked['app']),
                     username=account['id'],
                     password=account['secret_words'],
                     params=json.dumps({
