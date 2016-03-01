@@ -214,7 +214,7 @@ class CodeOrgAdaptor(BaseAdaptor):
 
             credentials = ServerCredentials.generate(
                 app=App.objects.get(pk=unpacked['app']),
-                user=self.request.user)
+                user=user)
             credentials.username = user.email
             from hashlib import md5
             hashed_email = md5(user.email).hexdigest()
