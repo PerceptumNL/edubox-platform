@@ -217,7 +217,8 @@ class CodeOrgAdaptor(BaseAdaptor):
                 user=user)
             credentials.username = user.email
             from hashlib import md5
-            hashed_email = md5(user.email).hexdigest()
+            hashed_email = md5(
+                user.email.encode("ascii", 'ignore').lower()).hexdigest()
 
             payload = {
                 "utf8": u"\u2713",
