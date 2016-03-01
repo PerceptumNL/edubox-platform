@@ -212,8 +212,10 @@ class CodeOrgAdaptor(BaseAdaptor):
             authenticity_token = cls.get_field_value_from_document(
                 login_document, "authenticity_token")
 
-            from strgen import StringGenerator
-            password = StringGenerator("[\w\d]{20}").render()
+            credentials = ServerCredentials.generate(
+                app=App.objects.get(pk=unpacked['app']),
+                user=self.request.user)
+            credentials.username = user.email
             from hashlib import md5
             hashed_email = md5(user.email).hexdigest()
 
@@ -225,8 +227,8 @@ class CodeOrgAdaptor(BaseAdaptor):
                 "user[hashed_email]": hashed_email,
                 "user[name]": user.profile.full_name,
                 "user[email]": user.email,
-                "user[password]": password,
-                "user[password_confirmation]": password,
+                "user[password]": credentials.password,
+                "user[password_confirmation]": credentials.password,
                 "user[school]": user.profile.institute.title,
                 "user[full_address]": "",
                 "user[age]": 21,
@@ -239,7 +241,11 @@ class CodeOrgAdaptor(BaseAdaptor):
                 custom_headers={
                     'Referer': cls.TEACHER_SIGNUP_PAGE
                 })
-            return response.is_redirect
+            if response.is_redirect:
+                credentials.save()
+                return True
+            else:
+                return False
         else:
             #Get the first teacher of this users group
             group = Group.objects.get(pk=unpacked['group'])
