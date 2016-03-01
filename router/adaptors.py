@@ -125,14 +125,17 @@ class BaseAdaptor():
 
 
 class CodeOrgAdaptor(BaseAdaptor):
-    LOGIN_CHECK_URL = "https://studio.code.org/users/edit"
-    LOGIN_PAGE_URL = "https://studio.code.org/users/sign_in"
-    LOGIN_URL = "https://studio.code.org/users/sign_in"
+    USERS_URL = "https://studio.code.org/users"
+    LOGIN_CHECK_URL = USERS_URL+"/edit"
+    LOGIN_PAGE_URL = USERS_URL+"/sign_in"
+    LOGIN_URL = LOGIN_PAGE_URL
     SECTION_LOGIN_PAGE_URL = "https://studio.code.org/sections/%s"
     SECTION_LOGIN_URL = "https://studio.code.org/sections/%s/log_in"
     SECTION_INDEX = "https://code.org/v2/sections"
     SECTION_STUDENTS_URL = "https://code.org/v2/sections/%d/students"
     TEACHER_DASHBOARD_PAGE = "https://code.org/teacher-dashboard"
+    TEACHER_SIGNUP_PAGE = USERS_URL + "/sign_up?user%5Buser_type%5D=teacher"
+    TEACHER_SIGNUP = USERS_URL
     APP_SCRIPT_URL = "adaptor/code_org.js"
 
     @classmethod
@@ -202,8 +205,41 @@ class CodeOrgAdaptor(BaseAdaptor):
     def signup(cls, token, user, *args, **kwargs):
         unpacked = unpack_token(token)
         if user.profile.is_teacher():
-            #TODO: Should signup the teacher using his email account
-            return False
+            if not user.email:
+                return False
+            login_document = cls.fetch_and_parse_document(
+                token, cls.TEACHER_SIGNUP_PAGE)
+            authenticity_token = cls.get_field_value_from_document(
+                login_document, "authenticity_token")
+
+            from strgen import StringGenerator
+            password = StringGenerator("[\w\d]{20}").render()
+            from hashlib import md5
+            hashed_email = md5(user.email).hexdigest()
+
+            payload = {
+                "utf8": u"\u2713",
+                "authenticity_token": authenticity_token,
+                "user[type]": "teacher",
+                "user[locale]": "nl-nl",
+                "user[hashed_email]": hashed_email,
+                "user[name]": user.profile.full_name,
+                "user[email]": user.email,
+                "user[password]": password,
+                "user[password_confirmation]": password,
+                "user[school]": user.profile.institute.title,
+                "user[full_address]": "",
+                "user[age]": 21,
+                "commit": "Sign up"
+            }
+            response = cls.form_post(
+                token=token,
+                url=cls.TEACHER_SIGNUP,
+                payload=payload,
+                custom_headers={
+                    'Referer': cls.TEACHER_SIGNUP_PAGE
+                })
+            return response.is_redirect
         else:
             #Get the first teacher of this users group
             group = Group.objects.get(pk=unpacked['group'])
@@ -260,7 +296,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                             'Referer': cls.TEACHER_DASHBOARD_PAGE,
                             'Content-Type': 'application/json;charset=UTF-8',
                             'X-Requested-With': 'XMLHttpRequest'
-                        }).json();
+                        }).json()
 
             section_code = section['code']
             section_id = section['id']
