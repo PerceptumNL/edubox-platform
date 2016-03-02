@@ -71,7 +71,7 @@ class Group(models.Model):
 class Institute(models.Model):
     title = models.CharField(max_length=255)
     email_domain = models.CharField(max_length=255)
-    brincode = models.CharField(max_length=10, blank=True, null=True);
+    brincode = models.CharField(max_length=10, blank=True, default='');
     #The apps an institute (client) has access to, OS-level setting
     apps = models.ManyToManyField(App)
     xmls = models.ManyToManyField(XmlDump, blank=True)

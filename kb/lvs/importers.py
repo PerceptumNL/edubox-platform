@@ -52,7 +52,7 @@ class EdeXmlImporter(object):
 
     def parse_school(self):
         brincode = self.soup.edex.school.brincode.string
-        if self.institute.brincode is None:
+        if not self.institute.brincode:
             self.institute.brincode = brincode
             self.institute.save()
         elif self.institute.brincode != brincode:
