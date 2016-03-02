@@ -125,12 +125,14 @@ class BaseAdaptor():
 
 
 class CodeOrgAdaptor(BaseAdaptor):
-    USERS_URL = "https://studio.code.org/users"
+    HOME_PAGE = "https://studio.code.org/"
+    USER_LANGUAGE = HOME_PAGE+"/locale"
+    USERS_URL = HOME_PAGE+"/users"
     LOGIN_CHECK_URL = USERS_URL+"/edit"
     LOGIN_PAGE_URL = USERS_URL+"/sign_in"
     LOGIN_URL = LOGIN_PAGE_URL
-    SECTION_LOGIN_PAGE_URL = "https://studio.code.org/sections/%s"
-    SECTION_LOGIN_URL = "https://studio.code.org/sections/%s/log_in"
+    SECTION_LOGIN_PAGE_URL = HOME_PAGE+"/sections/%s"
+    SECTION_LOGIN_URL = HOME_PAGE+"/sections/%s/log_in"
     SECTION_INDEX = "https://code.org/v2/sections"
     SECTION_STUDENTS_URL = "https://code.org/v2/sections/%d/students"
     TEACHER_DASHBOARD_PAGE = "https://code.org/teacher-dashboard"
@@ -339,7 +341,24 @@ class CodeOrgAdaptor(BaseAdaptor):
                         'login_mode': 'class',
                         'section': section_code,
                         'username': account['username']}))
-                # TODO: Set language to NL
+                # Ensure the language is set to Dutch
+                language_document = cls.fetch_and_parse_document(
+                    token, cls.HOME_PAGE)
+                authenticity_token = cls.get_field_value_from_document(
+                    language_document, "authenticity_token")
+                response = cls.form_post(
+                    token=token,
+                    url=cls.USER_LANGUAGE,
+                    payload={
+                        'utf8': u'\u2713',
+                        'locale': 'nl-nl',
+                        'authenticity_token': authenticity_token,
+                        'return_to': cls.HOME_PAGE},
+                    custom_headers={
+                        'Referer': cls.HOME_PAGE
+                    })
+                if not response.is_redirect:
+                    cls.debug("Could not set language to nl-nl")
                 cls.debug("Created account for %d in code.org" % (user.pk,))
                 return True
             else:
