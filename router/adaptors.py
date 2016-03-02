@@ -223,7 +223,7 @@ class CodeOrgAdaptor(BaseAdaptor):
             payload = {
                 "utf8": u"\u2713",
                 "authenticity_token": authenticity_token,
-                "user[type]": "teacher",
+                "user[user_type]": "teacher",
                 "user[locale]": "nl-nl",
                 "user[hashed_email]": hashed_email,
                 "user[name]": user.profile.full_name,
@@ -257,14 +257,13 @@ class CodeOrgAdaptor(BaseAdaptor):
                 user=teacher.pk,
                 group=unpacked['group'],
                 app=unpacked['app'])
+            credentials = cls.get_or_create_credentials(
+                teacher_token, teacher, unpacked['app'])
+            if credentials is None:
+                cls.debug("Cannot find or create credentials for %s in %s" % (
+                    teacher, str(unpacked['app'])))
+                return False
             if not cls.is_logged_in(teacher_token):
-                credentials = cls.get_or_create_credentials(
-                    teacher_token, teacher, unpacked['app'])
-                if credentials is None:
-                    cls.debug("Cannot find or create credentials for %s in %s" % (
-                        teacher, str(unpacked['app'])))
-                    return False
-
                 if not cls.login(teacher_token, credentials):
                     cls.debug("Cannot login as group teacher.")
                     return False
