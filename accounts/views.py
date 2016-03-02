@@ -1,10 +1,20 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 from importlib import import_module
 
 from kb.helpers import unpack_token
 from kb.apps.models import App
 from router.models import ServerCredentials
+
+def get_user_info(request):
+    if not request.user.is_authenticated():
+        return HttpResponse(status=401)
+
+    name = request.user.profile.full_name.strip()
+    if not name:
+        name = request.user.profile.alias.split('@')[0]
+
+    return JsonResponse({'info': {'name': name }})
 
 def login_user_into_app(request):
     if not request.user.is_authenticated():
