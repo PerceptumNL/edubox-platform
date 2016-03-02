@@ -332,7 +332,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 })
             if response.status_code == 200:
                 account = response.json()[0]
-                ServerCredentials.objects.create(
+                credentials = ServerCredentials.objects.create(
                     user=user,
                     app=App.objects.get(pk=unpacked['app']),
                     username=account['id'],
@@ -341,6 +341,12 @@ class CodeOrgAdaptor(BaseAdaptor):
                         'login_mode': 'class',
                         'section': section_code,
                         'username': account['username']}))
+
+                # Login to set language
+                if not cls.login(token, credentials):
+                    cls.debug('Could not login student with credentials.')
+                    return False
+
                 # Ensure the language is set to Dutch
                 language_document = cls.fetch_and_parse_document(
                     token, cls.HOME_PAGE)
