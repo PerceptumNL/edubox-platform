@@ -77,7 +77,7 @@ ROOT_URLCONF = 'eduraam.urls'
 
 SUBDOMAIN_ROUTING = {
     None: "eduraam.urls",
-    "accounts": "allauth.urls",
+    "accounts": "accounts.urls",
     "api": "kb.urls",
     "launch": "launch.urls"
 }

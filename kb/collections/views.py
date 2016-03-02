@@ -1,5 +1,6 @@
 from django.http import JsonResponse, HttpResponse
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from collections import defaultdict
 
@@ -36,6 +37,9 @@ def learning_units(request):
             for context in group_contexts.values():
                 context[1].remove(parent)
 
+    # Fetch correct urlconf for accounts app login routing
+    login_urlconf = settings.SUBDOMAIN_ROUTING.get('accounts',
+        settings.ROOT_URLCONF)
     #For each possible unit-group context store the name, description, icon,
     # trimmed-path and the computed context token, stored seperately for each group
     unit_groups = []
@@ -48,7 +52,7 @@ def learning_units(request):
                 'id': unit.pk,
                 'label': unit.label,
                 'login': "%s?token=%s" % (
-                    reverse('app_login'),
+                    reverse('app_login', urlconf=login_urlconf),
                     create_token(
                         request.user.pk,
                         group.pk,
