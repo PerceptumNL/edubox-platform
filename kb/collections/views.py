@@ -49,7 +49,11 @@ def learning_units(request):
                 'label': unit.label,
                 'login': "%s?token=%s" % (
                     reverse('app_login'),
-                    create_token(request.user.pk, group.pk, activity.app.pk)),
+                    create_token(
+                        request.user.pk,
+                        group.pk,
+                        activity.app.pk
+                    ).decode('utf-8')),
                 'path': parents })
         unit_groups.append({'id': group.pk, 'title': group.title,
             'units': unit_views})
