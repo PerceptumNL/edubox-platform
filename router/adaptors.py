@@ -125,7 +125,7 @@ class BaseAdaptor():
 
 
 class CodeOrgAdaptor(BaseAdaptor):
-    HOME_PAGE = "https://studio.code.org/"
+    HOME_PAGE = "https://studio.code.org"
     USER_LANGUAGE = HOME_PAGE+"/locale"
     USERS_URL = HOME_PAGE+"/users"
     LOGIN_CHECK_URL = USERS_URL+"/edit"
