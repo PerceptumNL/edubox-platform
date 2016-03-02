@@ -132,6 +132,8 @@ class EdeXmlImporter(object):
         alias = node['key']
         if node.gebruikersnaam is not None:
             alias = node.gebruikersnaam.string.strip()
+        elif node.emailadres is not None:
+            alias = node.emailadres.string.split('@')[0].strip()
         elif node.roepnaam is not None and node.achternaam is not None:
             if node.voorvoegsel is not None:
                 alias = self._join_names(node.roepnaam.string,
