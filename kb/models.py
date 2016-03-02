@@ -59,12 +59,12 @@ class UserProfile(models.Model):
 
     @property
     def full_name(self):
-        full = self.first_name +' '
-        
+        full = self.first_name
+
         if self.surname_prefixes != '':
-            full += self.surname_prefixes
-        
-        full += self.last_name
+            full += ' '+self.surname_prefixes
+
+        full += ' '+self.last_name
         return full
 
     def is_teacher(self, group=None):

@@ -2,6 +2,9 @@
 {% load staticfiles %}
 
 {% block body %}
+{% if error %}
+    <b>{{error}}</b>
+{% else %}
     <h1>{{ institute }}</h1>
     <h3>Docenten</h3>
     <table>
@@ -26,4 +29,5 @@
         {% endfor %}
         </table>
     {% endfor %}
+{% endif %}
 {% endblock %}

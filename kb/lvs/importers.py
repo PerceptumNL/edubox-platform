@@ -51,7 +51,12 @@ class EdeXmlImporter(object):
         self.parse_students()
 
     def parse_school(self):
-        pass
+        brincode = self.soup.edex.school.brincode.string
+        if self.institute.brincode is None:
+            self.institute.brincode = brincode
+            self.institute.save()
+        elif self.institute.brincode != brincode:
+            raise ValueError('BRIN code does not match!')
 
     def parse_groups(self):
         Group.objects.filter(institute=self.institute, imported=True).delete()
@@ -103,8 +108,7 @@ class EdeXmlImporter(object):
             
             self.teachers.append([
                 'Updated' if self.last_pw == '' else 'Created',
-                teacher.first_name,
-                teacher.last_name,
+                teacher.full_name,
                 teacher.alias,
                 self.last_pw,
                 group_list])
@@ -118,8 +122,7 @@ class EdeXmlImporter(object):
             
             self.students[self.groups[s.groep['key']].title].append([
                 'Updated' if self.last_pw == '' else 'Created',
-                student.first_name,
-                student.last_name,
+                student.full_name,
                 student.alias,
                 self.last_pw])
 
@@ -127,11 +130,16 @@ class EdeXmlImporter(object):
         username = node['key'] +'@'+ self.institute.email_domain
 
         alias = node['key']
-        if node.gebruikersnaam != None:
-            alias = node.gebruikersnaam.string
-        elif node.roepnaam != None and node.achternaam != None:
-            alias = self._join_names(node.roepnaam.string, 
-                    node.achternaam.string)
+        if node.gebruikersnaam is not None:
+            alias = node.gebruikersnaam.string.strip()
+        elif node.roepnaam is not None and node.achternaam is not None:
+            if node.voorvoegsel is not None:
+                alias = self._join_names(node.roepnaam.string,
+                                         node.voorvoegsel.string,
+                                         node.achternaam.string)
+            else:
+                alias = self._join_names(node.roepnaam.string,
+                                         node.achternaam.string)
         
         user_kwargs = self._kwarg_options(node, EdeXmlImporter.user_opts)
         profile_kwargs = self._kwarg_options(node, EdeXmlImporter.profile_opts)
@@ -159,8 +167,10 @@ class EdeXmlImporter(object):
             return profile
 
     def _join_names(self, *args):
+        from unidecode import unidecode
         res = ''
         for ind, arg in enumerate(args):
+            arg = unidecode(arg).strip();
             for char in ' '+string.punctuation:
                 arg = arg.replace(char, '_')
             if ind != 0:
@@ -172,6 +182,6 @@ class EdeXmlImporter(object):
         d = {}
         for n in node.children:
             if type(n) is element.Tag and n.name in trans:
-                d[trans[n.name]] = n.string
+                d[trans[n.name]] = n.string.strip()
         return d
 
