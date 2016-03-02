@@ -33,7 +33,7 @@ def debug_http_package(http_package, label=None, secret_body_values=None,
             body = http_package.body
             if secret_body_values is not None:
                 for secret in secret_body_values:
-                    body = body.replace(secret, "****")
+                    body = body.replace(str(secret), "****")
             output_lines.append(body)
     elif isinstance(http_package, requests.Response):
         output_lines.append("HTTP %s %s" % (
