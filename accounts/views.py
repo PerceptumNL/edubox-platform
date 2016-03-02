@@ -11,8 +11,10 @@ def get_user_info(request):
         return HttpResponse(status=401)
 
     name = request.user.profile.full_name.strip()
-    if not name:
+    if not name and request.user.profile.alias:
         name = request.user.profile.alias.split('@')[0]
+    elif not name:
+        name = request.user.username.split('@')[0]
 
     return JsonResponse({'info': {'name': name }})
 
