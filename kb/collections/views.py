@@ -1,6 +1,9 @@
 from django.http import JsonResponse, HttpResponse
+from django.core.urlresolvers import reverse
+
 from collections import defaultdict
 
+from kb.helpers import create_token
 from .models import LearningUnit
 
 def learning_units(request):
@@ -40,8 +43,14 @@ def learning_units(request):
         unit_views = []
         parents = [parent.title for parent in parents[::-1]]
         for unit in units:
+            activity = unit.get_next_activity_for_user(request.user)
             unit_views.append({
-                'id': unit.pk, 'label': unit.label, 'path': parents })
+                'id': unit.pk,
+                'label': unit.label,
+                'login': "%s?token=%s" % (
+                    reverse('app_login'),
+                    create_token(request.user.pk, group.pk, activity.app.pk)),
+                'path': parents })
         unit_groups.append({'id': group.pk, 'title': group.title,
             'units': unit_views})
 
