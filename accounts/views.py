@@ -7,6 +7,9 @@ from kb.apps.models import App
 from router.models import ServerCredentials
 
 def login_user_into_app(request):
+    if not request.user.is_authenticated():
+        return HttpResponse(status=401)
+
     token = request.GET.get('token', None)
     if token is None:
         return HttpResponse(status=400)
