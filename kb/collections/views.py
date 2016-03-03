@@ -48,16 +48,16 @@ def learning_units(request):
         parents = [parent.title for parent in parents[::-1]]
         for unit in units:
             activity = unit.get_next_activity_for_user(request.user)
+            token = create_token(
+                request.user.pk,
+                group.pk,
+                activity.app.pk).decode('utf-8')
             unit_views.append({
                 'id': unit.pk,
                 'label': unit.label,
                 'login': "%s?token=%s" % (
-                    reverse('app_login', urlconf=login_urlconf),
-                    create_token(
-                        request.user.pk,
-                        group.pk,
-                        activity.app.pk
-                    ).decode('utf-8')),
+                    reverse('app_login', urlconf=login_urlconf), token),
+                'token': token,
                 'path': parents })
         unit_groups.append({'id': group.pk, 'title': group.title,
             'units': unit_views})
