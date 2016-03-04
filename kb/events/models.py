@@ -102,8 +102,17 @@ class GenericEvent(Event):
     verb_instance = GenericForeignKey('content_type', 'object_id')
 
 
+class SubmittedEvent(Event):
+    submission = models.TextField();
+
+    def create(kwargs, submission):
+        try:
+            return SubmittedEvent.objects.create(submission=submission, **kwargs)
+        except ValueError:
+            return None
+
 class ReadEvent(Event):
-    
+
     def create(kwargs, res=None):
         try:
             return ReadEvent.objects.create(**kwargs)
