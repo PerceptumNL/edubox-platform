@@ -1,5 +1,4 @@
 from django.http import JsonResponse, HttpResponse
-from django.contrib.auth.models import User
 
 from kb.helpers import create_token
 from router import AppRouter
