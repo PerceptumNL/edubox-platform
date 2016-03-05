@@ -15,7 +15,7 @@ def handle_activity_completion(sender, instance, **kwargs):
         submission = QueryDict(instance.submission)
         if int(submission.get('testResult',0)) == 100:
             ActivityCompletion.objects.get_or_create(
-                activity=activity, user=instance.user)
+                activity=activity, user=instance.user.profile)
         else:
             print('testResult', repr(submission.get(testResult)))
     except Exception as e:
