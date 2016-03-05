@@ -31,6 +31,7 @@ def group_list(request):
 
     group_exports = [];
     for group, parents in group_contexts.items():
+        parents = [parent.title for parent in parents[::-1]]
         group_exports.append(
             {'id': group.pk, 'title': group.title, 'path': parents })
 
