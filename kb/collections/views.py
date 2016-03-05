@@ -7,6 +7,8 @@ from collections import defaultdict
 from kb.helpers import create_token
 from .models import LearningUnit
 
+from .events import * # TODO: Find a better place for loading this.
+
 def learning_units(request):
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
