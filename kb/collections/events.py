@@ -16,6 +16,5 @@ def handle_activity_completion(sender, instance, **kwargs):
         if int(submission.get('testResult',0)) == 100:
             ActivityCompletion.objects.get_or_create(
                 activity=activity, user=instance.user.profile)
-        else:
     except Exception:
         return;
