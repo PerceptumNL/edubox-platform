@@ -17,7 +17,5 @@ def handle_activity_completion(sender, instance, **kwargs):
             ActivityCompletion.objects.get_or_create(
                 activity=activity, user=instance.user.profile)
         else:
-            print('testResult', repr(submission.get(testResult)))
-    except Exception as e:
-        print(str(e))
+    except Exception:
         return;
