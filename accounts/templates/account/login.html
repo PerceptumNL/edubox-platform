@@ -6,23 +6,32 @@
 
 {% block content %}
 <div class='brand-header'>
-	<img src="{% static 'accounts/images/logo_eduraam_transparant.png' %}" />
+	<img src="{% static 'accounts/images/logo_codecult_transparant.png' %}" />
 </div>
 <div class="mdl-card mdl-shadow--2dp">
   <div class="mdl-card__title">
 	<h2 class="mdl-card__title-text">{% trans "Log In" %}</h2>
   </div>
   <div class="mdl-card__supporting-text">
-	<a class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
-		href="{% provider_login_url 'google' process='login' %}">
-		Login met Google
-	</a>
-	<a class="mdl-button mdl-js-button mdl-button--raised">
-		Login met Kennisnet
-	</a>
-	<a class="mdl-button mdl-js-button mdl-button--raised">
-		Login met Office 365
-	</a>
+    <form method="POST" action="{% url 'account_login' %}">
+      {% csrf_token %}
+      {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+      {% endif %}
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" type="text" id="username"
+            name="login">
+          <label class="mdl-textfield__label" for="username">Username</label>
+      </div>
+      <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" type="password" id="password"
+            name="password">
+          <label class="mdl-textfield__label" for="password">Password</label>
+      </div>
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
+        type="submit">
+          Login
+      </button>
   </div>
   <div class="mdl-card__actions mdl-card--border">
 	<a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect"
@@ -31,5 +40,10 @@
 	</a>
   </div>
 </div>
-</div>
+<!--
+	<a class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
+		href="{% provider_login_url 'google' process='login' %}">
+		Login met Google
+	</a>
+-->
 {% endblock %}

@@ -1,5 +1,4 @@
 from django.http import JsonResponse, HttpResponse
-from django.contrib.auth.models import User
 
 from kb.helpers import create_token
 from router import AppRouter
@@ -10,7 +9,7 @@ def app_list(request):
     #If user is authenticated, retrieve all groups he is a member of
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
-    groups = request.user.userprofile.groups.all()
+    groups = request.user.profile.groups.all()
 
     #For each group store all available apps and the complete parent-path
     group_contexts = {}

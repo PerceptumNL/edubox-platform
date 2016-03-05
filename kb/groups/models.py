@@ -5,6 +5,7 @@ from .helpers import *
 from kb.apps.models import App
 from kb.settings.models import *
 from kb.permissions.models import *
+from kb.lvs.models import XmlDump
 
 class Group(models.Model):
     title = models.CharField(max_length=255)
@@ -26,6 +27,9 @@ class Group(models.Model):
             through=GroupDefault,
             through_fields=('group', 'settingVal'),
             related_name='group_defaults')
+
+    tags = models.ManyToManyField('Tag', blank=True)
+    imported = models.BooleanField(default=False)
 
     class Meta:
         app_label = "groups"
@@ -67,8 +71,10 @@ class Group(models.Model):
 class Institute(models.Model):
     title = models.CharField(max_length=255)
     email_domain = models.CharField(max_length=255)
+    brincode = models.CharField(max_length=10, blank=True, default='');
     #The apps an institute (client) has access to, OS-level setting
     apps = models.ManyToManyField(App)
+    xmls = models.ManyToManyField(XmlDump, blank=True)
 
     class Meta:
         app_label = "groups"
@@ -77,6 +83,9 @@ class Institute(models.Model):
         return self.title
 
 class Membership(models.Model):
+    #TODO: Should this be a foreign key to User rather than UserProfile?
+    #  (Membership.get(..).user.user seems a bit clunky)
+    # Alternatively call it userprofile or profile
     user = models.ForeignKey('kb.UserProfile')
     group = models.ForeignKey(Group)
 
@@ -102,4 +111,10 @@ class Role(models.Model):
     def _update_flat_permissions(self, action, pk_set):
         for member in self.members.all():
             member.user._update_flat_permissions(action, pk_set)
+
+class Tag(models.Model):
+    label = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.label
 

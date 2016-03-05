@@ -12,6 +12,7 @@ DATABASES = {"default": dj_database_url.config()}
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
 
 # Allow all host headers
 ALLOWED_HOSTS = ['*']
@@ -27,6 +28,9 @@ if 'SECRET_KEY' in os.environ:
 if 'SITE_ID' in os.environ:
     SITE_ID = int(os.environ.get('SITE_ID'))
 
+if 'APPSTATIC' in os.environ:
+    APPSTATIC = os.environ.get('APPSTATIC')
+
 EMAIL_HOST_USER = os.environ['SENDGRID_USERNAME']
 EMAIL_HOST= 'smtp.sendgrid.net'
 EMAIL_PORT = 587
@@ -34,7 +38,9 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_PASSWORD = os.environ['SENDGRID_PASSWORD']
 SERVER_EMAIL = 'edbx@perceptum.nl'
 
-CORS_ORIGIN_WHITELIST = ('platform.eduraam.nl', 'staging.eduraam.nl')
+CORS_ORIGIN_WHITELIST = ('platform.codecult.nl', 'staging.codecult.nl')
 CORS_ALLOW_CREDENTIALS = True
 
-SESSION_COOKIE_DOMAIN = ".eduraam.nl"
+SESSION_COOKIE_DOMAIN = ".codecult.nl"
+
+DEFAULT_CODE_ORG_TEACHER = os.environ.get('DEFAULT_CODE_ORG_TEACHER')

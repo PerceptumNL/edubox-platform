@@ -55,7 +55,11 @@ import re
 import pickle
 import requests
 import subdomains
+import binascii
+from base64 import b32encode, b32decode
+from binascii import Error as BinASCIIError
 from bs4 import BeautifulSoup
+from Crypto.Cipher import AES
 from datetime import datetime
 from urllib.parse import urlsplit, urlunsplit, quote, unquote
 
@@ -63,7 +67,7 @@ from django.conf import settings
 from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.views.decorators.clickjacking import xframe_options_exempt
 
-from .models import ServerCookiejar
+from router import utils
 
 class BaseRouter():
     """
@@ -83,7 +87,8 @@ class BaseRouter():
         self.remote_domain = remote_domain
         self.remote_session = requests.Session()
 
-    def debug(self, msg):
+    @classmethod
+    def debug(cls, msg):
         """
         Prints a debug message when the setting ``DEBUG`` is set to True.
         Each debug message is preprended with the current time provided by
@@ -91,42 +96,53 @@ class BaseRouter():
 
         :param str msg: The debug message to display
         """
-        if not settings.DEBUG:
-            return
-        print("[%s] %s - %s" % (datetime.now(), self.__class__.__name__, msg))
+        utils.debug(msg, category=cls.__name__)
 
-    def debug_http_package(self, http_package, label=None, secret_body_values=None):
-        if not settings.DEBUG:
-            return
-        label = label or 'HTTP Package'
-        output_lines = [label+':']
-        if isinstance(http_package, requests.Request) or \
-            isinstance(http_package, requests.PreparedRequest):
-            output_lines.append("%s %s HTTP/1.1" % (
-                http_package.method, http_package.path_url))
-            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
-            for header, value in headers:
-                output_lines.append("%s: %s" % (header.title(), value))
-            if http_package.body is not None:
-                output_lines.append("")
-                body = http_package.body
-                if secret_body_values is not None:
-                    for secret in secret_body_values:
-                        body = body.replace(secret, "****")
-                output_lines.append(body)
-        elif isinstance(http_package, requests.Response):
-            output_lines.append("HTTP %s %s" % (
-                http_package.status_code, http_package.reason))
-            headers = sorted(http_package.headers.items(), key=lambda x:x[0])
-            for header, value in headers:
-                output_lines.append("%s: %s" % (header.title(), value))
-        else:
-            output_lines.append("Unknown http_package: %s" % (http_package,))
-        self.debug("\n".join(output_lines))
+    @classmethod
+    def debug_http_package(cls, http_package, label=None, secret_body_values=None):
+        utils.debug_http_package(http_package, label, secret_body_values,
+            category=cls.__name__)
+
+    @staticmethod
+    def pack_secure_params(params, sep='|'):
+        plain = sep.join([str(param) for param in params])
+        pad = (-len(plain) % 16) * '*'
+        plain += pad
+
+        #Use the django settings secret key to encrypt with AES
+        key = settings.SECRET_KEY[:16]
+        crypt = AES.new(key, AES.MODE_ECB)
+        cipher = crypt.encrypt(plain)
+
+        #Encode in base64
+        token = b32encode(cipher).decode('utf-8').replace("=","-")
+        return token
+
+    @staticmethod
+    def unpack_secure_token(token, sep='|'):
+        #Decode from base64
+        token = b32decode(token.replace("-","="), casefold=True)
+
+        #Decrypt AES using settings secret key
+        key = settings.SECRET_KEY[:16]
+        cipher = AES.new(key, AES.MODE_ECB)
+        context = cipher.decrypt(token)
+
+        #Seperate the elements from the string
+        context = context.decode('utf-8')
+        params = context.rstrip('*').split(sep)
+        return params
 
     @classmethod
     @xframe_options_exempt
-    def route_path_by_subdomain(cls, request, domain):
+    def route_path_by_subdomain(cls, request, domain_hash):
+        try:
+            domain, = cls.unpack_secure_token(domain_hash)
+        except ValueError:
+            cls.debug("Router could not unpack domain token")
+            raise Http404()
+
+        cls.debug("Router matched domain %s" % (domain,))
         router = cls(domain)
         return router.route_request(request)
 
@@ -193,7 +209,9 @@ class BaseRouter():
         """
         parts = urlsplit(url)
         netloc = parts.netloc or self.remote_domain
-        return "%s.rtr.%s" % (netloc, subdomains.utils.get_domain())
+        return "%s.%s" % (
+            binascii.b2a_hex(bytes(netloc, "utf-8")).decode("utf-8"), 
+            subdomains.utils.get_domain())
 
     def get_unrouted_domain_by_match(self, **kwargs):
         """
@@ -208,7 +226,11 @@ class BaseRouter():
                        groups.
         :return: the unrouted domain string or the current domain.
         """
-        return kwargs.get('domain', subdomains.utils.get_domain())
+        domain_hash = kwargs.get('domain_hash', None)
+        if domain_hash is None:
+            return subdomains.utils.get_domain()
+        else:
+            return self.unpack_secure_token(domain_hash)[0]
 
     def get_unrouted_url(self, routed_url, path_only=True):
         """
@@ -294,6 +316,7 @@ class BaseRouter():
         return path
 
     def get_remote_request_cookiejar(self):
+        from .models import ServerCookiejar
         server_cj, created = ServerCookiejar.objects.get_or_create(
             user=self.request.user)
         if created:
@@ -391,11 +414,12 @@ class BaseRouter():
                 continue
             elif header == "content-security-policy":
                 if 'frame-ancestors' in value:
-                    if 'HTTP_REFERER' in self.request.META:
-                        value = value.replace(
-                            "frame-ancestors",
-                            "frame-ancestors %s" % (
-                                self.request.META['HTTP_REFERER'],))
+                    from django.contrib.sites.models import Site
+                    current_site = Site.objects.get_current()
+                    value = value.replace(
+                        "frame-ancestors",
+                        "frame-ancestors *.%s" % (
+                            current_site.domain,))
                 headers[header.title()] = value
             elif header in ignore_list:
                 continue
@@ -410,6 +434,7 @@ class BaseRouter():
         # Cookies beloning to this user are kept at the server.
         # Since this will also be the last moment we'll need it in this request,
         # let's store the changes in the server cookiejar.
+        from .models import ServerCookiejar
         server_cj, _ = ServerCookiejar.objects.get_or_create(
             user=self.request.user)
         server_cj.contents = pickle.dumps(self.remote_session.cookies)
@@ -419,14 +444,33 @@ class BaseRouter():
 class StaticFileMixin():
 
     def route_request(self, request):
-        static_extensions = ['jpg','png','css','jpeg','gif', 'svg', 'js']
+        static_extensions = [
+            'css', 'js', 'jpg', 'jpeg', 'gif', 'ico', 'png', 'bmp', 'pict',
+            'csv', 'doc', 'pdf', 'pls', 'ppt', 'tif', 'tiff', 'eps', 'ejs',
+            'swf', 'midi', 'mid', 'ttf', 'eot', 'woff', 'otf', 'svg', 'svgz',
+            'webp', 'docx', 'xlsx', 'xls', 'pptx', 'ps', 'class', 'jar'
+        ]
         filename_parts = request.path_info.split('.')
         if filename_parts and filename_parts[-1] in static_extensions:
-            self.request = request
-            url = "%s://%s%s" % (
-                self.get_remote_request_scheme(),
-                self.get_remote_request_host(), self.get_remote_request_path())
-            self.debug("Redirecting request to remote host.")
+            if settings.APPSTATIC is not None:
+                from urllib.parse import quote
+                self.request = request
+                url = "https://appstatic.codecult.nl/%s.%s" % (
+                    quote("%s://%s%s" % (
+                        self.get_remote_request_scheme(),
+                        quote(self.get_remote_request_host(), safe=''),
+                        quote(".".join(filename_parts[:-1]), safe='')
+                    )),
+                    filename_parts[-1])
+                self.debug("Redirecting request to app static.")
+            else:
+                self.request = request
+                url = "%s://%s%s" % (
+                    self.get_remote_request_scheme(),
+                    self.get_remote_request_host(),
+                    self.get_remote_request_path())
+                self.debug("Redirecting request to remote app.")
+
             return HttpResponseRedirect(url)
         return super().route_request(request)
 
@@ -441,7 +485,7 @@ class Router(StaticFileMixin, BaseRouter):
 
         :rtype: tuple of regex strings
         """
-        return (r"(?P<domain>.+)\.rtr",)
+        return (r"(?P<domain_hash>[A-Za-z2-7-]+)-rtr",)
 
 
 class AppRouter(Router):
@@ -452,72 +496,100 @@ class AppRouter(Router):
     :type app: :py:class:`loader.models.App`
     """
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app, remote_domain=None, *args, **kwargs):
         self.app = app
-        kwargs['remote_domain'] = urlsplit('http://'+self.app.root).netloc
+        if remote_domain is None:
+            kwargs['remote_domain'] = urlsplit('http://'+self.app.root).netloc
+        else:
+            kwargs['remote_domain'] = remote_domain
         super().__init__(*args, **kwargs)
 
     @classmethod
-    def get_routed_app_root(cls, request, app):
+    def get_routed_app_url(cls, request, app, location='/'):
         router = cls(app)
         router.request = request
-        return router.get_routed_url(
-            "%s://%s" % (app.scheme, app.root), path_only=False)
+        return router.get_routed_url(location, path_only=False)
 
     @classmethod
     @xframe_options_exempt
-    def route_path_by_subdomain(cls, request, domain):
+    def route_path_by_subdomain(cls, request, domain_hash):
         from kb.apps.models import App
         try:
-            app = App.objects.get(root=domain)
-        except App.DoesNotExist:
-            for app in App.objects.exclude(identical_urls=""):
-                if re.match(app.identical_urls, domain):
-                    break
-            else:
-                app = None
+            domain, app_id = cls.unpack_secure_token(domain_hash)
+        except ValueError:
+            cls.debug("Router could not unpack domain token")
+            raise Http404()
 
-        if app is None:
+        cls.debug("Router matched domain %s of app %s" % (domain, app_id))
+        try:
+            app = App.objects.get(pk=app_id)
+        except App.DoesNotExist:
             raise Http404
         else:
-            router = cls(app)
+            router = cls(app, remote_domain=domain)
             return router.route_request(request)
 
     @classmethod
     def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+)\.app",)
+        return (r"(?P<domain_hash>[A-Za-z2-7-]+)-app",)
 
     def get_remote_response(self):
         """
         Send the request to the remote domain and return the response.
         """
-        app_root = urlsplit('http://'+self.app.root+'/')
-        if self.request.path_info == app_root.path \
-                and self.app_login_needed():
+        if self.app_login_needed():
             self.debug("[App Login] Starting login procedure")
             status = self.app_login()
             self.debug("[App Login] Successful?: %s" % (status,))
         return super().get_remote_response()
 
+    def alter_response_content(self, response_content, remote_response):
+        if isinstance(response_content, BeautifulSoup):
+            adaptor = self.get_app_adaptor()
+            if adaptor is not None:
+                app_script = adaptor.get_app_script()
+                if app_script is not None:
+                    response_content.body.append(response_content.new_tag(
+                        'script', src=app_script))
+        return response_content
+
     def get_remote_request_scheme(self):
         scheme = self.app.scheme
         return scheme
 
-    def get_routed_domain(self, url):
-        """
-        Return a routed version of the domain in ``url``.
+    def get_app_adaptor(self):
+        from importlib import import_module
+        if not self.app.adaptor_class:
+            return None
 
-        :param str url: The url that contains the domain that will be routed
-        :return: a routed domain string
-        """
-        parts = urlsplit(url)
-        netloc = parts.netloc or self.remote_domain
-        if re.match(self.app.identical_urls, netloc):
-            return "%s.app.%s" % (parts.netloc, subdomains.utils.get_domain())
+        adaptor_path = self.app.adaptor_class.split('.')
+        adaptor_module = ".".join(adaptor_path[:-1])
+        if adaptor_module:
+            try:
+                adaptor = getattr(import_module(adaptor_module),
+                    adaptor_path[-1])
+            except ImportError:
+                self.debug('Cannot find adaptor module.')
+                return None
+            except AttributeError:
+                self.debug('Cannot find adaptor class in module.')
+                return None
         else:
-            return super().get_routed_domain(url)
+            try:
+                adaptor = globals()[adaptor_path[-1]]
+            except KeyError:
+                self.debug("Cannot find adaptor class in globals")
+                return None
+        return adaptor
 
     def app_login_needed(self):
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
+            return adaptor.is_logged_in(
+                user=self.request.user,
+                session=self.remote_session,
+                app=self.app)
+
         config = self.app.login_config
         if 'check' not in config or 'method' not in config['check']:
             return False
@@ -546,10 +618,178 @@ class AppRouter(Router):
         else:
             return False
 
-    def app_login(self):
+    def app_signup(self):
+        """
+        Perform automatic app signup based on signup script.
+        """
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
+            return adaptor.signup(
+                user=self.request.user,
+                session=self.remote_session,
+                app=self.app)
+        config = self.app.login_config
+        cookiejar = self.remote_session.cookies
+        if 'signup' not in config or 'post' not in config['signup']:
+            return False
+        # Execute signup script
+        signup_document = None
+        signup_url = "%s://%s%s" % (
+            self.app.scheme, self.app.root, config['signup']['post'])
+        if 'form' in config['signup']:
+            signup_document_url = "%s://%s%s" % (
+                self.app.scheme, self.app.root, config['signup']['form'])
+        else:
+            signup_document_url = signup_url
+        signup_variables = {}
+        signup_payload = {}
+        signup_headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Origin': '%s://%s' % (self.app.scheme, self.app.root),
+            'User-Agent': (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+                "(KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36"),
+            'Referer': signup_url}
+        # Generate user credentials
+        from .models import ServerCredentials
+        if 'check-username' in config['signup']:
+            username_valid = False
+            invalid_usernames = []
+            while not username_valid:
+                credentials = ServerCredentials.generate(
+                    app=self.app,
+                    user=self.request.user,
+                    invalid_usernames=invalid_usernames)
+                check_username = config['signup']['check-username']
+                if check_username['method'] == "GET_EXACT_MATCH":
+                    check_username_result = self.remote_session.request(
+                        method="GET",
+                        url=check_username['url'].replace(
+                            "$username", credentials.username))
+                    check_username_match_value = \
+                            check_username['match'].replace(
+                                "$username", credentials.username)
+                    if check_username_result.text == \
+                            check_username_match_value:
+                        username_valid = True
+                    else:
+                        invalid_usernames.append(credentials.username)
+                else:
+                    break
+
+            signup_variables['username'] = credentials.username
+            signup_variables['password'] = credentials.password
+        else:
+            credentials = ServerCredentials.generate(
+                    app=self.app, user=self.request.user)
+            signup_variables['username'] = credentials.username
+            signup_variables['password'] = credentials.password
+
+        # TODO: Set user fields as signup variables (name, email, birthday, etc)
+        secret_body_values = [credentials.username, credentials.password]
+
+        # Retrieve the head of the signup page for cookies
+        signup_document_response = self.remote_session.request(
+            url=signup_document_url, method="GET")
+
+        if 'heads' in config['signup']:
+            for url in config['signup']['heads']:
+                self.remote_session.request(url=url, method="HEAD")
+
+        if 'vars' in config['signup']:
+            for name, value in config['signup']['vars'].items():
+                if value[:7] == "cookie:" and value[7:] in cookiejar:
+                    signup_variables[name] = cookiejar[value[7:]]
+                elif value[:6] == "field:":
+                    if signup_document is None:
+                        if signup_document_response.status_code != 200:
+                            self.debug(
+                                "Retrieving signup document for field"
+                                "retrieval failed.")
+                            continue
+                        signup_document = BeautifulSoup(
+                            signup_document_response.text)
+                    field = signup_document.find('input',
+                                                attrs={"name": value[6:]})
+                    if field is not None and field.has_attr('value'):
+                        signup_variables[name] = field['value']
+                else:
+                    signup_variables[name] = value
+
+        if 'payload' in config['signup']:
+            for name, value in config['signup']['payload'].items():
+                if value == "":
+                    signup_payload[name] = ""
+                elif isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in signup_variables:
+                    signup_payload[name] = signup_variables[value[1:]]
+                else:
+                    signup_payload[name] = value
+
+        if 'headers' in config['signup']:
+            for name, value in config['signup']['headers'].items():
+                if isinstance(value, str) and value[0] == "$" \
+                        and value[1:] in signup_variables:
+                    signup_headers[name] = signup_variables[value[1:]]
+                else:
+                    signup_headers[name] = value
+
+        # Construct and execute signup request
+        request_params = {
+            "method":"POST",
+            "allow_redirects":False,
+            "headers":signup_headers,
+            "url":signup_url}
+        if 'Content-Type' in signup_headers and \
+                signup_headers['Content-Type'] == "application/json":
+            request_params['json'] = signup_payload
+        else:
+            request_params['data'] = signup_payload
+        response = self.remote_session.request(**request_params)
+
+        # Debug the interaction
+        self.debug_http_package(response.request, label='Signup request',
+                secret_body_values=secret_body_values)
+        self.debug_http_package(response, label='Signup response')
+        if not self.app_login_needed():
+            credentials.save()
+            return True
+        elif self.app_login(credentials=credentials):
+            credentials.save()
+            return True
+        else:
+            return False
+
+    def app_login(self, credentials=None):
         """
         Perform automatic app login based on login script.
         """
+        from .models import ServerCredentials
+        try:
+            credentials = ServerCredentials.objects.get(
+                app=self.app, user=self.request.user)
+        except ServerCredentials.DoesNotExist:
+            self.debug("No credentials found for this app.")
+            credentials = None
+
+        if credentials is None:
+            if self.app_signup():
+                self.debug("Retrying credentials after signup")
+                try:
+                    credentials = ServerCredentials.objects.get(
+                        app=self.app, user=self.request.user)
+                except ServerCredentials.DoesNotExist:
+                    self.debug("No credentials found for this app.")
+                    credentials = None
+
+        adaptor = self.get_app_adaptor()
+        if adaptor is not None:
+            return adaptor.login(
+                credentials=credentials,
+                user=self.request.user,
+                session=self.remote_session,
+                app=self.app)
+
         config = self.app.login_config
         cookiejar = self.remote_session.cookies
         if 'login' not in config or 'post' not in config['login']:
@@ -567,14 +807,8 @@ class AppRouter(Router):
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
                 "(KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36"),
             'Referer': login_url}
-        # Retrieve user credentials
-        from .models import ServerCredentials
-        try:
-            credentials = ServerCredentials.objects.get(
-                app=self.app, user=self.request.user)
-        except ServerCredentials.DoesNotExist:
-            self.debug("No credentials found for this app.")
-            credentials = None
+
+        if credentials is None:
             secret_body_values = None
         else:
             login_variables['username'] = credentials.username
@@ -648,10 +882,3 @@ class AppRouter(Router):
             return True
         else:
             return not self.app_login_needed()
-
-
-class DuolingoAppRouter(AppRouter):
-
-    @classmethod
-    def get_subdomain_patterns(cls):
-        return (r"(?P<domain>.+\.duolingo\.com)\.app",)

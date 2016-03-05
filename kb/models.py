@@ -1,12 +1,20 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 from kb.groups.models import *
 from kb.settings.models import *
 from kb.permissions.models import *
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, unique=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, unique=True,
+            on_delete=models.CASCADE, related_name='profile')
+
+    #EdeXML additions
+    alias = models.CharField(max_length=255, unique=True, null=True)
+    surname_prefixes = models.CharField(max_length=127, blank=True)
+    initials = models.CharField(max_length=15, blank=True)
+    gender = models.PositiveSmallIntegerField(default=0)
+    date_of_birth = models.DateField(null=True)
 
     #Member specifies the role the user has in the group
     groups = models.ManyToManyField(Group, through=Membership, 
@@ -32,6 +40,43 @@ class UserProfile(models.Model):
 
     class Meta:
         app_label = "kb"
+
+    @property
+    def username(self):
+        return self.user.username
+    
+    @property
+    def first_name(self):
+        return self.user.first_name
+
+    @property
+    def last_name(self):
+        return self.user.last_name
+    
+    @property
+    def email(self):
+        return self.user.email
+
+    @property
+    def full_name(self):
+        full = self.first_name
+
+        if self.surname_prefixes != '':
+            full += ' '+self.surname_prefixes
+
+        full += ' '+self.last_name
+        return full
+
+    def is_teacher(self, group=None):
+        if group:
+            return Membership.objects.filter(
+                user=self,
+                group=group,
+                role__role="Teacher").exists()
+        else:
+            return Membership.objects.filter(
+                user=self,
+                role__role="Teacher").exists()
 
     def __str__(self):
         return str(self.user)

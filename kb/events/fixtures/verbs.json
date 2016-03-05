@@ -34,5 +34,14 @@
             "iri": "http://adlnet.gov/expapi/verbs/interacted",
             "description": "A catch-all verb used to assert an actor's manipulation of an object, physical or digital, in some context. For now this will mean 'clicked word'."
         }
+    },
+    {
+        "model": "events.Verb",
+        "pk": 5,
+        "fields": {
+            "event_class": "SubmittedEvent",
+            "iri": "http://adlnet.gov/expapi/verbs/completed",
+            "description": "Indicates the actor finished or concluded the activity normally. For now this will mean a solution has been submitted to a problem"
+        }
     }
 ]

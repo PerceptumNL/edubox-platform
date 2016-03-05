@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block body %}
+{% if error %}
+    <b>{{error}}</b>
+{% else %}
+    <h1>{{ institute }}</h1>
+    <h3>Docenten</h3>
+    <table>
+    {% for t in teachers %}
+        <tr>
+        {% for e in t %}
+            <td>{{ e }}</td>
+        {% endfor %}
+        </tr>
+    {% endfor %}
+    </table>
+    <h3>Leerlingen</h3>
+    {% for g, s in students.items %}
+        <h5>{{ g }}</h5>
+        <table>
+        {% for m in s %}
+            <tr>
+            {% for e in m %}
+                <td>{{ e }}</td>
+            {% endfor %}
+            </tr>
+        {% endfor %}
+        </table>
+    {% endfor %}
+{% endif %}
+{% endblock %}

@@ -29,27 +29,27 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'polymorphic',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    'django_summernote',
     'rest_framework',
     'compressor',
-    'router',
     'corsheaders',
-    'kb',
     'kb.events',
     'kb.apps',
+    'kb.collections',
     'kb.groups',
+    'kb.lvs',
     'kb.settings',
     'kb.permissions',
     'kb.badges',
+    'kb',
+    'router',
     'launch',
     'accounts',
     'allauth',
@@ -57,9 +57,9 @@ INSTALLED_APPS = (
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.openid',
-)
+]
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'kb.middleware.ContextTokenProcessingMiddleware',
@@ -72,13 +72,13 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'router.middleware.SubdomainAppRoutingMiddleware',
-)
+]
 
 ROOT_URLCONF = 'eduraam.urls'
 
 SUBDOMAIN_ROUTING = {
     None: "eduraam.urls",
-    "accounts": "allauth.urls",
+    "accounts": "accounts.urls",
     "api": "kb.urls",
     "launch": "launch.urls"
 }
@@ -99,22 +99,34 @@ TEMPLATES = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = (
-    # Needed to login by username in Django admin, regardless of `allauth`
+AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    # `allauth` specific authentication methods, such as login by e-mail
-    'allauth.account.auth_backends.AuthenticationBackend',
-)
+    'accounts.auth_backends.ExtendedAuthenticationBackend',
+]
 ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
+ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 LOGIN_REDIRECT_URL = '/'
 
-STATICFILES_FINDERS = (
+STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'compressor.finders.CompressorFinder'
-)
+]
+
+APPSTATIC = None
 
 WSGI_APPLICATION = 'eduraam.wsgi.application'
+
+REST_FRAMEWORK = {
+    # Use Django's standard `django.contrib.auth` permissions,
+    # or allow read-only access for unauthenticated users.
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated'
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication'
+    ]
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
