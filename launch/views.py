@@ -3,7 +3,23 @@ from django.shortcuts import get_object_or_404
 
 from kb.groups.models import Group
 from kb.helpers import create_token
-from router import AppRouter
+
+def get_routed_app_url(request, app, url='/'):
+    from urllib.parse import urlsplit, urlunsplit
+    from binascii import b2a_hex
+    from subdomains.utils import get_domain
+
+    parts = urlsplit(url)
+    domain = parts.netloc or urlsplit('http://'+app.root).netloc
+    hashed_domain = "%s.%s" % (
+        b2a_hex(bytes(domain, "utf-8")).decode("utf-8"), get_domain())
+
+    return urlunsplit((
+        parts.scheme or request.scheme,
+        hashed_domain,
+        parts.path,
+        parts.query,
+        parts.fragment))
 
 def launch_app(request, group_id, app_id):
     if not request.user.is_authenticated():
@@ -15,7 +31,7 @@ def launch_app(request, group_id, app_id):
     # TODO: Ensure user has access to that app in that group
 
     token = create_token(user=request.user.pk, group=group.pk, app=app.pk)
-    location = AppRouter.get_routed_app_url(request, app)
+    location = get_routed_app_url(request, app)
 
     return HttpResponseRedirect(
             "%s?token=%s" % (location, token.decode('utf-8')))
@@ -33,7 +49,7 @@ def launch_unit(request, group_id, unit_id):
     if activity is not None:
         token = create_token(user=request.user.pk, group=group.pk,
             app=activity.app.pk)
-        location = AppRouter.get_routed_app_url(request, activity.app,
+        location = get_routed_app_url(request, activity.app,
                 activity.url)
 
         return HttpResponseRedirect(

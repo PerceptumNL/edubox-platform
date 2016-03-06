@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'kb.settings',
     'kb.permissions',
     'kb',
-    'router',
     'launch',
     'accounts',
     'allauth',
@@ -62,6 +61,7 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'kb.middleware.ContextTokenProcessingMiddleware',
+    'subdomains.middleware.SubdomainURLRoutingMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.middleware.gzip.GZipMiddleware',
@@ -70,13 +70,12 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'router.middleware.SubdomainAppRoutingMiddleware',
 ]
 
 ROOT_URLCONF = 'eduraam.urls'
 
-SUBDOMAIN_ROUTING = {
-    None: "eduraam.urls",
+SUBDOMAIN_URLCONFS = {
+    None: ROOT_URLCONF,
     "accounts": "accounts.urls",
     "api": "kb.urls",
     "launch": "launch.urls"

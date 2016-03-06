@@ -1,5 +1,5 @@
 from django.http import JsonResponse, HttpResponse
-from django.core.urlresolvers import reverse
+from subdomains.utils import reverse
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 
@@ -19,10 +19,6 @@ def learning_units(request):
 
     group = get_object_or_404(Group, pk=int(group_id))
 
-    # Fetch correct urlconf for accounts app login routing
-    login_urlconf = settings.SUBDOMAIN_ROUTING.get('accounts',
-        settings.ROOT_URLCONF)
-
     units = []
     # TODO: Actually make this list group dependant.
     for unit in LearningUnit.objects.all():
@@ -35,7 +31,7 @@ def learning_units(request):
             'id': unit.pk,
             'label': unit.label,
             'login': "%s?token=%s" % (
-                reverse('app_login', urlconf=login_urlconf), token),
+                reverse('app_login', subdomain='accounts'), token),
             'token': token})
 
     return JsonResponse({'units': units})

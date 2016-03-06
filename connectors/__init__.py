@@ -1,16 +1,32 @@
-from bs4 import BeautifulSoup
-
-import json
 import requests
-import binascii
-
-from router import utils
+from importlib import import_module
+from binascii import b2a_hex
 from accounts.models import AppAccount
-from kb.apps.models import App
 from kb.helpers import create_token, unpack_token
-from kb.groups.models import Group, Membership, Role
+import debugutil
 
-class BaseAdaptor():
+def get_app_connector(app):
+    if not app.connector_class:
+        return None
+
+    connector_path = app.connector_class.split('.')
+    connector_module = ".".join(connector_path[:-1])
+    if connector_module:
+        try:
+            Connector = getattr(import_module(connector_module),
+                connector_path[-1])
+        except ImportError:
+            return None
+        except AttributeError:
+            return None
+    else:
+        try:
+            Connector = globals()[connector_path[-1]]
+        except KeyError:
+            return None
+    return Connector
+
+class BaseConnector():
 
     @classmethod
     def debug(cls, msg):
@@ -21,11 +37,11 @@ class BaseAdaptor():
 
         :param str msg: The debug message to display
         """
-        utils.debug(msg, category=cls.__name__)
+        debugutil.debug(msg, category=cls.__name__)
 
     @classmethod
     def debug_http_package(cls, http_package, label=None, secret_body_values=None):
-        utils.debug_http_package(http_package, label, secret_body_values,
+        debugutil.debug_http_package(http_package, label, secret_body_values,
             category=cls.__name__)
 
     @classmethod
@@ -78,6 +94,7 @@ class BaseAdaptor():
 
     @classmethod
     def fetch_and_parse_document(cls, token, url):
+        from bs4 import BeautifulSoup
         response = requests.get(cls.route_url(url), params={'token':token})
         return BeautifulSoup(response.text)
 
@@ -117,14 +134,14 @@ class BaseAdaptor():
         urlparts = urlsplit(url)
         return urlunsplit((
             urlparts.scheme,
-            "%s.codecult.nl" % ( binascii.b2a_hex(
+            "%s.codecult.nl" % ( b2a_hex(
                 bytes(urlparts.netloc, "utf-8")).decode("utf-8")),
             urlparts.path,
             urlparts.query,
             urlparts.fragment))
 
 
-class CodeOrgAdaptor(BaseAdaptor):
+class CodeOrgConnector(BaseConnector):
     HOME_PAGE = "https://studio.code.org"
     USER_LANGUAGE = HOME_PAGE+"/locale"
     USERS_URL = HOME_PAGE+"/users"
@@ -204,6 +221,7 @@ class CodeOrgAdaptor(BaseAdaptor):
 
     @classmethod
     def signup(cls, token, user, *args, **kwargs):
+        from kb.apps.models import App
         unpacked = unpack_token(token)
         if user.profile.is_teacher():
             if not user.email:
@@ -249,6 +267,7 @@ class CodeOrgAdaptor(BaseAdaptor):
             else:
                 return False
         else:
+            from kb.groups.models import Group, Membership, Role
             #Get the first teacher of this users group
             group = Group.objects.get(pk=unpacked['group'])
             role = Role.objects.get(role='Teacher')
@@ -330,13 +349,14 @@ class CodeOrgAdaptor(BaseAdaptor):
                     'X-Requested-With': 'XMLHttpRequest'
                 })
             if response.status_code == 200:
+                from json import dumps
                 account = response.json()[0]
                 credentials = AppAccount.objects.create(
                     user=user,
                     app=App.objects.get(pk=unpacked['app']),
                     username=account['id'],
                     password=account['secret_words'],
-                    params=json.dumps({
+                    params=dumps({
                         'login_mode': 'class',
                         'section': section_code,
                         'username': account['username']}))

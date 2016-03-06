@@ -1,9 +1,7 @@
 from django.http import JsonResponse, HttpResponse
-
-from kb.helpers import create_token
-from router import AppRouter
-
 from collections import defaultdict
+from kb.helpers import create_token
+
 
 def app_list(request):
     #If user is authenticated, retrieve all groups he is a member of

@@ -23,8 +23,8 @@ class App(models.Model):
     # JSON serialization of login script configuration
     # (TODO: Change to JSONField)
     login_config_json = models.TextField(default="{}", blank=True)
-    # App adaptor class for app-specific behaviour
-    adaptor_class = models.CharField(default='', blank=True, max_length=255)
+    # App connector class for app-specific behaviour
+    connector_class = models.CharField(default='', blank=True, max_length=255)
 
     class Meta:
         app_label = "apps"
