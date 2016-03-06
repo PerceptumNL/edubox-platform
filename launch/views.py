@@ -1,5 +1,6 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 
 from kb.groups.models import Group
 from kb.helpers import create_token
@@ -15,7 +16,7 @@ def get_routed_app_url(request, app, url='/'):
         b2a_hex(bytes(domain, "utf-8")).decode("utf-8"), get_domain())
 
     return urlunsplit((
-        parts.scheme or request.scheme,
+        settings.ROUTER_PROTOCOL or parts.scheme or request.scheme,
         hashed_domain,
         parts.path,
         parts.query,

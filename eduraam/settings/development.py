@@ -14,3 +14,5 @@ SITE_ID = 1
 
 CORS_ORIGIN_WHITELIST = ('localhost:8000','localhost:9000')
 CORS_ALLOW_CREDENTIALS = True
+
+ROUTER_PROTOCOL = 'http'
