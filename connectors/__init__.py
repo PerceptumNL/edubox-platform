@@ -137,7 +137,7 @@ class BaseConnector():
             urlparts.scheme,
             "%s.%s" % (
                 b2a_hex(bytes(urlparts.netloc, "utf-8")).decode("utf-8"),
-                get_domain),
+                get_domain()),
             urlparts.path,
             urlparts.query,
             urlparts.fragment))
