@@ -131,11 +131,13 @@ class BaseConnector():
     @classmethod
     def route_url(cls, url):
         from urllib.parse import urlsplit, urlunsplit
+        from subdomains.utils import get_domain
         urlparts = urlsplit(url)
         return urlunsplit((
             urlparts.scheme,
-            "%s.codecult.nl" % ( b2a_hex(
-                bytes(urlparts.netloc, "utf-8")).decode("utf-8")),
+            "%s.%s" % (
+                b2a_hex(bytes(urlparts.netloc, "utf-8")).decode("utf-8"),
+                get_domain),
             urlparts.path,
             urlparts.query,
             urlparts.fragment))
