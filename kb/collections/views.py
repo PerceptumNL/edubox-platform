@@ -20,6 +20,8 @@ def learning_units(request):
     group = get_object_or_404(Group, pk=int(group_id))
 
     units = []
+    login_base = reverse('app_login', subdomain='accounts',
+            scheme=request.scheme)
     # TODO: Actually make this list group dependant.
     for unit in LearningUnit.objects.all():
         activity = unit.get_next_activity_for_user(request.user)
@@ -30,8 +32,7 @@ def learning_units(request):
         units.append({
             'id': unit.pk,
             'label': unit.label,
-            'login': "%s?token=%s" % (
-                reverse('app_login', subdomain='accounts'), token),
+            'login': "%s?token=%s" % (login_base, token),
             'token': token})
 
     return JsonResponse({'units': units})
