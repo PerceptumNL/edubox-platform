@@ -1,4 +1,5 @@
 from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
 
 from collections import defaultdict
 
@@ -36,3 +37,35 @@ def group_list(request):
             {'id': group.pk, 'title': group.title, 'path': parents })
 
     return JsonResponse({'groups': group_exports});
+
+def group_details(request, group_id):
+    from .models import Group, Membership
+    group = get_object_or_404(Group, pk=int(group_id))
+    try:
+        membership = Membership.objects.get(
+            user=request.user.profile, group=group)
+    except Membership.DoesNotExist:
+        return HttpResponse(status=403);
+
+    # TODO: Use permissions linked to the Role to determine access
+    if membership.role.role == "Teacher":
+        members = Membership.objects.filter(group=group).exclude(
+            user=request.user.profile);
+    else:
+        members = Membership.objects.filter(
+            group=group, role__role='Teacher').exclude(user=request.user.profile);
+
+    members_export = []
+    for member in members:
+        members_export.append({
+            'id': member.user.user.pk,
+            'role': member.role.role,
+            'name': member.user.full_name,
+        })
+
+    return JsonResponse({
+        'id': group.pk,
+        'title': group.title,
+        'role': membership.role.role,
+        'members': members_export
+    })
