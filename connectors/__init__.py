@@ -132,9 +132,10 @@ class BaseConnector():
     def route_url(cls, url):
         from urllib.parse import urlsplit, urlunsplit
         from subdomains.utils import get_domain
+        from django.conf import settings
         urlparts = urlsplit(url)
         return urlunsplit((
-            urlparts.scheme,
+            settings.ROUTER_PROTOCOL or urlparts.scheme,
             "%s.%s" % (
                 b2a_hex(bytes(urlparts.netloc, "utf-8")).decode("utf-8"),
                 get_domain()),
