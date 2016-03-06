@@ -5,7 +5,7 @@ import requests
 import binascii
 
 from router import utils
-from .models import ServerCredentials
+from accounts.models import AppAccount
 from kb.apps.models import App
 from kb.helpers import create_token, unpack_token
 from kb.groups.models import Group, Membership, Role
@@ -43,9 +43,9 @@ class BaseAdaptor():
     @classmethod
     def get_credentials(cls, user, app_pk):
         try:
-            credentials = ServerCredentials.objects.get(
+            credentials = AppAccount.objects.get(
                 app__pk=app_pk, user=user)
-        except ServerCredentials.DoesNotExist:
+        except AppAccount.DoesNotExist:
             return None
         else:
             return credentials
@@ -138,7 +138,6 @@ class CodeOrgAdaptor(BaseAdaptor):
     TEACHER_DASHBOARD_PAGE = "https://code.org/teacher-dashboard"
     TEACHER_SIGNUP_PAGE = USERS_URL + "/sign_up?user%5Buser_type%5D=teacher"
     TEACHER_SIGNUP = USERS_URL
-    APP_SCRIPT_URL = "adaptor/code_org.js"
 
     @classmethod
     def is_logged_in(cls, token, *args, **kwargs):
@@ -214,7 +213,7 @@ class CodeOrgAdaptor(BaseAdaptor):
             authenticity_token = cls.get_field_value_from_document(
                 login_document, "authenticity_token")
 
-            credentials = ServerCredentials.generate(
+            credentials = AppAccount.generate(
                 app=App.objects.get(pk=unpacked['app']),
                 user=user)
             credentials.username = user.email
@@ -332,7 +331,7 @@ class CodeOrgAdaptor(BaseAdaptor):
                 })
             if response.status_code == 200:
                 account = response.json()[0]
-                credentials = ServerCredentials.objects.create(
+                credentials = AppAccount.objects.create(
                     user=user,
                     app=App.objects.get(pk=unpacked['app']),
                     username=account['id'],
@@ -370,8 +369,3 @@ class CodeOrgAdaptor(BaseAdaptor):
             else:
                 return False
 
-    @classmethod
-    def get_app_script(cls, *args, **kwargs):
-        from django.conf import settings
-        return "https://backend.codecult.nl%s%s" % (
-            settings.STATIC_URL, cls.APP_SCRIPT_URL)

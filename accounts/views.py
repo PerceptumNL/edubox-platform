@@ -4,7 +4,6 @@ from importlib import import_module
 
 from kb.helpers import unpack_token
 from kb.apps.models import App
-from router.models import ServerCredentials
 
 def get_user_info(request):
     if not request.user.is_authenticated():
