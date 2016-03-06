@@ -21,24 +21,24 @@ def login_user_into_app(request):
 
     token = request.GET.get('token', None)
     if token is None:
-        return HttpResponse(status=400)
+        return HttpResponse('No token.', status=400)
 
     unpacked = unpack_token(token)
     if unpacked is None:
-        return HttpResponse(status=400)
+        return HttpResponse('Illegal token', status=400)
 
     if int(unpacked['user']) != request.user.pk:
-        return HttpResponse(status=403)
+        return HttpResponse('User does not match.', status=403)
 
     try:
         app = App.objects.get(pk=unpacked['app'])
     except App.DoesNotExist:
-        return HttpResponse(status=400)
+        return HttpResponse('Unknown app.', status=400)
 
     from connectors import get_app_connector
     connector = get_app_connector(app)
     if connector is None:
-        return HttpResponse(status=500)
+        return HttpResponse('Could not find connector.', status=500)
 
     if connector.is_logged_in(token=token):
         return HttpResponse(status=200)
@@ -46,9 +46,9 @@ def login_user_into_app(request):
     credentials = connector.get_or_create_credentials(
         token, request.user, app.pk)
     if credentials is None:
-        return HttpResponse(status=503)
+        return HttpResponse('Could not find/create credentials.', status=503)
 
     if connector.login(token, credentials):
         return HttpResponse(status=200)
     else:
-        return HttpResponse(status=500)
+        return HttpResponse('Could not login.', status=500)
