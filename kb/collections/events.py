@@ -6,8 +6,11 @@ from .models import Activity, ActivityCompletion
 
 @receiver(post_save, sender=SubmittedEvent)
 def handle_activity_completion(sender, instance, **kwargs):
+    from re import sub
     try:
-        activity = Activity.objects.get(url=instance.obj, app=instance.app);
+        activity = Activity.objects.get(
+            url__endswith=sub(r"https?", "", instance.obj),
+            app=instance.app);
     except Activity.DoesNotExist:
         return
 
