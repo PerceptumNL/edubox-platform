@@ -13,7 +13,7 @@ def get_routed_app_url(request, app, url='/'):
     parts = urlsplit(url)
     domain = parts.netloc or urlsplit('http://'+app.root).netloc
     hashed_domain = "%s.%s" % (
-        b2a_hex(bytes(domain, "utf-8")).decode("utf-8"), get_domain())
+        b2a_hex(bytes(domain, "utf-8")).decode("utf-8"), settings.ROUTER_DOMAIN)
 
     return urlunsplit((
         settings.ROUTER_PROTOCOL or parts.scheme or request.scheme,

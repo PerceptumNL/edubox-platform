@@ -12,7 +12,9 @@ STATIC_ROOT = 'staticfiles'
 
 SITE_ID = 1
 
-CORS_ORIGIN_WHITELIST = ('localhost:8000','localhost:9000')
+CORS_ORIGIN_WHITELIST = ('platform.codecult.local:9000', 'codecult.local:9000')
 CORS_ALLOW_CREDENTIALS = True
 
 ROUTER_PROTOCOL = 'http'
+ROUTER_DOMAIN = 'codecult.local:5000'
+SESSION_COOKIE_DOMAIN = ".codecult.local"

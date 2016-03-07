@@ -44,3 +44,4 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_DOMAIN = ".codecult.nl"
 
 ROUTER_PROTOCOL = os.environ.get('ROUTER_PROTOCOL', None)
+ROUTER_DOMAIN = 'codecult.nl'
