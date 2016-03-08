@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.openid',
+    'connectors.apps.ConnectorsConfig',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -71,6 +72,10 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
 ]
+
+CONNECTORS = {
+    'codeorg': 'connectors.codeorg.Connector'
+}
 
 ROOT_URLCONF = 'eduraam.urls'
 
