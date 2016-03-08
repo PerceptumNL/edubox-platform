@@ -3,6 +3,7 @@ Reference
 
 Router
 ------
+*NOTE: THE ROUTER MODULE IS DEPRECATED!*
 
 router.middleware
 ^^^^^^^^^^^^^^^^^

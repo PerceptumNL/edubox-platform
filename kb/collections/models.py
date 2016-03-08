@@ -63,6 +63,9 @@ class ActivityCompletion(models.Model):
     user = models.ForeignKey(UserProfile)
     datetime = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return "%s completed %s" % (self.user, self.activity)
+
 
 class Observation(models.Model):
     observable = models.ForeignKey(Observable)

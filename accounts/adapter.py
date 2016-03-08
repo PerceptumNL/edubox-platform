@@ -2,10 +2,13 @@ from urllib.parse import urlparse
 from django.contrib.sites.models import Site
 from django.utils.http import is_safe_url
 from allauth.account.adapter import DefaultAccountAdapter
+from django.conf import settings
 
 class EduraamAccountAdapter(DefaultAccountAdapter):
 
     def is_safe_url(self, url):
+        if settings.DEBUG:
+            return True
         if url is None:
             return False
         current_domain = Site.objects.get_current().domain

@@ -10,10 +10,6 @@ ADMINS = (
 import dj_database_url
 DATABASES = {"default": dj_database_url.config()}
 
-# Honor the 'X-Forwarded-Proto' header for request.is_secure()
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-
 # Allow all host headers
 ALLOWED_HOSTS = ['*']
 
@@ -38,10 +34,10 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_PASSWORD = os.environ['SENDGRID_PASSWORD']
 SERVER_EMAIL = 'edbx@perceptum.nl'
 
-CORS_ORIGIN_WHITELIST = ('platform.codecult.nl', 'staging.codecult.nl')
+CORS_ORIGIN_WHITELIST = ('staging.codecult.nl')
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_DOMAIN = ".codecult.nl"
 
 ROUTER_PROTOCOL = os.environ.get('ROUTER_PROTOCOL', None)
-ROUTER_DOMAIN = 'codecult.nl'
+ROUTER_DOMAIN = 'staging.codecult.nl'
