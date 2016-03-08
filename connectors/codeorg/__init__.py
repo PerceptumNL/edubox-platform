@@ -256,4 +256,3 @@ class Connector(BaseConnector):
         from django.db.models.signals import post_save
         from .signals import handle_codeorg_submission
         post_save.connect(handle_codeorg_submission, sender=SubmittedEvent)
-        print("Signals registered")
