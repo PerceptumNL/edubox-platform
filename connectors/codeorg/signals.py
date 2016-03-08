@@ -1,8 +1,6 @@
 from django.db.models.signals import post_save
-from django.dispatch import receiver, Signal
+from django.dispatch import receiver
 from kb.events.models import SubmittedEvent
-
-submitted_code_parsed = Signal(providing_args=["user", "code"])
 
 @receiver(post_save, sender=SubmittedEvent)
 def handle_codeorg_submission(sender, instance, **kwargs):
@@ -15,6 +13,7 @@ def handle_codeorg_submission(sender, instance, **kwargs):
                 return
             from urllib.parse import unquote
             from .parser import codeorg_parse
+            from codelib.signals import submitted_code_parsed
             code = codeorg_parse(unquote(program))
             if code:
                 submitted_code_parsed.send(user=instance.user, code=code)
