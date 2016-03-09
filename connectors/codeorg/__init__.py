@@ -1,5 +1,6 @@
 from connectors import BaseConnector
 from kb.helpers import create_token, unpack_token
+import requests
 
 class Connector(BaseConnector):
     HOME_PAGE = "https://studio.code.org"

@@ -1,0 +1,78 @@
+[
+	{
+		"model": "badges.BadgeLevel",
+		"pk": "code_level_gold",
+		"fields": {
+			"xp_thres": 25,
+			"index": 3
+		}
+	},
+	{
+		"model": "badges.BadgeLevel",
+		"pk": "code_level_silver",
+		"fields": {
+			"xp_thres": 10,
+			"index": 2,
+			"next_level": "code_level_gold"
+		}
+	},
+	{
+		"model": "badges.BadgeLevel",
+		"pk": "code_level_bronze",
+		"fields": {
+			"xp_thres": 0,
+			"index": 1,
+			"next_level": "code_level_silver"
+		}
+	},
+	{
+		"model": "badges.Badge",
+		"pk": "code_skill_sequence",
+		"fields": {
+			"title": "Sequence",
+			"description": "Knowing how to use a sequence of statements",
+			"badge_type": 1,
+			"start_level": "code_level_bronze"
+		}
+	},
+	{
+		"model": "badges.Badge",
+		"pk": "code_skill_if",
+		"fields": {
+			"title": "If",
+			"description": "Knowing how to use the conditional statement IF",
+			"badge_type": 1,
+			"start_level": "code_level_bronze"
+		}
+	},
+	{
+		"model": "badges.Badge",
+		"pk": "code_skill_if_else",
+		"fields": {
+			"title": "If-else",
+			"description": "Knowing how to use the conditional statement IF-ELSE",
+			"badge_type": 1,
+			"start_level": "code_level_bronze"
+		}
+	},
+	{
+		"model": "badges.Badge",
+		"pk": "code_skill_while",
+		"fields": {
+			"title": "While",
+			"description": "Knowing how to use the conditional statement WHILE",
+			"badge_type": 1,
+			"start_level": "code_level_bronze"
+		}
+	},
+	{
+		"model": "badges.Badge",
+		"pk": "code_skill_for",
+		"fields": {
+			"title": "For",
+			"description": "Knowing how to use the conditional statement FOR",
+			"badge_type": 1,
+			"start_level": "code_level_bronze"
+		}
+	}
+]

@@ -14,7 +14,7 @@ def codeorg(node):
             codeorg(node.statement.contents[0]),
             codeorg(node.statement.next_sibling.contents[0])
                 if node.statement.next_sibling is not None else None)
-    elif '_forever' in node['type']:
+    elif any(map(lambda x: x in node['type'], ('_forever', '_while', '_until'))):
         parsed = While('True', codeorg(node.statement.contents[0]))
     elif '_repeat' in node['type']:
         parsed = For(node.title.string, codeorg(node.statement.contents[0]))

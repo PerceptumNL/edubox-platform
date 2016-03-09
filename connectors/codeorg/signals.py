@@ -13,7 +13,7 @@ def handle_codeorg_submission(sender, instance, **kwargs):
                 return
             from urllib.parse import unquote
             from .parser import codeorg_parse
-            from codelib.signals import submitted_code_parsed
+            from connectors.signals import parsed_submission
             code = codeorg_parse(unquote(program))
             if code:
-                submitted_code_parsed.send(user=instance.user, code=code)
+                parsed_submission.send(sender=type(code), code=code, user=instance.user)

@@ -18,6 +18,18 @@ class Node(object):
             return True
         return any(n._contains(node_type) for n in self.block)
 
+    def find(self, node_type):
+        nodes = []
+        for n in self.block:
+            nodes += n._find(node_type)
+        return nodes
+
+    def _find(self, node_type):
+        nodes = [self] if isinstance(self, node_type) else []
+        for n in self.block:
+            nodes += n._find(node_type)
+        return nodes
+
     def node_count(self):
         return sum(n._node_count() for n in self.block)
 
@@ -69,6 +81,6 @@ class While(Node):
         self.condition = condition
 
     def __str__(self):
-        return "WHILE {} DO [{}]".format(self.condition, 
+        return "WHILE {} DO [{}]".format(self.condition,
             ", ".join(str(n) for n in self.block))
 
