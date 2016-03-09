@@ -36,7 +36,7 @@ class Badge(models.Model):
         return self.title
 
     def __repr__(self):
-        return "Badge (%s)" % (self,)
+        return "%s (%s)" % (self.__class__.__name__, self)
 
 
 class BadgeLevel(models.Model):
@@ -50,7 +50,7 @@ class BadgeLevel(models.Model):
         return self.level
 
     def __repr__(self):
-        return "Badge Level (%s)" % (self,)
+        return "%s (%s)" % (self.__class__.__name__, self)
 
 
 class UserBadge(models.Model):
@@ -71,5 +71,5 @@ class UserBadge(models.Model):
         return "%s has %s (%d xp) in %s" % (self.user, self.level, self.xp, self.badge)
 
     def __repr__(self):
-        return "User Badge (%s)" % (self,)
+        return "%s (%s)" % (self.__class__.__name__, self)
 
