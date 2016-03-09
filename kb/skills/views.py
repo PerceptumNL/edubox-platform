@@ -3,22 +3,33 @@ from django.http import HttpResponse, JsonResponse
 
 def skill_export_by_user(user):
     from kb.badges.models import UserBadge, Badge
-    skills = UserBadge.objects.filter(user=user,
+    user_skills = UserBadge.objects.filter(user=user,
             badge__badge_type=Badge.T_SKILL_BADGE)
-    skill_export = []
-    for skill in skills:
-        skill_export.append({
-            "skill": {
-                "id": skill.badge.pk,
-                "title": skill.badge.title,
-                "description": skill.badge.description
-            },
+    skill_export = {}
+    for user_skill in user_skills:
+        skill_export[user_skill.badge.pk] = {
+            "id": user_skill.badge.pk,
+            "title": user_skill.badge.title,
+            "description": user_skill.badge.description,
             "level": {
-                "id": skill.level.pk,
-                "index": skill.level.index
+                "id": user_skill.level.pk,
+                "index": user_skill.level.index
             },
-            "xp": skill.xp
-        });
+            "xp": user_skill.xp
+        };
+    skills = Badge.objects.filter(badge_type=Badge.T_SKILL_BADGE)
+    for skill in skills:
+        if skill.pk not in skill_export:
+            skill_export[skill.pk] = {
+                "id": skill.pk,
+                "title": skill.title,
+                "description": skill.description,
+                "level": {
+                    "id": None,
+                    "index": 0
+                },
+                "xp": 0
+            }
     return skill_export
 
 # Create your views here.

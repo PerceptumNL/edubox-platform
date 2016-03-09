@@ -26,9 +26,12 @@ class Badge(models.Model):
         instance, _ = UserBadge.objects.get_or_create(user=user, badge=self)
         instance.xp += xp
 
-        while instance.xp >= instance.level.xp_thres and \
-                instance.level.next_level is not None:
-            instance.level = instance.level.next_level
+        next_level = instance.level.next_level if instance.level else \
+            self.start_level
+
+        while next_level is not None and instance.xp >= next_level.xp_thres:
+            instance.level = next_level
+            next_level = instance.level.next_level
 
         instance.save()
 
@@ -57,15 +60,8 @@ class UserBadge(models.Model):
     user = models.ForeignKey(UserProfile)
     badge = models.ForeignKey(Badge)
 
-    level = models.ForeignKey(BadgeLevel)
-    xp = models.PositiveSmallIntegerField()
-
-    def __init__(self, *args, **kwargs):
-        if 'level' not in kwargs and 'badge' in kwargs:
-            kwargs['level'] = kwargs['badge'].start_level
-        if 'xp' not in kwargs:
-            kwargs['xp'] = 0
-        super().__init__(*args, **kwargs)
+    level = models.ForeignKey(BadgeLevel, null=True, blank=True)
+    xp = models.PositiveSmallIntegerField(default=0)
 
     def __str__(self):
         return "%s has %s (%d xp) in %s" % (self.user, self.level, self.xp, self.badge)

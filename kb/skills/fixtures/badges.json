@@ -3,7 +3,7 @@
 		"model": "badges.BadgeLevel",
 		"pk": "code_level_gold",
 		"fields": {
-			"xp_thres": 25,
+			"xp_thres": 35,
 			"index": 3
 		}
 	},
@@ -11,7 +11,7 @@
 		"model": "badges.BadgeLevel",
 		"pk": "code_level_silver",
 		"fields": {
-			"xp_thres": 10,
+			"xp_thres": 20,
 			"index": 2,
 			"next_level": "code_level_gold"
 		}
@@ -20,7 +20,7 @@
 		"model": "badges.BadgeLevel",
 		"pk": "code_level_bronze",
 		"fields": {
-			"xp_thres": 0,
+			"xp_thres": 5,
 			"index": 1,
 			"next_level": "code_level_silver"
 		}
