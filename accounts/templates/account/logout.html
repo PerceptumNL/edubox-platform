@@ -1,0 +1,27 @@
+{% extends "account/base.html" %}
+
+{% load i18n %}
+{% load account socialaccount %}
+{% load staticfiles %}
+
+{% block content %}
+<div class='brand-header'>
+	<img src="{% static 'accounts/images/logo_codecult_transparant.png' %}" />
+</div>
+<div class="mdl-card mdl-shadow--2dp">
+  <div class="mdl-card__title">
+	<h2 class="mdl-card__title-text">{% trans "Log Out" %}</h2>
+  </div>
+  <div class="mdl-card__supporting-text">
+    <form method="POST" action="{% url 'account_logout' %}">
+      {% csrf_token %}
+      {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+      {% endif %}
+      <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
+        type="submit">
+		{% trans "Log out" %}
+      </button>
+  </div>
+</div>
+{% endblock %}
