@@ -3,37 +3,41 @@ from django.http import HttpResponse, JsonResponse
 
 def skill_export_by_user(user):
     from kb.badges.models import UserBadge, Badge
-    user_skills = UserBadge.objects.filter(user=user,
-            badge__badge_type=Badge.T_SKILL_BADGE)
+    user_skills = {}
+    for user_skill in UserBadge.objects.filter(
+            user=user, badge__badge_type=Badge.T_SKILL_BADGE):
+        user_skills[user_skill.badge.pk] = user_skill
+
+    skills = Badge.objects.filter(
+        badge_type=Badge.T_SKILL_BADGE).order_by('pk')
     skill_export = {}
-    for user_skill in user_skills:
-        skill_export[user_skill.badge.pk] = {
-            "id": user_skill.badge.pk,
-            "title": user_skill.badge.title,
-            "description": user_skill.badge.description,
-            "level": {
-                "id": user_skill.level.pk if user_skill.level else None,
-                "index": user_skill.level.index if user_skill.level else 0
-            },
-            "xp": user_skill.xp
-        };
-    skills = Badge.objects.filter(badge_type=Badge.T_SKILL_BADGE)
     for skill in skills:
-        if skill.pk not in skill_export:
-            skill_export[skill.pk] = {
-                "id": skill.pk,
-                "title": skill.title,
-                "description": skill.description,
-                "level": {
+        skill_export[skill.pk] = {
+            "id": skill.pk,
+            "title": skill.title,
+            "description": skill.description,
+        }
+        if skill.pk in user_skills:
+            if user_skills[skill.pk].level:
+                skill_export[skill.pk]["level"] = {
+                    "id": user_skill.level.pk,
+                    "index": user_skill.level.index
+                },
+            else:
+                skill_export[skill.pk]["level"] = {
                     "id": None,
                     "index": 0
-                },
-                "xp": 0
-            }
+                }
+            skill_export[skill.pk]["xp"] = user_skills[skill.pk].xp
+        else:
+            skill_export[skill.pk]["level"] = { "id": None, "index": 0 }
+            skill_export[skill.pk]["xp"] = 0
     return skill_export
 
 # Create your views here.
 def get_skills(request):
+    if not request.user.is_authenticated():
+        return HttpResponse(status=401)
     from kb.groups.models import Group, Membership
     group = request.GET.get('group')
     if group is not None:
