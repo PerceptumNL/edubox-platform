@@ -22,7 +22,7 @@ def skill_export_by_user(user):
                 skill_export[skill.pk]["level"] = {
                     "id": user_skills[skill.pk].level.pk,
                     "index": user_skills[skill.pk].level.index
-                },
+                }
             else:
                 skill_export[skill.pk]["level"] = {
                     "id": None,
