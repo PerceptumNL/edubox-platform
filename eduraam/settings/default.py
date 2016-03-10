@@ -76,7 +76,8 @@ MIDDLEWARE_CLASSES = [
 ]
 
 CONNECTORS = {
-    'codeorg': 'connectors.codeorg.Connector'
+    'codeorg': 'connectors.codeorg.Connector',
+    'scratch': 'connectors.scratch.Connector'
 }
 
 ROOT_URLCONF = 'eduraam.urls'

@@ -133,7 +133,8 @@ class Connector(BaseConnector):
             #Get the first teacher of this users group
             group = Group.objects.get(pk=unpacked['group'])
             role = Role.objects.get(role='Teacher')
-            teacher = Membership.objects.filter(
+            teacher = Membership.objects.exclude(
+                user__user__email="").filter(
                 group=group, role=role).first().user.user
             teacher_token = create_token(
                 user=teacher.pk,
