@@ -10,29 +10,30 @@ def skill_export_by_user(user):
 
     skills = Badge.objects.filter(
         badge_type=Badge.T_SKILL_BADGE).order_by('order')
-    skill_export = {}
+    skills_export = []
     for skill in skills:
-        skill_export[skill.pk] = {
+        skill_export = {
             "id": skill.pk,
             "title": skill.title,
             "description": skill.description,
         }
         if skill.pk in user_skills:
             if user_skills[skill.pk].level:
-                skill_export[skill.pk]["level"] = {
+                skill_export["level"] = {
                     "id": user_skills[skill.pk].level.pk,
                     "index": user_skills[skill.pk].level.index
                 }
             else:
-                skill_export[skill.pk]["level"] = {
+                skill_export["level"] = {
                     "id": None,
                     "index": 0
                 }
-            skill_export[skill.pk]["xp"] = user_skills[skill.pk].xp
+            skill_export["xp"] = user_skills[skill.pk].xp
         else:
-            skill_export[skill.pk]["level"] = { "id": None, "index": 0 }
-            skill_export[skill.pk]["xp"] = 0
-    return skill_export
+            skill_export["level"] = { "id": None, "index": 0 }
+            skill_export["xp"] = 0
+        skills_export.append(skill_export)
+    return skills_export
 
 # Create your views here.
 def get_skills(request):
