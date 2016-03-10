@@ -157,6 +157,9 @@ class EdeXmlImporter(object):
 
             return existing_user[0].profile
         else:
+            # Ensure alias is unique
+            if UserProfile.objects.filter(alias=alias).exists():
+                raise ValueError("Alias is not unique: "+alias)
             self.last_pw = self.password
             if self.last_pw == '':
                 self.last_pw = generate_password()
