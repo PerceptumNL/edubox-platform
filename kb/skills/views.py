@@ -20,8 +20,8 @@ def skill_export_by_user(user):
         if skill.pk in user_skills:
             if user_skills[skill.pk].level:
                 skill_export[skill.pk]["level"] = {
-                    "id": user_skill.level.pk,
-                    "index": user_skill.level.index
+                    "id": user_skill[skill.pk].level.pk,
+                    "index": user_skill[skill.pk].level.index
                 },
             else:
                 skill_export[skill.pk]["level"] = {
