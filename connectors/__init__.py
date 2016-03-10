@@ -146,7 +146,7 @@ class BaseConnector():
             settings.ROUTER_PROTOCOL or urlparts.scheme,
             "%s.%s" % (
                 b2a_hex(bytes(urlparts.netloc, "utf-8")).decode("utf-8"),
-                get_domain()),
+                settings.ROUTER_DOMAIN),
             urlparts.path,
             urlparts.query,
             urlparts.fragment))
