@@ -124,9 +124,6 @@ class Connector(BaseConnector):
                     'Referer': cls.TEACHER_SIGNUP_PAGE
                 })
             if response.is_redirect:
-                if not cls.login(token, credentials):
-                    cls.debug('Could not login teacher with credentials.')
-
                 credentials.save()
                 # Ensure the language is set to Dutch
                 language_document = cls.fetch_and_parse_document(
