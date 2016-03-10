@@ -124,7 +124,28 @@ class Connector(BaseConnector):
                     'Referer': cls.TEACHER_SIGNUP_PAGE
                 })
             if response.is_redirect:
+                if not cls.login(token, credentials):
+                    cls.debug('Could not login teacher with credentials.')
+
                 credentials.save()
+                # Ensure the language is set to Dutch
+                language_document = cls.fetch_and_parse_document(
+                    token, cls.HOME_PAGE)
+                authenticity_token = cls.get_field_value_from_document(
+                    language_document, "authenticity_token")
+                response = cls.form_post(
+                    token=token,
+                    url=cls.USER_LANGUAGE,
+                    payload={
+                        'utf8': u'\u2713',
+                        'locale': 'nl-nl',
+                        'authenticity_token': authenticity_token,
+                        'return_to': cls.HOME_PAGE},
+                    custom_headers={
+                        'Referer': cls.HOME_PAGE
+                    })
+                if not response.is_redirect:
+                    cls.debug("Could not set language to nl-nl")
                 return True
             else:
                 return False
