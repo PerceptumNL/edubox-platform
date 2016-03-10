@@ -13,6 +13,7 @@ class Badge(models.Model):
     description = models.TextField()
     badge_type = models.PositiveSmallIntegerField(choices=BADGE_TYPES,
             default=0)
+    order = models.PositiveSmallIntegerField(default=0)
 
     start_level = models.ForeignKey('BadgeLevel')
     users = models.ManyToManyField(UserProfile, through='UserBadge')

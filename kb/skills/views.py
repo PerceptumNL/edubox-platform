@@ -9,7 +9,7 @@ def skill_export_by_user(user):
         user_skills[user_skill.badge.pk] = user_skill
 
     skills = Badge.objects.filter(
-        badge_type=Badge.T_SKILL_BADGE).order_by('pk')
+        badge_type=Badge.T_SKILL_BADGE).order_by('order')
     skill_export = {}
     for skill in skills:
         skill_export[skill.pk] = {
