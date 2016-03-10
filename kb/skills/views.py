@@ -12,8 +12,8 @@ def skill_export_by_user(user):
             "title": user_skill.badge.title,
             "description": user_skill.badge.description,
             "level": {
-                "id": user_skill.level.pk,
-                "index": user_skill.level.index
+                "id": user_skill.level.pk if user_skill.level else None,
+                "index": user_skill.level.index if user_skill.level else 0
             },
             "xp": user_skill.xp
         };
