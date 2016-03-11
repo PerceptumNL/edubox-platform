@@ -29,7 +29,8 @@ class InstituteFilter(admin.SimpleListFilter):
         provided in the query string and retrievable via
         `self.value()`.
         """
-        queryset.filter(profile__institute__pk=self.value())
+        if self.value():
+            return queryset.filter(profile__institute__pk=self.value())
 
 
 class CustomUserAdmin(UserAdmin):
