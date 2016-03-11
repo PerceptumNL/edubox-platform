@@ -80,6 +80,9 @@ CONNECTORS = {
     'scratch': 'connectors.scratch.Connector'
 }
 
+SCRATCH_SIGNUP_EMAIL = "butler.melvin+scratch@perceptum.nl"
+SCRATCH_SIGNUP_COUNTRY = "Netherlands"
+
 ROOT_URLCONF = 'eduraam.urls'
 
 SUBDOMAIN_URLCONFS = {
