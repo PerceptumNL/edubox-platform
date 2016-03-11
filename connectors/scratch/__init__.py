@@ -74,7 +74,7 @@ class Connector(BaseConnector):
                 invalid_usernames=invalid_usernames)
             check_username_response = requests.get(
                 cls.route_url(cls.CHECK_USERNAME)+credentials.username+"/")
-            if check_username_response.json()[0].msg == "valid username":
+            if check_username_response.json()[0]['msg'] == "valid username":
                 username_valid = True
             else:
                 invalid_usernames.append(credentials.username)
@@ -116,6 +116,13 @@ class Connector(BaseConnector):
         cls.debug_http_package(login_response.request, label='Login request',
                 secret_body_values=secret_body_values)
         cls.debug_http_package(login_response, label='Login response')
+
+        if cls.is_logged_in(token) or cls.login(token, credentials):
+            credentials.save()
+            return True
+        else:
+            cls.debug("Could not login with credentials on signup")
+            return False
 
     @classmethod
     def register_signals(cls):
