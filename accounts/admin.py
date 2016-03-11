@@ -49,6 +49,7 @@ class CustomUserAdmin(UserAdmin):
     def institute(self, instance):
         return instance.profile.institute
     institute.short_name = "Institute"
+    institute.admin_order_field = "profile__institute__title"
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
