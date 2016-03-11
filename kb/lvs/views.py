@@ -16,6 +16,9 @@ def upload_edexml(request):
                         form.cleaned_data)
                 importer.parse_all()
             except Exception as e:
+                from django.conf import settings
+                if settings.DEBUG:
+                    raise e
                 return render(request, 'done.html', {
                     'error': "An error occured while importing: '%s'" % (e,)})
             else:
