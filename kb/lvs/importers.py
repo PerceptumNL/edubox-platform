@@ -29,6 +29,10 @@ class EdeXmlImporter(object):
         self.password = ''
         if 'password' in form_data:
             self.password = form_data['password']
+
+        self.emails = {}
+        if 'teacher_emails' in form_data:
+            self._parse_emails(form_data['teacher_emails'])
         
         self.soup = BeautifulSoup(xml_file)
         self.groups = {}
@@ -99,7 +103,12 @@ class EdeXmlImporter(object):
     def parse_teachers(self):
         teach = Role.objects.get(role='Teacher')
         for t in self.soup.edex.leerkrachten.findAll('leerkracht'):
-            teacher = self._create_user(t)
+            teacher = self._create_user(t, True)
+            if teacher is None:
+                self.teachers.append(['No valid email', t.roepnaam.string+' '+
+                    t.achternaam.string])
+                continue
+
             group_list = ''
             for g in t.groepen.findAll('groep'):
                 Membership.objects.create(user=teacher,
@@ -126,9 +135,22 @@ class EdeXmlImporter(object):
                 student.alias,
                 self.last_pw])
 
-    def _create_user(self, node):
+    def _create_user(self, node, teacher=False):
+        user_kwargs = self._kwarg_options(node, EdeXmlImporter.user_opts)
+        profile_kwargs = self._kwarg_options(node, EdeXmlImporter.profile_opts)
+        
         username = node['key'] +'@'+ self.institute.email_domain
+        existing_user = User.objects.filter(username=username)
+        if len(existing_user) == 1:
+            self.last_pw = ''
+            
+            existing_user.update(**user_kwargs)
+            UserProfile.objects.filter(user=existing_user[0]).update(
+                    **profile_kwargs)
 
+            return existing_user[0].profile
+       
+        # Create alias
         alias = node['key']
         if node.gebruikersnaam is not None:
             alias = node.gebruikersnaam.string.strip()
@@ -142,51 +164,66 @@ class EdeXmlImporter(object):
             else:
                 alias = self._join_names(node.roepnaam.string,
                                          node.achternaam.string)
+        # Ensure alias is unique
+        alias_count = len(UserProfile.objects.filter(alias__regex=r'^'+
+            alias+'.*'+self.institute.email_domain+'$'))
+        if alias_count > 0:
+            alias += str(alias_count+1)
         
-        user_kwargs = self._kwarg_options(node, EdeXmlImporter.user_opts)
-        profile_kwargs = self._kwarg_options(node, EdeXmlImporter.profile_opts)
         profile_kwargs['alias'] = alias +'@'+ self.institute.email_domain
+      
+        # Ensure teachers have an email adres
+        if teacher and 'email' not in user_kwargs:
+            for names in self.emails:
+                for n in names:
+                    if n not in alias:
+                        break
+                else:
+                    user_kwargs['email'] = self.emails[names]
+                    break
+            else:
+                return None
+
+        self.last_pw = self.password
+        if self.last_pw == '':
+            self.last_pw = generate_password()
+
+        user = User.objects.create_user(username, password=self.last_pw,
+                  **user_kwargs)
+        profile = UserProfile.objects.create(user=user, 
+                institute=self.institute, **profile_kwargs)
         
-        existing_user = User.objects.filter(username=username)
-        if len(existing_user) == 1:
-            self.last_pw = ''
-            
-            existing_user.update(**user_kwargs)
-            UserProfile.objects.filter(user=existing_user[0]).update(
-                    **profile_kwargs)
+        return profile
+    
+    def _parse_emails(self, data):
+        for line in data.split('\n'):
+            for char in "'-`":
+                line = line.replace(char, '')
+            s = line.lower().split(',')
+            if len(s) > 1:
+                self.emails[tuple(s[0].strip().split())] = s[1].strip()
 
-            return existing_user[0].profile
-        else:
-            # Ensure alias is unique
-            if UserProfile.objects.filter(alias=alias).exists():
-                raise ValueError("Alias is not unique: "+alias)
-            self.last_pw = self.password
-            if self.last_pw == '':
-                self.last_pw = generate_password()
-
-            user = User.objects.create_user(username, password=self.last_pw,
-                      **user_kwargs)
-            profile = UserProfile.objects.create(user=user, 
-                    institute=self.institute, **profile_kwargs)
-            
-            return profile
-
-    def _join_names(self, *args):
-        from unidecode import unidecode
-        res = ''
-        for ind, arg in enumerate(args):
-            arg = unidecode(arg).strip();
-            for char in ' '+string.punctuation:
-                arg = arg.replace(char, '_')
-            if ind != 0:
-                res += '_'
-            res += arg.lower()
-        return res
-
-    def _kwarg_options(self, node, trans):
+    @staticmethod
+    def _kwarg_options(node, trans):
         d = {}
         for n in node.children:
             if type(n) is element.Tag and n.name in trans:
                 d[trans[n.name]] = n.string.strip()
         return d
+
+    @staticmethod
+    def _join_names(*args):
+        from unidecode import unidecode
+        res = ''
+        for ind, arg in enumerate(args):
+            arg = unidecode(arg).strip();
+            # Only use the first part of last names
+            if ind == len(args)-1:
+                arg = arg.split(' ')[0]
+            for char in ' '+string.punctuation:
+                arg = arg.replace(char, '')
+            if ind != 0:
+                res += '.'
+            res += arg.lower()
+        return res
 
