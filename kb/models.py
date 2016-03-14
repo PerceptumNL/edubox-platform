@@ -14,7 +14,7 @@ class UserProfile(models.Model):
     surname_prefixes = models.CharField(max_length=127, blank=True)
     initials = models.CharField(max_length=15, blank=True)
     gender = models.PositiveSmallIntegerField(default=0)
-    date_of_birth = models.DateField(null=True)
+    date_of_birth = models.DateField(null=True, blank=True)
 
     #Member specifies the role the user has in the group
     groups = models.ManyToManyField(Group, through=Membership, 
