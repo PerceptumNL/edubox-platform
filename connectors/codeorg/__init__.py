@@ -145,6 +145,12 @@ class Connector(BaseConnector):
                     cls.debug("Could not set language to nl-nl")
                 return True
             else:
+                cls.debug("Signup failed for teacher")
+                secret_body_values = (credentials.username,
+                        credentials.password)
+                cls.debug_http_package(response.request, label='Signup request',
+                        secret_body_values=secret_body_values)
+                cls.debug_http_package(response, label='Signup response')
                 return False
         else:
             from kb.groups.models import Group, Membership, Role
@@ -268,6 +274,12 @@ class Connector(BaseConnector):
                 cls.debug("Created account for %d in code.org" % (user.pk,))
                 return True
             else:
+                secret_body_values = (credentials.username,
+                        credentials.password)
+                cls.debug("Signup failed for student")
+                cls.debug_http_package(response.request, label='Signup request',
+                        secret_body_values=secret_body_values)
+                cls.debug_http_package(response, label='Signup response')
                 return False
 
     @classmethod
