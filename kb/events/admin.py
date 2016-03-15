@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.http import QueryDict
 
 from .models import *
 
@@ -49,10 +50,24 @@ class EventAdmin(admin.ModelAdmin):
     def event_type(self, instance):
         return instance.__class__.__name__
 
+
+class SubmittedEventAdmin(EventAdmin):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.list_display += ('result',)
+
+    def result(self, instance):
+        try:
+            return QueryDict(instance.submission).get('testResult','?')
+        except Exception:
+            return "?"
+
+
 admin.site.register(Verb)
 admin.site.register(GenericEvent)
 admin.site.register(ReadEvent, EventAdmin)
 admin.site.register(RatedEvent, EventAdmin)
 admin.site.register(ScoredEvent, EventAdmin)
 admin.site.register(ClickedEvent, EventAdmin)
-admin.site.register(SubmittedEvent, EventAdmin)
+admin.site.register(SubmittedEvent, SubmittedEventAdmin)
