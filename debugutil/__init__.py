@@ -1,8 +1,9 @@
 from django.conf import settings
 from datetime import datetime
 import requests
+import logging
 
-def debug(msg, category='DEBUG'):
+def debug(code, category='DEBUG', logger=None, extra_msg=None, **kwargs):
     """
     Prints a debug message when the setting ``DEBUG`` is set to True.
     Each debug message is preprended with the current time provided by
@@ -11,14 +12,26 @@ def debug(msg, category='DEBUG'):
     :param str msg: The debug message to display
     :param str category: The debug category to display
     """
-    if not settings.DEBUG:
-        return
-    print("[%s] %s - %s" % (datetime.now(), category, msg))
+    if logger is None:
+        logger = logging.getLogger()
+    elif isinstance(logger, 'str'):
+        logger = logging.getLogger(logger)
 
-def debug_http_package(http_package, label=None, secret_body_values=None,
-        category='DEBUG'):
-    if not settings.DEBUG:
-        return
+    desc = settings.LOG_CODES.get(code, 'Unknown code')
+    try:
+        level = { '1': logging.DEBUG, '2': logging.INFO, '3': logging.WARNING,
+                  '4': logging.ERROR, '5': logging.CRITICAL }[code[0]]
+    except KeyError:
+        level = loggin.ERROR
+        code = 'S501'
+    if extra_msg is None:
+        logger.log(level, "[%s] %s - %s" % (category, code), **kwargs)
+    else:
+        logger.log(
+            level, "[%s] %s - %s\n%s" % (category, code, extra_msg), **kwargs)
+
+def debug_http_package(code, http_package, label=None, secret_body_values=None,
+        category='DEBUG', logger=None):
     label = label or 'HTTP Package'
     output_lines = [label+':']
     if isinstance(http_package, requests.Request) or \
@@ -43,4 +56,4 @@ def debug_http_package(http_package, label=None, secret_body_values=None,
             output_lines.append("%s: %s" % (header.title(), value))
     else:
         output_lines.append("Unknown http_package: %s" % (http_package,))
-    debug("\n".join(output_lines), category)
+    debug(code, category=category, logger=logger, extra_msg="\n".join(output_lines))

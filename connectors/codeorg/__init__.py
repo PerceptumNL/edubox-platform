@@ -1,8 +1,12 @@
-from connectors import BaseConnector
-from kb.helpers import create_token, unpack_token
 import requests
 
+from connectors import BaseConnector
+from kb.helpers import create_token, unpack_token
+
+# Get an instance of a logger
+
 class Connector(BaseConnector):
+    LOG_NAME = __name__
     HOME_PAGE = "https://studio.code.org"
     USER_LANGUAGE = HOME_PAGE+"/locale"
     USERS_URL = HOME_PAGE+"/users"
@@ -250,7 +254,8 @@ class Connector(BaseConnector):
 
                 # Login to set language
                 if not cls.login(token, credentials):
-                    cls.debug('Could not login student with credentials.')
+                    logger.error('Could not login student after signup {%s}.'
+                            % (token,))
                     return False
 
                 # Ensure the language is set to Dutch
@@ -276,7 +281,8 @@ class Connector(BaseConnector):
             else:
                 secret_body_values = (credentials.username,
                         credentials.password)
-                cls.debug("Signup failed for student")
+                cls.debug("Signup failed for student [%d]" %
+                        (response.status_code,))
                 cls.debug_http_package(response.request, label='Signup request',
                         secret_body_values=secret_body_values)
                 cls.debug_http_package(response, label='Signup response')
