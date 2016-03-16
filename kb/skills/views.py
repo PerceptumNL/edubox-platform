@@ -45,7 +45,7 @@ def get_skills(request):
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
     from kb.groups.models import Group, Membership
-    filter_dashboard = bool(int(request.GET.get('filter_dashboard', '0')))
+    filter_dashboard = bool(int(request.GET.get('dashboard', '0')))
     group = request.GET.get('group')
     if group is not None:
         group = get_object_or_404(Group, pk=group)
