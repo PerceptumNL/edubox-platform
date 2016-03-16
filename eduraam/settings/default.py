@@ -105,6 +105,72 @@ TEMPLATES = [
     },
 ]
 
+import logging
+LOG_LEVEL = os.getenv('GENERAL_LOG_LEVEL', 20 if DEBUG else 30)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL)
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', LOG_LEVEL),
+        },
+        'connectors': {
+            'handlers': ['console'],
+            'level': os.getenv('CONNECTORS_LOG_LEVEL', LOG_LEVEL),
+        }
+    }
+}
+
+"""
+LOG_CODES Tables
+================
+
+The log codes table contains a mapping from shorthand log codes to
+verbose descriptions. The log code itself is constructed as follows:
+
+    'Component (letter)' + 'Log category (digit)' + 'Log code (2 digits)'
+
+Modules
+-------
+    'T' :   Anything related to tokens
+    'C' :   Anything related to connectors
+    'A' :   Anything related to accounts
+    'K' :   Anything related to the knowledge base
+    'L' :   Anything related to the launcher
+    'S' :   Anything related to the general system (last resort option)
+
+Log categories
+--------------
+The log categories are inspired by both HTTP status codes and the python logger
+module, for more information see: https://docs.python.org/3.5/howto/logging.html
+
+    1xx :   log level DEBUG
+    2xx :   log level INFO
+    3xx :   log level WARNING
+    4xx :   log level ERROR
+    5xx :   log level CRITICAL
+
+Example
+-------
+    T501 would mean a critical error (01) occured related to the token component
+"""
+LOG_CODES = {
+    'S501': "Something unexpected happened: %(error)",
+    'T501': "Cannot unpack token",
+    'T302': "Token doesn't match current user",
+    'C502': "Cannot extract %(field) from HTML document",
+    'C401': "User has no email",
+    'C101': "Network package debug",
+}
+
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'accounts.auth_backends.ExtendedAuthenticationBackend',

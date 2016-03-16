@@ -34,9 +34,10 @@ def get_app_connector(app_or_connector):
     return Connector
 
 class BaseConnector():
+    LOG_NAME = __name__
 
     @classmethod
-    def debug(cls, msg):
+    def debug(cls, msg, level=None):
         """
         Prints a debug message when the setting ``DEBUG`` is set to True.
         Each debug message is preprended with the current time provided by
@@ -44,12 +45,14 @@ class BaseConnector():
 
         :param str msg: The debug message to display
         """
-        debugutil.debug(msg, category=cls.__name__)
+        debugutil.debug(msg, category=cls.__name__, logger=cls.LOG_NAME,
+                level=level)
 
     @classmethod
-    def debug_http_package(cls, http_package, label=None, secret_body_values=None):
+    def debug_http_package(cls, http_package, label=None,
+            secret_body_values=None, level=None):
         debugutil.debug_http_package(http_package, label, secret_body_values,
-            category=cls.__name__)
+            category=cls.__name__, logger=cls.LOG_NAME, level=level)
 
     @classmethod
     def is_logged_in(cls, token, *args, **kwargs):
