@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block body %}
+{% if error %}
+    <b>{{error}}</b>
+{% else %}
+    <h3>Gebruiker toegevoegd</h3>
+    <table>
+    {% for e in data %}
+        <tr>
+            <td>{{ e.0 }}</td>
+            <td>{{ e.1 }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+{% endif %}
+<input type="button" onclick="window.location.href='/api/lvs/student'"
+    value="Nog een gebruiker toevoegen"/>
+
+<input type="button" onclick="window.location.href='/'" value="Homepage"/>
+{% endblock %}
