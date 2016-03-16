@@ -19,8 +19,8 @@ def upload_edexml(request):
         form = EdeXmlForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                importer = EdeXmlImporter(request.FILES['edexml'],
-                        form.cleaned_data)
+                importer = EdeXmlImporter(
+                    request.FILES['edexml'], form.cleaned_data)
                 importer.parse_all()
             except Exception as e:
                 from django.conf import settings
@@ -30,7 +30,8 @@ def upload_edexml(request):
                     'error': "An error occured while importing: '%s'" % (e,)})
             else:
                 response = HttpResponse(content_type='text/csv')
-                response['Content-Disposition'] = 'attachment; filename={}.csv'.format(importer.institute.title)
+                response['Content-Disposition'] = \
+                    'attachment; filename={}.csv'.format(importer.institute.title)
 
                 writer = csv.writer(response)
                 writer.writerow([importer.institute.title])
@@ -69,13 +70,13 @@ def add_student(request):
                 name = EdeXmlImporter._join_names(
                     form.cleaned_data['first_name'],
                     form.cleaned_data['last_name'])
-                
+
                 user_count = len(User.objects.filter(username__regex=r'^'+
                     name+'.*'+codecult.email_domain+'$'))
                 if user_count > 0:
                     name += str(user_count+1)
                 kwargs['username'] = name+'@'+codecult.email_domain
-                
+
                 password = form.cleaned_data['password']
                 if password == '':
                     password = generate_password()
@@ -83,7 +84,7 @@ def add_student(request):
 
                 for key in ['first_name', 'last_name', 'email']:
                     kwargs[key] = form.cleaned_data[key]
-                
+
                 user = User.objects.create(**kwargs)
                 profile = UserProfile.objects.create(user=user,
                     institute=codecult)
