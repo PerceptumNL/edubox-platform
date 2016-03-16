@@ -47,6 +47,8 @@ def group_list(request):
             'path': parents
         })
 
+    group_exports = sorted(group_exports, key=lambda x: x['title'])
+
     return JsonResponse({'groups': group_exports});
 
 def group_details(request, group_id):
