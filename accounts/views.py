@@ -13,7 +13,12 @@ def get_user_info(request):
     elif not name:
         name = request.user.username.split('@')[0]
 
-    return JsonResponse({'info': {'name': name }})
+    return JsonResponse({
+        'info': {
+            'name': name,
+            'isTeacher': request.user.profile.is_teacher()
+        }
+    })
 
 def login_user_into_app(request):
     if not request.user.is_authenticated():

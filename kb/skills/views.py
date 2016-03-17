@@ -1,15 +1,20 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 
-def skill_export_by_user(user):
+def skill_export_by_user(user, filter_dashboard):
     from kb.badges.models import UserBadge, Badge
     user_skills = {}
     for user_skill in UserBadge.objects.filter(
             user=user, badge__badge_type=Badge.T_SKILL_BADGE):
         user_skills[user_skill.badge.pk] = user_skill
 
-    skills = Badge.objects.filter(
-        badge_type=Badge.T_SKILL_BADGE).order_by('order')
+    if filter_dashboard:
+        skills = Badge.objects.filter(
+            show_in_dashboard = True, badge_type=Badge.T_SKILL_BADGE
+        ).order_by('order')
+    else:
+        skills = Badge.objects.filter(
+            badge_type=Badge.T_SKILL_BADGE).order_by('order')
     skills_export = []
     for skill in skills:
         skill_export = {
@@ -40,6 +45,7 @@ def get_skills(request):
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
     from kb.groups.models import Group, Membership
+    filter_dashboard = bool(int(request.GET.get('dashboard', '0')))
     group = request.GET.get('group')
     if group is not None:
         group = get_object_or_404(Group, pk=group)
@@ -52,9 +58,10 @@ def get_skills(request):
                 'id': member.user.user.pk,
                 'role': member.role.role,
                 'name': member.user.full_name,
-                'skills': skill_export_by_user(member.user)
+                'skills': skill_export_by_user(member.user, filter_dashboard)
             })
         return JsonResponse({'skills': group_skill_export})
     else:
-        skill_export = skill_export_by_user(request.user.profile)
+        skill_export = skill_export_by_user(request.user.profile,
+            filter_dashboard)
         return JsonResponse({'skills': skill_export})

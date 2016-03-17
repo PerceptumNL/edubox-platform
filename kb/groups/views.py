@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from collections import defaultdict
 
 def group_list(request):
+    from .models import Membership
     #If user is authenticated, retrieve all groups he is a member of
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
@@ -12,15 +13,21 @@ def group_list(request):
     group_contexts = {}
     #For each group count how many parent-paths traverse that group
     parent_counts = defaultdict(int)
-    for group in request.user.profile.groups.all():
-        parent = group
+    role = request.GET.get('role', None)
+    if role is None:
+        memberships = Membership.objects.filter(user=request.user.profile)
+    else:
+        memberships = Membership.objects.filter(user=request.user.profile,
+                role__role=role)
+    for membership in memberships:
+        parent = membership.group
         parents = []
         while parent != None:
             parents.append(parent)
             parent_counts[parent] += 1
             parent = parent.parent
 
-        group_contexts[group] = parents
+        group_contexts[membership] = parents
 
     #Remove all groups that shared in all parent-paths from the paths
     # i.e. the groups where the parent-path-count == the total number of groups
@@ -31,10 +38,16 @@ def group_list(request):
                 parents.remove(parent)
 
     group_exports = [];
-    for group, parents in group_contexts.items():
+    for membership, parents in group_contexts.items():
         parents = [parent.title for parent in parents[::-1]]
-        group_exports.append(
-            {'id': group.pk, 'title': group.title, 'path': parents })
+        group_exports.append({
+            'id': membership.group.pk,
+            'title': membership.group.title,
+            'role': membership.role.role,
+            'path': parents
+        })
+
+    group_exports = sorted(group_exports, key=lambda x: x['title'])
 
     return JsonResponse({'groups': group_exports});
 
@@ -50,10 +63,10 @@ def group_details(request, group_id):
     # TODO: Use permissions linked to the Role to determine access
     if membership.role.role == "Teacher":
         members = Membership.objects.filter(group=group).exclude(
-            user=request.user.profile);
+            user=request.user.profile)
     else:
         members = Membership.objects.filter(
-            group=group, role__role='Teacher').exclude(user=request.user.profile);
+            group=group, role__role='Teacher').exclude(user=request.user.profile)
 
     members_export = []
     for member in members:

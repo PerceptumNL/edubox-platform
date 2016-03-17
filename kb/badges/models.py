@@ -16,6 +16,7 @@ class Badge(models.Model):
     order = models.PositiveSmallIntegerField(default=0)
 
     start_level = models.ForeignKey('BadgeLevel')
+    show_in_dashboard = models.BooleanField(default=True)
     users = models.ManyToManyField(UserProfile, through='UserBadge')
 
     def update_badge(self, user_or_id, xp):
