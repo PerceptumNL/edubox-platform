@@ -24,14 +24,15 @@ class AppAccount(models.Model):
         except (ValueError, TypeError):
             return {}
         else:
-           return parameters
+            return parameters
 
     @classmethod
     def generate(cls, app, user, invalid_usernames=None):
+        """Generate account credentials for user."""
         from strgen import StringGenerator
         invalid_usernames = invalid_usernames or []
         username = user.username
-        for c in ['@',':','/']:
+        for c in ['@', ':', '/']:
             username = username.replace(c, ".")
         base_username = username
         unique_counter = 1
@@ -39,5 +40,4 @@ class AppAccount(models.Model):
             username = "%s_%d" % (base_username, unique_counter)
             unique_counter += 1
         password = StringGenerator("[\w\d]{20}").render()
-        return AppAccount(user=user, app=app,
-                username=username, password=password)
+        return cls(user=user, app=app, username=username, password=password)

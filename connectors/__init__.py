@@ -1,3 +1,4 @@
+import sys
 import requests
 from binascii import b2a_hex
 import debugutil
@@ -37,22 +38,26 @@ class BaseConnector():
     LOG_NAME = __name__
 
     @classmethod
-    def debug(cls, msg, level=None):
+    def debug(cls, *args, **kwargs):
         """
-        Prints a debug message when the setting ``DEBUG`` is set to True.
-        Each debug message is preprended with the current time provided by
-        :func:`datetime.datetime.now` and the class name."
-
-        :param str msg: The debug message to display
+        Wrapper function for debugutil.debug, setting the logger based on the
+        value of the class variable `LOG_NAME` and the function that called
+        this debug function.
         """
-        debugutil.debug(msg, category=cls.__name__, logger=cls.LOG_NAME,
-                level=level)
+        logger_name = "%s.%s" % (
+            cls.LOG_NAME, sys._getframe().f_back.f_code.co_name)
+        debugutil.debug(*args, logger=logger_name, **kwargs)
 
     @classmethod
-    def debug_http_package(cls, http_package, label=None,
-            secret_body_values=None, level=None):
-        debugutil.debug_http_package(http_package, label, secret_body_values,
-            category=cls.__name__, logger=cls.LOG_NAME, level=level)
+    def debug_http_package(cls, *args, **kwargs):
+        """
+        Wrapper function for debugutil.debug_http_package, setting the logger
+        based on the value of the class variable `LOG_NAME` and the function
+        that called this debug function.
+        """
+        logger_name = "%s.%s" % (
+            cls.LOG_NAME, sys._getframe().f_back.f_code.co_name)
+        debugutil.debug_http_package(*args, logger=logger_name, **kwargs)
 
     @classmethod
     def is_logged_in(cls, token, *args, **kwargs):
@@ -115,6 +120,12 @@ class BaseConnector():
         return field['value']
 
     @classmethod
+    def get_field_value_from_url(cls, token, url, field_name):
+        """Convenience wrapper function for two commonly combined calls."""
+        return cls.get_field_value_from_document(
+            cls.fetch_and_parse_document(token, url), field_name)
+
+    @classmethod
     def form_post(cls, token, url, payload, custom_headers={}):
         from urllib.parse import urlsplit
         urlparts = urlsplit(url)
@@ -145,7 +156,7 @@ class BaseConnector():
         from subdomains.utils import get_domain
         from django.conf import settings
         urlparts = urlsplit(url)
-        return urlunsplit((
+        routed_url = urlunsplit((
             settings.ROUTER_PROTOCOL or urlparts.scheme,
             "%s.%s" % (
                 b2a_hex(bytes(urlparts.netloc, "utf-8")).decode("utf-8"),
@@ -153,3 +164,5 @@ class BaseConnector():
             urlparts.path,
             urlparts.query,
             urlparts.fragment))
+        cls.debug(100, url=url, routed_url=routed_url)
+        return routed_url
