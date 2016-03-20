@@ -1,20 +1,23 @@
+"""Module containing parsers for code.org submissions."""
 from bs4 import BeautifulSoup
-from bs4.element import Tag, NavigableString
-from codelib import *
+from codelib import Root, Statement, While, For, IfElse
 
 def codeorg_parse(xml):
+    """Parse incoming code submission from xml"""
     soup = BeautifulSoup(xml, 'xml')
     return codeorg(soup.xml.contents[0])
 
 def codeorg(node):
+    """Parse BS4 node containing code submission."""
     if 'when_run' in node['type']:
         return Root(codeorg(node.next.contents[0]))
     elif '_if' in node['type']:
-        parsed = IfElse(node.title.string,
+        parsed = IfElse(
+            node.title.string,
             codeorg(node.statement.contents[0]),
-            codeorg(node.statement.next_sibling.contents[0])
-                if node.statement.next_sibling is not None else None)
-    elif any(map(lambda x: x in node['type'], ('_forever', '_while', '_until'))):
+            codeorg(node.statement.next_sibling.contents[0]) if \
+                node.statement.next_sibling is not None else None)
+    elif any([x in node['type'] for x in ('_forever', '_while', '_until')]):
         parsed = While('True', codeorg(node.statement.contents[0]))
     elif '_repeat' in node['type']:
         parsed = For(node.title.string, codeorg(node.statement.contents[0]))
@@ -24,12 +27,12 @@ def codeorg(node):
         parsed = Statement(node.title.string)
     else:
         parsed = Statement(node['type'])
-    
+
     #Next is a BS function, so can't be used as a tag
     siblings = []
-    for n in node.contents:
-        if n.name == 'next':
-            siblings = codeorg(n.contents[0])
+    for child_node in node.contents:
+        if child_node.name == 'next':
+            siblings = codeorg(child_node.contents[0])
             break
     return [parsed] + siblings
 

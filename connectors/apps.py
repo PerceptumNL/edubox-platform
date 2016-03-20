@@ -1,6 +1,4 @@
 from django.apps import AppConfig
-import logging
-logger = logging.getLogger(__name__)
 
 class ConnectorsConfig(AppConfig):
     name = 'connectors'
@@ -8,9 +6,8 @@ class ConnectorsConfig(AppConfig):
     def ready(self):
         from connectors import get_app_connector
         from django.conf import settings
+        from debugutil import debug
 
-        logger.info('Registering signals for connectors: %s' %
-                (settings.CONNECTORS,))
         connectors = [ get_app_connector(con) for con in settings.CONNECTORS ]
         for connector in connectors:
             if connector:

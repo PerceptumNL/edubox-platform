@@ -111,10 +111,24 @@ LOG_LEVEL = os.getenv('GENERAL_LOG_LEVEL', 20 if DEBUG else 30)
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'coded': {
+            'format': '{%(name)s:[%(code)s]} %(message)s',
+        },
+        'basic': {
+            'format': '{%(name)s} %(message)s',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL)
+            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL),
+            'formatter': 'basic',
+        },
+        'coded-console': {
+            'class': 'logging.StreamHandler',
+            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL),
+            'formatter': 'coded',
         }
     },
     'loggers': {
@@ -123,7 +137,7 @@ LOGGING = {
             'level': os.getenv('DJANGO_LOG_LEVEL', LOG_LEVEL),
         },
         'connectors': {
-            'handlers': ['console'],
+            'handlers': ['coded-console'],
             'level': os.getenv('CONNECTORS_LOG_LEVEL', LOG_LEVEL),
         }
     }
@@ -136,16 +150,7 @@ LOG_CODES Tables
 The log codes table contains a mapping from shorthand log codes to
 verbose descriptions. The log code itself is constructed as follows:
 
-    'Component (letter)' + 'Log category (digit)' + 'Log code (2 digits)'
-
-Modules
--------
-    'T' :   Anything related to tokens
-    'C' :   Anything related to connectors
-    'A' :   Anything related to accounts
-    'K' :   Anything related to the knowledge base
-    'L' :   Anything related to the launcher
-    'S' :   Anything related to the general system (last resort option)
+    <Log level (1 digit)><Log code (2 digits)>
 
 Log categories
 --------------
@@ -160,16 +165,37 @@ module, for more information see: https://docs.python.org/3.5/howto/logging.html
 
 Example
 -------
-    T501 would mean a critical error (01) occured related to the token component
+    501 would mean a critical error (01)
 """
 LOG_CODES = {
-    'S501': "Something unexpected happened: %(error)",
-    'T501': "Cannot unpack token",
-    'T302': "Token doesn't match current user",
-    'C502': "Cannot extract %(field) from HTML document",
-    'C401': "User has no email",
-    'C101': "Network package debug",
+    100: "Routed %(url)s to %(routed_url)s",
+    101: "Network package debug",
+
+    110: "Login parameters %(params)s",
+    111: "Signup successful for %(user)s",
+    112: "Login sucessfull with %(token)s",
+    113: "Login failed with %(token)s",
+    114: "Already logged in with %(token)s",
+
+    201: "Signals registered",
+
+    302: "Token doesn't match current user",
+
+    410: "Unexpected login failure with %(token)s",
+    411: "Signup failed for %(user)s",
+    412: "Could not set language to %(lang)s for %(user)s",
+
+    501: "Something unexpected happened: %(error)s",
+    502: "Unknown debug log code: %(code)s",
+    503: "Error constructing log message: %(error)s",
+
+    509: "Cannot unpack token",
+
+    510: "Cannot extract %(field)s from HTML document",
+    511: "Unknown login parameter %(param)s:%(value)s",
+    512: "Login called with invalid credentials object",
 }
+SHOW_LOG_CODE_DESCRIPTION = os.getenv('SHOW_LOG_CODE_DESCRIPTION', True)
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
