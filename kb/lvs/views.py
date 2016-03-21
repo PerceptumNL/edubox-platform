@@ -1,10 +1,9 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password 
 
-from .forms import EdeXmlForm, CodecultStudentForm
-from .importers import EdeXmlImporter
+from .forms import *
+#from .importers import EdeXmlImporter
 
 from kb.models import UserProfile
 from kb.groups.models import Institute, Membership, Role
@@ -48,29 +47,81 @@ def process_institute(request):
         form = InstituteForm(request.POST, request.FILES)
         if form.is_valid():
             institute = form.cleaned_data['institute']
-            soup = BeautifulSoup(XmlDump.object.filter(institute=
-                institute).order_by('date_added').first())
+            soup = BeautifulSoup(XmlDump.objects.filter(institute=
+                institute).order_by('date_added').first().dump)
 
-            teacher_email = {t.full_name: t.email for t in 
-                UserProfile.objects.filter(institute=institute, is_teacher=True)}
+            #TODO: Fix this, very inefficient
+            teacher_email = {(t.full_name if t.is_teacher() else ''): (t.email if t.is_teacher() else '') for t in 
+                UserProfile.objects.filter(institute=institute)}
+            
             teacher_guess = {}
-
             for t in soup.leerkrachten.findAll('leerkracht'):
-                 
- 
-
-
+                name = _full_name(t)
+                if name in teacher_email:
+                    pass
+                elif type(t.emailadres) is element.Tag:
+                    teacher_email[name] = t.emailadres.string.strip()
+                else:
+                    #TODO: Should be teacher_guess, to be filled in the form
+                    teacher_email[name] = _generate_email(t, form.cleaned_data,
+                        institute.email_domain)
+            
+            return render(request, 'emails.html', {'emails': teacher_email})
         else:
             return render(request, 'done.html', {
                 'error': "The submitted form was not valid: (%s)" % (
                     'AND '.join(form.errors),)})
     else:
-        form = InstitueForm()
+        form = InstituteForm()
     return render(request, 'upload.html', {'form': form})
 
 def _full_name(node):
+    full = ''
     
+    first = _tag_string(node.roepnaam)
+    if first == '':
+        first = _tag_string(node.voornamen)
+    if first == '':
+        first = _tag_string(node.voorletters)
+    full += first +' '
 
+    prefix = _tag_string(node.voorvoegsel)
+    if prefix != '':
+        full += prefix +' '
+    
+    full += _tag_string(node.achternaam)
+    
+    return full
+
+def _tag_string(node):
+    if type(node) is element.Tag:
+        return node.string.strip().lower()
+    return ''
+
+def _generate_email(node, form, domain): 
+    email = ''
+    
+    first = _tag_string(node.roepnaam)
+    if first == '':
+        first = _tag_string(node.voornamen)
+    
+    if form['first_name'] == 'name':
+        email += first
+    elif form['first_name'] == 'letter':
+        email += first[0]
+    elif form['first_name'] == 'initials':
+        email += _tag_string(node.voorletters)
+    email += form['separator']
+
+    prefix = _tag_string(node.voorvoegsel)
+    if form['prefix'] and prefix != '':
+        email += prefix + form['separator']
+    
+    email += _tag_string(node.achternaam)
+
+    email += '@' + domain
+    
+    return email
 
 def process_teachers(request): 
     if not request.user.is_staff:
@@ -88,6 +139,8 @@ def process_teachers(request):
         form = InstituteForm()
     return render(request, 'upload.html', {'form': form})
 
+
+#TODO: Turn into DB Transaction. @transaction.atomic?
 def process_groups(request):
     if not request.user.is_staff:
         return HttpResponse(status=401)
@@ -160,15 +213,14 @@ def add_student(request):
                 password = form.cleaned_data['password']
                 if password == '':
                     password = generate_password()
-                kwargs['password'] = make_password(password)
+                kwargs['password'] = password
 
                 for key in ['first_name', 'last_name', 'email']:
                     kwargs[key] = form.cleaned_data[key]
 
-                user = User.objects.create(**kwargs)
+                user = User.objects.create_user(**kwargs)
                 profile = UserProfile.objects.create(user=user,
                     institute=codecult)
-                kwargs['password'] = password
 
                 Membership.objects.create(user=profile, 
                     group=form.cleaned_data['group'], 
