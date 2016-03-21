@@ -38,6 +38,11 @@ class LearningUnitItem(models.Model):
         ordering = ('order',)
 
 
+class Challenge(models.Model):
+    label = models.CharField(max_length=255)
+    body = models.TextField()
+
+
 class Collection(models.Model):
     label = models.CharField(max_length=255)
     author = models.ForeignKey(UserProfile)

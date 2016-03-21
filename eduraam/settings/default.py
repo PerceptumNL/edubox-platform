@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.openid',
     'connectors.apps.ConnectorsConfig',
+    'django_summernote',
 ]
 
 MIDDLEWARE_CLASSES = [
