@@ -4,8 +4,17 @@ from kb.groups.models import Institute, Group
 class EdeXmlForm(forms.Form):
     institute = forms.ModelChoiceField(queryset=Institute.objects.all())
     edexml = forms.FileField()
-    password = forms.CharField(required=False)
-    teacher_emails = forms.CharField(widget=forms.Textarea, required=False)
+
+
+class InstituteForm(forms.Form):
+    institute = forms.ModelChoiceField(queryset=Institute.objects.all())
+    first_name = forms.ChoiceField(choices=[
+        ('name', 'Name'),
+        ('letter', 'First letter'),
+        ('initials', 'Initials')])
+    prefix = forms.BooleanField()
+    separator = forms.CharField(max_length=1)
+
 
 class CodecultStudentForm(forms.Form):
     group = forms.ModelChoiceField(queryset=
