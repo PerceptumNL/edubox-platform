@@ -11,6 +11,49 @@ from kb.groups.models import Group
 
 from .events import * # TODO: Find a better place for loading this.
 
+def list_all(request):
+    """Catch all view that combines results from units and challenges."""
+    if not request.user.is_authenticated():
+        return HttpResponse(status=401)
+
+    group_id = request.GET.get('group', None)
+    if group_id is None:
+        return HttpResponse(status=400)
+
+    group = get_object_or_404(Group, pk=int(group_id))
+
+    login_base = reverse('app_login', subdomain='accounts',
+            scheme=request.scheme)
+
+    units = []
+    # TODO: Actually make this list group dependant.
+    for unit in LearningUnit.objects.all():
+        activity = unit.get_next_activity_for_user(request.user)
+        token = create_token(
+            request.user.pk,
+            group.pk,
+            activity.app.pk).decode('utf-8')
+        units.append({
+            'id': unit.pk,
+            'label': unit.label,
+            'login': "%s?token=%s" % (login_base, token),
+            'token': token})
+
+    challenges = []
+    # TODO: Actually make this list group dependant.
+    for challenge in Challenge.objects.all():
+        challenges.append({
+            'id': challenge.pk,
+            'label': challenge.label,
+            'details': "%s/?group=%s" % (
+                reverse("collections_challenge_detail", args=(challenge.pk,),
+                        subdomain="api",scheme=request.scheme),
+                group_id),
+            })
+
+    return JsonResponse({'items': {'units': units, 'challenges': challenges}})
+
+
 def learning_units(request):
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
@@ -49,15 +92,13 @@ def challenges(request):
 
     group = get_object_or_404(Group, pk=int(group_id))
 
-    challenges = []
-
     # TODO: Actually make this list group dependant.
     for challenge in Challenge.objects.all():
         challenges.append({
             'id': challenge.pk,
             'label': challenge.label,
             'details': "%s/?group=%s" % (
-                reverse("challenge_detail", args=(challenge.pk,),
+                reverse("collections_challenge_detail", args=(challenge.pk,),
                         subdomain="api",scheme=request.scheme),
                 group_id),
             })
