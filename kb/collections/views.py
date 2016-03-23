@@ -69,7 +69,7 @@ def list_units(request):
     login_base = reverse('app_login', subdomain='accounts',
             scheme=request.scheme)
     # TODO: Actually make this list group dependant.
-    for unit in LearningUnit.objects.all():
+    for unit in LearningUnit.objects.order_by('order').all():
         activity = unit.get_next_activity_for_user(request.user)
         token = create_token(
             request.user.pk,

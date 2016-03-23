@@ -39,7 +39,7 @@ class Connector(BaseConnector):
         try:
             authenticity_token = cls.get_field_value_from_url(
                 token, cls.LOGIN_PAGE_URL, "authenticity_token")
-        except KeyError:
+        except (KeyError, TypeError):
             cls.debug(510, field="authenticity_token")
             return None
 
@@ -61,7 +61,7 @@ class Connector(BaseConnector):
         try:
             authenticity_token = cls.get_field_value_from_url(
                 token, login_page_url, "authenticity_token")
-        except KeyError:
+        except (KeyError, TypeError):
             cls.debug(510, field="authenticity_token")
             return None
 
@@ -132,7 +132,7 @@ class Connector(BaseConnector):
         try:
             authenticity_token = cls.get_field_value_from_url(
                 token, cls.TEACHER_SIGNUP_PAGE, "authenticity_token")
-        except KeyError:
+        except (KeyError, TypeError):
             cls.debug(510, field="authenticity_token")
             cls.debug(411, user=user)
             return False
@@ -173,7 +173,7 @@ class Connector(BaseConnector):
             try:
                 authenticity_token = cls.get_field_value_from_url(
                     token, cls.HOME_PAGE, "authenticity_token")
-            except KeyError:
+            except (KeyError, TypeError):
                 cls.debug(510, field="authenticity_token")
                 cls.debug(411, user=user)
                 return False
@@ -315,7 +315,7 @@ class Connector(BaseConnector):
             try:
                 authenticity_token = cls.get_field_value_from_url(
                     token, cls.HOME_PAGE, "authenticity_token")
-            except KeyError:
+            except (KeyError, TypeError):
                 cls.debug(510, field="authenticity_token")
                 cls.debug(411, user=user)
                 return False

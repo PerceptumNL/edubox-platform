@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password 
 
 from .forms import EdeXmlForm, CodecultStudentForm
 from .importers import EdeXmlImporter
@@ -80,7 +81,7 @@ def add_student(request):
                 password = form.cleaned_data['password']
                 if password == '':
                     password = generate_password()
-                kwargs['password'] = password
+                kwargs['password'] = make_password(password)
 
                 for key in ['first_name', 'last_name', 'email']:
                     kwargs[key] = form.cleaned_data[key]
@@ -88,6 +89,7 @@ def add_student(request):
                 user = User.objects.create(**kwargs)
                 profile = UserProfile.objects.create(user=user,
                     institute=codecult)
+                kwargs['password'] = password
 
                 Membership.objects.create(user=profile, 
                     group=form.cleaned_data['group'], 

@@ -19,6 +19,7 @@ class Activity(models.Model):
 class LearningUnit(models.Model):
     label = models.CharField(max_length=255)
     activities = models.ManyToManyField(Activity, through='LearningUnitItem')
+    order = models.PositiveSmallIntegerField(default=0)
     #TODO dependencies = models.ManyToManyField(Badge)
     #TODO provides = models.ManyToManyField(Badge, through=LearningUnitOutcome)
 
