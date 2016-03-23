@@ -44,6 +44,7 @@ def list_all(request):
         challenges.append({
             'id': challenge.pk,
             'label': challenge.label,
+            'url': route_links_in_text(request, challenge.url, group),
             'details': "%s/?group=%s" % (
                 reverse("collections_challenge_detail", args=(challenge.pk,),
                         subdomain="api",scheme=request.scheme),
@@ -98,6 +99,7 @@ def list_challenges(request):
         challenges.append({
             'id': challenge.pk,
             'label': challenge.label,
+            'url': route_links_in_text(request, challenge.url, group),
             'details': "%s/?group=%s" % (
                 reverse("collections_challenge_detail", args=(challenge.pk,),
                         subdomain="api",scheme=request.scheme),
@@ -121,4 +123,5 @@ def challenge_detail(request, challenge_id):
     return JsonResponse({
         'id': challenge.pk,
         'label': challenge.label,
+        'url': route_links_in_text(request, challenge.url, group),
         'body': route_links_in_text(request, challenge.body, group)})

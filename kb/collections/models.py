@@ -41,6 +41,7 @@ class LearningUnitItem(models.Model):
 class Challenge(models.Model):
     label = models.CharField(max_length=255)
     body = models.TextField()
+    url = models.URLField(max_length=255)
 
 
 class Collection(models.Model):
