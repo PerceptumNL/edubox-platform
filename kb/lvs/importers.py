@@ -222,8 +222,11 @@ class EdeXmlImporter(object):
             # Only use the first part of last names
             if ind == len(args)-1:
                 arg = arg.split(' ')[0]
-            for char in ' '+string.punctuation:
+            
+            for char in string.punctuation:
                 arg = arg.replace(char, '')
+            arg = arg.replace(' ', '.')
+            
             if ind != 0 and arg != '':
                 res += '.'
             res += arg.lower()
