@@ -129,6 +129,9 @@ class Connector(BaseConnector):
             cls.debug(411, user=user, info='No user email')
             return False
 
+        if not user.first_name and not user.last_name:
+            cls.debug(411, user=user, info='No first or last name known.')
+
         try:
             authenticity_token = cls.get_field_value_from_url(
                 token, cls.TEACHER_SIGNUP_PAGE, "authenticity_token")
@@ -208,6 +211,10 @@ class Connector(BaseConnector):
         from kb.groups.models import Group, Membership, Role
         from kb.apps.models import App
         from accounts.models import AppAccount
+
+        if not user.first_name and not user.last_name:
+            cls.debug(411, user=user, info='No first or last name known.')
+
         unpacked = unpack_token(token)
         #Get the first teacher of this users group
         group = Group.objects.get(pk=unpacked['group'])
