@@ -141,7 +141,7 @@ class EdeXmlImporter(object):
         user_kwargs = self._kwarg_options(node, EdeXmlImporter.user_opts)
         profile_kwargs = self._kwarg_options(node, EdeXmlImporter.profile_opts)
 
-        username = node['key'] +'@'+ self.institute.pk
+        username = node['key'] +'@'+str(self.institute.pk)
         existing_user = User.objects.filter(username=username)
         if len(existing_user) == 1:
             self.last_pw = ''
