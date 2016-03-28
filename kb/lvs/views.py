@@ -2,16 +2,16 @@ from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse
 from django.contrib.auth.models import User
 
-from .forms import *
-#from .importers import EdeXmlImporter
+from bs4 import BeautifulSoup, element
+import csv
 
+#from .importers import EdeXmlImporter
 from kb.models import UserProfile
 from kb.groups.models import Institute, Membership, Role
 from kb.groups.helpers import generate_password
+from .forms import *
 from .models import *
-
-from bs4 import BeautifulSoup, element
-import csv
+from .helpers import *
 
 def upload_edexml(request):
     if not request.user.is_staff:
@@ -22,7 +22,7 @@ def upload_edexml(request):
         if form.is_valid():
             soup = BeautifulSoup(request.FILES['edexml'])
             institute = form.cleaned_data['institute']
-            
+
             try:
                 xmldump = XmlDump.objects.create(dump=str(soup.edex))
             except Exception:
@@ -30,7 +30,7 @@ def upload_edexml(request):
 
             institute.xmls.add(xmldump)
             return render(request, 'done.html', {'institute': institute})
-        
+
         else:
             return render(request, 'done.html', {
                 'error': "The submitted form was not valid: (%s)" % (
@@ -42,7 +42,7 @@ def upload_edexml(request):
 def process_institute(request):
     if not request.user.is_staff:
         return HttpResponse(status=401)
-            
+
     if request.method == 'POST':
         form = InstituteForm(request.POST, request.FILES)
         if form.is_valid():
@@ -53,7 +53,7 @@ def process_institute(request):
             #TODO: Fix this, very inefficient
             teacher_email = {(t.full_name if t.is_teacher() else ''): (t.email if t.is_teacher() else '') for t in 
                 UserProfile.objects.filter(institute=institute)}
-            
+
             teacher_guess = {}
             for t in soup.leerkrachten.findAll('leerkracht'):
                 name = _full_name(t)
@@ -65,7 +65,7 @@ def process_institute(request):
                     #TODO: Should be teacher_guess, to be filled in the form
                     teacher_email[name] = _generate_email(t, form.cleaned_data,
                         institute.email_domain)
-            
+
             return render(request, 'emails.html', {'emails': teacher_email})
         else:
             return render(request, 'done.html', {
@@ -75,58 +75,11 @@ def process_institute(request):
         form = InstituteForm()
     return render(request, 'upload.html', {'form': form})
 
-def _full_name(node):
-    full = ''
-    
-    first = _tag_string(node.roepnaam)
-    if first == '':
-        first = _tag_string(node.voornamen)
-    if first == '':
-        first = _tag_string(node.voorletters)
-    full += first +' '
-
-    prefix = _tag_string(node.voorvoegsel)
-    if prefix != '':
-        full += prefix +' '
-    
-    full += _tag_string(node.achternaam)
-    
-    return full
-
-def _tag_string(node):
-    if type(node) is element.Tag:
-        return node.string.strip().lower()
-    return ''
-
-def _generate_email(node, form, domain): 
-    email = ''
-    
-    first = _tag_string(node.roepnaam)
-    if first == '':
-        first = _tag_string(node.voornamen)
-    
-    if form['first_name'] == 'name':
-        email += first
-    elif form['first_name'] == 'letter':
-        email += first[0]
-    elif form['first_name'] == 'initials':
-        email += _tag_string(node.voorletters)
-    email += form['separator']
-
-    prefix = _tag_string(node.voorvoegsel)
-    if form['prefix'] and prefix != '':
-        email += prefix + form['separator']
-    
-    email += _tag_string(node.achternaam)
-
-    email += '@' + domain
-    
-    return email
 
 def process_teachers(request): 
     if not request.user.is_staff:
         return HttpResponse(status=401)
-            
+
     if request.method == 'POST':
         form = InstituteForm(request.POST)
         if form.is_valid():
@@ -138,7 +91,6 @@ def process_teachers(request):
     else:
         form = InstituteForm()
     return render(request, 'upload.html', {'form': form})
-
 
 #TODO: Turn into DB Transaction. @transaction.atomic?
 def process_groups(request):
