@@ -349,7 +349,7 @@ class Connector(BaseConnector):
     @classmethod
     def signup(cls, token, user, *args, **kwargs):
         """Create account for user in code.org"""
-        if user.profile.is_teacher():
+        if user.profile.is_teacher:
             return cls.signup_teacher(token, user, *args, **kwargs)
         else:
             return cls.signup_student(token, user, *args, **kwargs)

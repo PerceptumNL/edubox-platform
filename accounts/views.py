@@ -16,7 +16,7 @@ def get_user_info(request):
     return JsonResponse({
         'info': {
             'name': name,
-            'isTeacher': request.user.profile.is_teacher()
+            'isTeacher': request.user.profile.is_teacher
         }
     })
 

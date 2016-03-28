@@ -50,9 +50,8 @@ def process_institute(request):
             soup = BeautifulSoup(XmlDump.objects.filter(institute=
                 institute).order_by('date_added').first().dump)
 
-            #TODO: Fix this, very inefficient
-            teacher_email = {(t.full_name if t.is_teacher() else ''): (t.email if t.is_teacher() else '') for t in 
-                UserProfile.objects.filter(institute=institute)}
+            teacher_email = {t.full_name: t.email for t in
+                UserProfile.objects.filter(institute=institute, is_teacher=True)}
 
             teacher_guess = {}
             for t in soup.leerkrachten.findAll('leerkracht'):

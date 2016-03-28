@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'kb.permissions',
     'kb.badges',
     'kb.skills.apps.SkillsConfig',
-    'kb',
+    'kb.__apps__.KbConfig',
     'launch',
     'accounts',
     'allauth',

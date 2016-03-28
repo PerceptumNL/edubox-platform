@@ -20,6 +20,8 @@ class UserProfile(models.Model):
     groups = models.ManyToManyField(Group, through=Membership, 
             through_fields=('user', 'group'), related_name='users')
     institute = models.ForeignKey(Institute, related_name='users')
+    # Is teacher in any group
+    is_teacher = models.BooleanField(default=False)
 
     #User specific additions to permissions, outside of group or role
     #permission. UserPermissions specifies the app for which this addition applies
@@ -67,16 +69,14 @@ class UserProfile(models.Model):
         full += ' '+self.last_name
         return full
 
-    def is_teacher(self, group=None):
+    def teaches(self, group=None):
         if group:
             return Membership.objects.filter(
                 user=self,
                 group=group,
                 role__role="Teacher").exists()
         else:
-            return Membership.objects.filter(
-                user=self,
-                role__role="Teacher").exists()
+            return self.is_teacher
 
     def __str__(self):
         return str(self.user)
