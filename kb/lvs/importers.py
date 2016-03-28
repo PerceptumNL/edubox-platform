@@ -224,7 +224,7 @@ class EdeXmlImporter(object):
                 arg = arg.split(' ')[0]
             for char in ' '+string.punctuation:
                 arg = arg.replace(char, '')
-            if ind != 0:
+            if ind != 0 and arg != '':
                 res += '.'
             res += arg.lower()
         return res

@@ -11,6 +11,7 @@ class CodecultStudentForm(forms.Form):
     group = forms.ModelChoiceField(queryset=
         Group.objects.filter(institute__title='CodeCult'))
     first_name = forms.CharField()
+    last_name_prefix = forms.CharField(required=False)
     last_name = forms.CharField()
     password = forms.CharField(required=False)
     email = forms.CharField(required=False)
