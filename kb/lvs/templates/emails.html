@@ -2,13 +2,27 @@
 {% load staticfiles %}
 
 {% block body %}
-<h3>Emails</h3>
-<table>
+<h2>Existing emails</h2>
+<h3><table>
 {% for k, v in emails.items %}
     <tr>
         <td>{{ k }}</td>
         <td>{{ v }}</td>
     </tr>
 {% endfor %}
-</table>
+</table></h3>
+<h2>Generated guesses</h2>
+<form method="post" action="">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    <table>
+        {% for form in  formset %}
+            <tr>
+                <td>{{ form.name }}</td>
+                <td>{{ form.email }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+    <input type="submit" value="Submit">
+</form>
 {% endblock %}
