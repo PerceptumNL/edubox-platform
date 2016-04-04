@@ -125,23 +125,27 @@ LOGGING = {
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL)),
             'formatter': 'basic',
         },
         'coded-console': {
             'class': 'logging.StreamHandler',
-            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL)),
             'formatter': 'coded',
         }
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('DJANGO_LOG_LEVEL', LOG_LEVEL)),
         },
         'connectors': {
             'handlers': ['coded-console'],
-            'level': os.getenv('CONNECTORS_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('CONNECTORS_LOG_LEVEL', LOG_LEVEL)),
+        },
+        'kb.events': {
+            'handlers': ['coded-console'],
+            'level': int(os.getenv('EVENT_LOG_LEVEL', LOG_LEVEL)),
         }
     }
 }
@@ -187,6 +191,7 @@ LOG_CODES = {
     410: "Unexpected login failure with %(token)s",
     411: "Signup failed for %(user)s",
     412: "Could not set language to %(lang)s for %(user)s",
+    420: "Could not create event",
 
     501: "Something unexpected happened: %(error)s",
     502: "Unknown debug log code: %(code)s",
