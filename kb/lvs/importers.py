@@ -64,9 +64,12 @@ class EdeXmlImporter(object):
             raise ValueError('BRIN code does not match!')
 
     def parse_groups(self):
-        Group.objects.filter(institute=self.institute, imported=True).delete()
+        for group in Group.objects.filter(institute=self.institute, imported=True):
+            Membership.objects.filter(group=group).delete()
+            group.inactive = True
+            group.save()
 
-        institute_group = Group.objects.create(
+        institute_group, created = Group.objects.get_or_create(
             title=self.institute.title, institute=self.institute, imported=True)
 
         groups = defaultdict(list)
@@ -86,17 +89,21 @@ class EdeXmlImporter(object):
                     self.groups[g.key] = self._create_group(
                         name, meta_group, g.year)
 
-    def _create_group(self, name, parent, year=None):
-        group = Group.objects.create(
-            title=name, parent=parent, institute=self.institute, imported=True)
-
+    def _create_group(self, name, parent, year=None): 
+        title = name
+        # Do not add year annotation to single-year or meta groups
         if parent.title != self.institute.title:
-            group.title = name +' - ' + year
-
-        if year != None:
+            title +=' - ' + year
+        
+        group, created = Group.objects.get_or_create(
+            title=title, parent=parent, institute=self.institute, imported=True)
+        
+        if created and year != None:
             t, c = Tag.objects.get_or_create(label='Jaargroep '+year)
             group.tags.add(t)
-
+      
+        # Reactivate groups that already existed
+        group.inactive = False
         group.save()
 
         return group
@@ -128,14 +135,21 @@ class EdeXmlImporter(object):
         study = Role.objects.get(role='Student')
         for s in self.soup.edex.leerlingen.findAll('leerling'):
             student = self._create_user(s)
-            Membership.objects.create(
-                user=student, group=self.groups[s.groep['key']], role=study)
+            if type(s.groep) is element.Tag and s.groep['key'] in self.groups:
+                Membership.objects.create(
+                    user=student, group=self.groups[s.groep['key']], role=study)
 
-            self.students[self.groups[s.groep['key']].title].append([
-                'Updated' if self.last_pw == '' else 'Created',
-                student.full_name,
-                student.alias,
-                self.last_pw])
+                self.students[self.groups[s.groep['key']].title].append([
+                    'Updated' if self.last_pw == '' else 'Created',
+                    student.full_name,
+                    student.alias,
+                    self.last_pw])
+            else:
+                # Fallback option for invalid group (implies EdeXML is invalid)
+                institute_group = Group.objects.get(title=self.institute.title,
+                    institute=self.institute, imported=True)
+                Membership.objects.create(
+                    user=student, group=institute_group, role=study)
 
     def _create_user(self, node, teacher=False):
         user_kwargs = self._kwarg_options(node, EdeXmlImporter.user_opts)

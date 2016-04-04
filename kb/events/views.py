@@ -7,6 +7,8 @@ from .models import Verb, Event, GenericEvent
 
 import json
 import datetime
+import sys
+import debugutil
 
 class API(View):
 
@@ -79,7 +81,8 @@ class API(View):
         event.update(context)
         try:
             Event.create(**event)
-        except (TypeError, AttributeError):
+        except (TypeError, AttributeError) as err:
+            self._debug(420, info=str(err))
             return HttpResponse(status=400)
 
         return HttpResponse()
@@ -89,6 +92,16 @@ class API(View):
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
         return super(API, self).dispatch(*args, **kwargs)
+
+    def _debug(self, *args, **kwargs):
+        """
+        Wrapper function for debugutil.debug, setting the logger based on the
+        value of the class name and the function that called
+        this debug function.
+        """
+        logger_name = "%s.%s" % (
+            __name__, sys._getframe().f_back.f_code.co_name)
+        debugutil.debug(*args, logger=logger_name, **kwargs)
 
 def _date_instance(date):
     """Convert string tot datetime instance according to ISO 8601"""
