@@ -120,9 +120,11 @@ class EdeXmlImporter(object):
 
             group_list = ''
             for g in t.groepen.findAll('groep'):
-                Membership.objects.create(
-                    user=teacher, group=self.groups[g['key']], role=teach)
-                group_list += self.groups[g['key']].title +', '
+                # Check if group exists (should always be the case)
+                if type(g) == element.Tag and g['key'] in self.groups:
+                    Membership.objects.create(
+                        user=teacher, group=self.groups[g['key']], role=teach)
+                    group_list += self.groups[g['key']].title +', '
 
             self.teachers.append([
                 'Updated' if self.last_pw == '' else 'Created',
