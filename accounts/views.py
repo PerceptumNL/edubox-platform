@@ -57,3 +57,31 @@ def login_user_into_app(request):
         return HttpResponse(status=200)
     else:
         return HttpResponse('Could not login.', status=500)
+
+def change_password(request):
+    try:
+        params = json.loads(request.body)
+    except (ValueError, TypeError):
+        return HttpResponse('Invalid format', status=400)
+
+    if not isinstance(params, dict):
+        return HttpResponse('Invalid format', status=400)
+
+    if not ('old' in params and 'new' in params):
+        return HttpResponse('Missing parameters', status=400)
+
+    if not (isinstance(params['old'], str) and isinstance(params['new'], str)):
+        return HttpResponse('Invalid parameters', status=400)
+
+    if not request.user.check_password(params['new']):
+        return HttpResponse('Invalid password', status=401)
+
+    if params['old'] == params['new']:
+        return HttpResponse(status=204)
+
+    request.user.set_password(params['new'])
+    if not request.user.has_usable_password():
+        return HttpResponse('Invalid parameters', status=400)
+
+    request.user.save()
+    return HttpResponse(status=204)
