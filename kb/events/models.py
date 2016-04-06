@@ -8,6 +8,7 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
 
 from uuid import uuid4
+import json
 
 from kb.models import App
 from kb.groups.models import Group
@@ -110,6 +111,22 @@ class SubmittedEvent(Event):
             return SubmittedEvent.objects.create(submission=submission, **kwargs)
         except ValueError:
             return None
+
+
+class CompiledEvent(Event):
+    code = models.TextField()
+    code_type = models.CharField(max_length=50, default='javascript')
+
+    def create(kwargs, payload):
+        if 'type' not in payload or 'code' not in payload:
+            return None
+
+        try:
+            return CompiledEvent.objects.create(
+                code=payload['code'], code_type=payload['type'], **kwargs)
+        except ValueError:
+            return None
+
 
 class ReadEvent(Event):
 

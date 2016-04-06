@@ -53,7 +53,10 @@ class CodeSkill(Skill):
     def register_signals(cls):
         from connectors.signals import parsed_submission
         from codelib import Root
+        from codelib.signals import code_parsed
+        from codelib.dialects import js
         parsed_submission.connect(cls.extract_from_code, sender=Root)
+        #code_parsed.connect(cls.extract_from_code, sender=js.Dialect)
 
 
 class SequenceSkill(CodeSkill):

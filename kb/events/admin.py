@@ -64,6 +64,14 @@ class SubmittedEventAdmin(EventAdmin):
             return "?"
 
 
+class CompiledEventAdmin(EventAdmin):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.list_display += ('code_type',)
+        self.list_filter += ('code_type',)
+
+
 admin.site.register(Verb)
 admin.site.register(GenericEvent)
 admin.site.register(ReadEvent, EventAdmin)
@@ -71,3 +79,4 @@ admin.site.register(RatedEvent, EventAdmin)
 admin.site.register(ScoredEvent, EventAdmin)
 admin.site.register(ClickedEvent, EventAdmin)
 admin.site.register(SubmittedEvent, SubmittedEventAdmin)
+admin.site.register(CompiledEvent, CompiledEventAdmin)

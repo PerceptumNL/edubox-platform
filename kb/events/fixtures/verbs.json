@@ -43,5 +43,14 @@
             "iri": "http://adlnet.gov/expapi/verbs/completed",
             "description": "Indicates the actor finished or concluded the activity normally. For now this will mean a solution has been submitted to a problem"
         }
+    },
+    {
+        "model": "events.Verb",
+        "pk": 6,
+        "fields": {
+            "event_class": "CompiledEvent",
+            "iri": "http://activitystrea.ms/schema/1.0/build",
+            "description": "Indicates that the actor has built the object. For example, if a person builds a model or compiles code."
+        }
     }
 ]
