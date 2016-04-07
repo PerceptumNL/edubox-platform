@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'kb.events',
     'kb.apps',
+    'kb.inbox',
     'kb.collections',
     'kb.groups',
     'kb.lvs',
@@ -238,9 +239,9 @@ REST_FRAMEWORK = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'nl-NL'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 
