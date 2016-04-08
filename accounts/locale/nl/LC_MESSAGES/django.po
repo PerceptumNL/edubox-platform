@@ -95,7 +95,7 @@ msgid ""
 "within a few minutes."
 msgstr ""
 "We hebben u een e-mail gestuurd. Neem a.u.b contact met ons op indien u "
-"dezeniet binnen enkele minuten heeft ontvangen."
+"deze niet binnen enkele minuten heeft ontvangen."
 
 #: templates/account/password_reset_from_key.html:15
 #: templates/account/password_reset_from_key_done.html:15
