@@ -21,30 +21,30 @@
       <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
           <input class="mdl-textfield__input" type="text" id="username"
             name="login">
-          <label class="mdl-textfield__label" for="username">Username</label>
+            <label class="mdl-textfield__label" for="username">{% trans 'Username' %}</label>
       </div>
       <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
           <input class="mdl-textfield__input" type="password" id="password"
             name="password">
-          <label class="mdl-textfield__label" for="password">Password</label>
+            <label class="mdl-textfield__label" for="password">{% trans 'Password' %}</label>
       </div>
       <button class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
         type="submit">
-          Login
+        {% trans 'Log In' %}
       </button>
 	</form>
   </div>
   <div class="mdl-card__actions mdl-card--border">
 	<a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect"
 		href="{% url 'account_reset_password' %}">
-		{% trans "Ik ben mijn wachtwoord vergeten" %}
+		{% trans "I forgot my password" %}
 	</a>
   </div>
 </div>
 <!--
 	<a class="mdl-button mdl-js-button mdl-button--raised mdl-button--colored"
 		href="{% provider_login_url 'google' process='login' %}">
-		Login met Google
+    {% trans "Log in with Google" %}
 	</a>
 -->
 {% endblock %}
