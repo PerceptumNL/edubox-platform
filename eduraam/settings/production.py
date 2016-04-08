@@ -44,5 +44,7 @@ CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_DOMAIN = ".codecult.nl"
 CSRF_COOKIE_DOMAIN = SESSION_COOKIE_DOMAIN
 
+LOGIN_REDIRECT_URL = "https://platform.codecult.nl"
+
 ROUTER_PROTOCOL = os.environ.get('ROUTER_PROTOCOL', None)
 ROUTER_DOMAIN = 'codecult.nl'
