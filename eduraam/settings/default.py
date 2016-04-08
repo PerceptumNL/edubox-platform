@@ -217,6 +217,8 @@ LOGIN_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Codecult] "
 
+DEFAULT_FROM_EMAIL = "info@codecult.nl"
+
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
