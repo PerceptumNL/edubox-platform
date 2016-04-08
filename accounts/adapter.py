@@ -13,7 +13,7 @@ class EduraamAccountAdapter(DefaultAccountAdapter):
             return False
         current_domain = Site.objects.get_current().domain
         url_domain = urlparse(url).netloc
-        # Check if the url domain is a subdomain of the current domain
-        if url_domain.endswith("."+current_domain):
+        # Check if the url domain is (a subdomain of) the current domain
+        if url_domain == current_domain or url_domain.endswith("."+current_domain):
             return is_safe_url(url=url, host=url_domain)
         return is_safe_url(url=url)

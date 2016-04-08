@@ -42,6 +42,10 @@ CORS_ORIGIN_WHITELIST = ('platform.codecult.nl', 'staging.codecult.nl')
 CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_DOMAIN = ".codecult.nl"
+CSRF_COOKIE_DOMAIN = SESSION_COOKIE_DOMAIN
+
+LOGIN_REDIRECT_URL = "https://platform.codecult.nl"
+ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
 
 ROUTER_PROTOCOL = os.environ.get('ROUTER_PROTOCOL', None)
 ROUTER_DOMAIN = 'codecult.nl'

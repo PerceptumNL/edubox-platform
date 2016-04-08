@@ -1,4 +1,6 @@
 from django.http import HttpResponse, JsonResponse
+from django.contrib.auth.decorators import login_required
+from allauth.account.views import PasswordChangeView
 
 from kb.helpers import unpack_token
 from kb.apps.models import App
@@ -57,3 +59,27 @@ def login_user_into_app(request):
         return HttpResponse(status=200)
     else:
         return HttpResponse('Could not login.', status=500)
+
+class RedirectPasswordChangeView(PasswordChangeView):
+    success_url = None
+    redirect_field_name = "next"
+
+    def get_success_url(self):
+        from allauth.account.utils import get_next_redirect_url
+        # Explicitly passed ?next= URL takes precedence
+        ret = (get_next_redirect_url(self.request,
+                                     self.redirect_field_name)
+               or self.success_url)
+        return ret
+
+    def get_context_data(self, **kwargs):
+        from allauth.utils import get_request_param
+        ret = super().get_context_data()
+        redirect_field_value = get_request_param(self.request,
+                                                 self.redirect_field_name)
+        ret['redirect_field_name'] = self.redirect_field_name
+        ret['redirect_field_value'] = get_request_param(self.request,
+                                                        self.redirect_field_name)
+        return ret
+
+redirect_password_change = login_required(RedirectPasswordChangeView.as_view())

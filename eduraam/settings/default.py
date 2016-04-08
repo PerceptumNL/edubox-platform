@@ -42,12 +42,14 @@ INSTALLED_APPS = [
     'corsheaders',
     'kb.events',
     'kb.apps',
+    'kb.inbox',
     'kb.collections',
     'kb.groups',
     'kb.lvs',
     'kb.settings',
     'kb.permissions',
     'kb.badges',
+    'kb.questions',
     'kb.skills.apps.SkillsConfig',
     'kb.__apps__.KbConfig',
     'launch',
@@ -212,6 +214,10 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Codecult] "
+
+DEFAULT_FROM_EMAIL = "info@codecult.nl"
 
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -237,9 +243,9 @@ REST_FRAMEWORK = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'nl-NL'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 
