@@ -215,6 +215,7 @@ ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 LOGIN_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Codecult] "
 
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
