@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-04-08 14:28+0200\n"
+"POT-Creation-Date: 2016-04-08 17:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -37,36 +37,72 @@ msgstr ""
 
 #: templates/account/email/password_reset_key_message.txt:8
 #, python-format
-msgid ""
-"Thank you for using %(site_name)s!\n"
-"%(site_domain)s"
-msgstr ""
-"Dank u voor het gebruiken van %(site_name)s!\n"
-"%(site_domain)s"
+msgid "Thank you for using %(site_name)s!"
+msgstr "Dank u voor het gebruiken van %(site_name)s!"
 
-#: templates/account/login.html:13 templates/account/login.html.py:33
+#: templates/account/email/password_reset_key_message.txt:10
+msgid ""
+"Best regards,\n"
+"\n"
+"The CodeCult Team"
+msgstr ""
+"Met vriendelijke groet,\n"
+"\n"
+"Het CodeCult Team"
+
+#: templates/account/login.html:13 templates/account/login.html.py:46
 msgid "Log In"
 msgstr "Log in"
 
-#: templates/account/login.html:24
+#: templates/account/login.html:25
 msgid "Username"
 msgstr "Gebruikersnaam"
 
-#: templates/account/login.html:29
+#: templates/account/login.html:36
 msgid "Password"
 msgstr "Wachtwoord"
 
-#: templates/account/login.html:40
+#: templates/account/login.html:53
 msgid "I forgot my password"
 msgstr "Ik ben mijn wachtwoord vergeten"
 
-#: templates/account/login.html:47
+#: templates/account/login.html:60
 msgid "Log in with Google"
 msgstr "Log in met Google"
 
 #: templates/account/logout.html:13 templates/account/logout.html.py:23
 msgid "Log Out"
 msgstr "Log uit"
+
+#: templates/account/password_change.html:15
+#: templates/account/password_reset_from_key.html:15
+#: templates/account/password_reset_from_key_done.html:15
+msgid "Bad Token"
+msgstr "Ongeldige sleutel"
+
+#: templates/account/password_change.html:17
+#: templates/account/password_change.html:65
+#: templates/account/password_reset_from_key.html:17
+#: templates/account/password_reset_from_key.html:55
+#: templates/account/password_reset_from_key_done.html:17
+msgid "Change Password"
+msgstr "Verander wachtwoord"
+
+#: templates/account/password_change.html:31
+#, fuzzy
+#| msgid "New Password"
+msgid "Current Password"
+msgstr "Nieuw wachtwoord"
+
+#: templates/account/password_change.html:43
+#: templates/account/password_reset_from_key.html:33
+msgid "New Password"
+msgstr "Nieuw wachtwoord"
+
+#: templates/account/password_change.html:55
+#: templates/account/password_reset_from_key.html:45
+msgid "New Password (again)"
+msgstr "Nieuw wachtwoord (herhaling)"
 
 #: templates/account/password_reset.html:13
 #: templates/account/password_reset_done.html:13
@@ -81,11 +117,11 @@ msgstr ""
 "Wachtwoord vergeten? Vul hieronder uw e-mail adres in, dan sturen we u een e-"
 "mail om uw wachtoord te kunnen resetten."
 
-#: templates/account/password_reset.html:25
+#: templates/account/password_reset.html:26
 msgid "E-mail"
 msgstr "E-mail"
 
-#: templates/account/password_reset.html:28
+#: templates/account/password_reset.html:35
 msgid "Reset My Password"
 msgstr "Reset mijn wachtwoord"
 
@@ -94,19 +130,8 @@ msgid ""
 "We have sent you an e-mail. Please contact us if you do not receive it "
 "within a few minutes."
 msgstr ""
-"We hebben u een e-mail gestuurd. Neem a.u.b contact met ons op indien u "
-"deze niet binnen enkele minuten heeft ontvangen."
-
-#: templates/account/password_reset_from_key.html:15
-#: templates/account/password_reset_from_key_done.html:15
-msgid "Bad Token"
-msgstr "Ongeldige sleutel"
-
-#: templates/account/password_reset_from_key.html:17
-#: templates/account/password_reset_from_key.html:42
-#: templates/account/password_reset_from_key_done.html:17
-msgid "Change Password"
-msgstr "Verander wachtwoord"
+"We hebben u een e-mail gestuurd. Neem a.u.b contact met ons op indien u deze "
+"niet binnen enkele minuten heeft ontvangen."
 
 #: templates/account/password_reset_from_key.html:24
 #, python-format
@@ -119,20 +144,12 @@ msgstr ""
 "keer is gebruikt. Vraagt u a.u.b een nieuwe <a href=\"%(passwd_reset_url)s"
 "\">reset</a> link aan."
 
-#: templates/account/password_reset_from_key.html:32
-msgid "New Password"
-msgstr "Nieuw wachtwoord"
-
-#: templates/account/password_reset_from_key.html:38
-msgid "New Password (again)"
-msgstr "Nieuw wachtwoord (herhaling)"
-
-#: templates/account/password_reset_from_key.html:46
+#: templates/account/password_reset_from_key.html:59
 #: templates/account/password_reset_from_key_done.html:22
 msgid "Your password is now changed."
 msgstr "Uw wachtwoord is nu veranderd"
 
-#: templates/account/password_reset_from_key.html:54
+#: templates/account/password_reset_from_key.html:67
 #: templates/account/password_reset_from_key_done.html:27
 msgid "Go to the log in screen"
 msgstr "Ga naar het log in scherm"
