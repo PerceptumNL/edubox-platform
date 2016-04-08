@@ -22,7 +22,7 @@ def upload_edexml(request):
         if form.is_valid():
             soup = BeautifulSoup(request.FILES['edexml'])
             institute = form.cleaned_data['institute']
-            
+
             try:
                 xmldump = XmlDump.objects.create(dump=str(soup.edex))
             except Exception:
@@ -30,7 +30,7 @@ def upload_edexml(request):
 
             institute.xmls.add(xmldump)
             return render(request, 'done.html', {'institute': institute})
-        
+
         else:
             return render(request, 'done.html', {
                 'error': "The submitted form was not valid: (%s)" % (
@@ -42,7 +42,7 @@ def upload_edexml(request):
 def process_institute(request):
     if not request.user.is_staff:
         return HttpResponse(status=401)
-            
+
     if request.method == 'POST':
         form = InstituteForm(request.POST, request.FILES)
         if form.is_valid():
@@ -50,13 +50,13 @@ def process_institute(request):
             soup = BeautifulSoup(XmlDump.object.filter(institute=
                 institute).order_by('date_added').first())
 
-            teacher_email = {t.full_name: t.email for t in 
+            teacher_email = {t.full_name: t.email for t in
                 UserProfile.objects.filter(institute=institute, is_teacher=True)}
             teacher_guess = {}
 
             for t in soup.leerkrachten.findAll('leerkracht'):
-                 
- 
+
+
 
 
         else:
@@ -68,17 +68,17 @@ def process_institute(request):
     return render(request, 'upload.html', {'form': form})
 
 def _full_name(node):
-    
 
 
-def process_teachers(request): 
+
+def process_teachers(request):
     if not request.user.is_staff:
         return HttpResponse(status=401)
-            
+
     if request.method == 'POST':
         form = InstituteForm(request.POST)
         if form.is_valid():
-            pass 
+            pass
         else:
             return render(request, 'done.html', {
                 'error': "The submitted form was not valid: (%s)" % (
@@ -90,7 +90,7 @@ def process_teachers(request):
 def process_groups(request):
     if not request.user.is_staff:
         return HttpResponse(status=401)
-            
+
     if request.method == 'POST':
         form = EdeXmlForm(request.POST, request.FILES)
         if form.is_valid():
@@ -102,7 +102,7 @@ def process_groups(request):
     else:
         form = EdeXmlForm()
     return render(request, 'upload.html', {'form': form})
-    
+
     try:
         importer = EdeXMLImporter
         importer.parse_all()
@@ -128,7 +128,7 @@ def process_groups(request):
             for m in s:
                 writer.writerow(m)
         return response
-        """ 
+        """
         return render(request, 'done.html', {
                 'teachers': importer.teachers,
                 'students': dict(importer.students),
@@ -148,13 +148,14 @@ def add_student(request):
                 codecult = Institute.objects.get(title='CodeCult')
                 name = EdeXmlImporter._join_names(
                     form.cleaned_data['first_name'],
+                    form.cleaned_data['last_name_prefix'],
                     form.cleaned_data['last_name'])
 
                 user_count = len(User.objects.filter(username__regex=r'^'+
-                    name+'.*'+codecult.email_domain+'$'))
+                    name+'.*'+str(codecult.pk)+'$'))
                 if user_count > 0:
                     name += str(user_count+1)
-                kwargs['username'] = name+'@'+codecult.email_domain
+                kwargs['username'] = name+'@'+str(codecult.pk)
 
                 password = form.cleaned_data['password']
                 if password == '':
@@ -164,12 +165,14 @@ def add_student(request):
                 for key in ['first_name', 'last_name', 'email']:
                     kwargs[key] = form.cleaned_data[key]
 
-                user = User.objects.create(**kwargs)
+                user = User.objects.create_user(**kwargs)
                 profile = UserProfile.objects.create(user=user,
-                    institute=codecult)
+                    institute=codecult,
+                    alias=name+'@'+codecult.email_domain,
+                    surname_prefixes=form.cleaned_data['last_name_prefix'])
 
-                Membership.objects.create(user=profile, 
-                    group=form.cleaned_data['group'], 
+                Membership.objects.create(user=profile,
+                    group=form.cleaned_data['group'],
                     role=Role.objects.get(role='Student'))
 
             except Exception as e:
@@ -179,9 +182,13 @@ def add_student(request):
                 return render(request, 'student.html', {
                     'error': "An error occured while importing: '%s'" % (e,)})
             else:
+                res = [('first_name', kwargs['first_name'])]
+                res.append(('last_name', form.cleaned_data['last_name_prefix']+
+                    ' '+kwargs['last_name']))
+                res.append(('username', name+'@'+codecult.email_domain))
+                res += [(e, kwargs[e]) for e in ['email', 'password']]
                 return render(request, 'student.html', {
-                        'data': [(e, kwargs[e]) for e in ['first_name', 
-                            'last_name', 'email', 'username', 'password']]})
+                        'data': res})
         else:
             return render(request, 'student.html', {
                 'error': "The submitted form was not valid: (%s)" % (

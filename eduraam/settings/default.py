@@ -42,12 +42,14 @@ INSTALLED_APPS = [
     'corsheaders',
     'kb.events',
     'kb.apps',
+    'kb.inbox',
     'kb.collections',
     'kb.groups',
     'kb.lvs',
     'kb.settings',
     'kb.permissions',
     'kb.badges',
+    'kb.questions',
     'kb.skills.apps.SkillsConfig',
     'kb',
     'launch',
@@ -79,6 +81,9 @@ CONNECTORS = {
     'codeorg': 'connectors.codeorg.Connector',
     'scratch': 'connectors.scratch.Connector'
 }
+
+SCRATCH_SIGNUP_EMAIL = "butler.melvin+scratch@perceptum.nl"
+SCRATCH_SIGNUP_COUNTRY = "Netherlands"
 
 ROOT_URLCONF = 'eduraam.urls'
 
@@ -122,23 +127,27 @@ LOGGING = {
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL)),
             'formatter': 'basic',
         },
         'coded-console': {
             'class': 'logging.StreamHandler',
-            'level': os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('H_CONSOLE_LOG_LEVEL', LOG_LEVEL)),
             'formatter': 'coded',
         }
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('DJANGO_LOG_LEVEL', LOG_LEVEL)),
         },
         'connectors': {
             'handlers': ['coded-console'],
-            'level': os.getenv('CONNECTORS_LOG_LEVEL', LOG_LEVEL),
+            'level': int(os.getenv('CONNECTORS_LOG_LEVEL', LOG_LEVEL)),
+        },
+        'kb.events': {
+            'handlers': ['coded-console'],
+            'level': int(os.getenv('EVENT_LOG_LEVEL', LOG_LEVEL)),
         }
     }
 }
@@ -184,6 +193,7 @@ LOG_CODES = {
     410: "Unexpected login failure with %(token)s",
     411: "Signup failed for %(user)s",
     412: "Could not set language to %(lang)s for %(user)s",
+    420: "Could not create event",
 
     501: "Something unexpected happened: %(error)s",
     502: "Unknown debug log code: %(code)s",
@@ -204,6 +214,10 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Codecult] "
+
+DEFAULT_FROM_EMAIL = "info@codecult.nl"
 
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -229,9 +243,9 @@ REST_FRAMEWORK = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'nl-NL'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 

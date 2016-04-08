@@ -39,7 +39,7 @@ class Connector(BaseConnector):
         try:
             authenticity_token = cls.get_field_value_from_url(
                 token, cls.LOGIN_PAGE_URL, "authenticity_token")
-        except KeyError:
+        except (KeyError, TypeError):
             cls.debug(510, field="authenticity_token")
             return None
 
@@ -61,7 +61,7 @@ class Connector(BaseConnector):
         try:
             authenticity_token = cls.get_field_value_from_url(
                 token, login_page_url, "authenticity_token")
-        except KeyError:
+        except (KeyError, TypeError):
             cls.debug(510, field="authenticity_token")
             return None
 
@@ -129,10 +129,13 @@ class Connector(BaseConnector):
             cls.debug(411, user=user, info='No user email')
             return False
 
+        if not user.first_name and not user.last_name:
+            cls.debug(411, user=user, info='No first or last name known.')
+
         try:
             authenticity_token = cls.get_field_value_from_url(
                 token, cls.TEACHER_SIGNUP_PAGE, "authenticity_token")
-        except KeyError:
+        except (KeyError, TypeError):
             cls.debug(510, field="authenticity_token")
             cls.debug(411, user=user)
             return False
@@ -173,7 +176,7 @@ class Connector(BaseConnector):
             try:
                 authenticity_token = cls.get_field_value_from_url(
                     token, cls.HOME_PAGE, "authenticity_token")
-            except KeyError:
+            except (KeyError, TypeError):
                 cls.debug(510, field="authenticity_token")
                 cls.debug(411, user=user)
                 return False
@@ -208,6 +211,10 @@ class Connector(BaseConnector):
         from kb.groups.models import Group, Membership, Role
         from kb.apps.models import App
         from accounts.models import AppAccount
+
+        if not user.first_name and not user.last_name:
+            cls.debug(411, user=user, info='No first or last name known.')
+
         unpacked = unpack_token(token)
         #Get the first teacher of this users group
         group = Group.objects.get(pk=unpacked['group'])
@@ -315,7 +322,7 @@ class Connector(BaseConnector):
             try:
                 authenticity_token = cls.get_field_value_from_url(
                     token, cls.HOME_PAGE, "authenticity_token")
-            except KeyError:
+            except (KeyError, TypeError):
                 cls.debug(510, field="authenticity_token")
                 cls.debug(411, user=user)
                 return False
