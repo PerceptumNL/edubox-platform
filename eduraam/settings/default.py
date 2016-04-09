@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'kb.badges',
     'kb.questions',
     'kb.skills.apps.SkillsConfig',
+    'kb.releases',
     'kb',
     'launch',
     'accounts',
