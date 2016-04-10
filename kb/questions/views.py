@@ -36,7 +36,9 @@ The following question was asked on the Codecult platform by %(user)s of
 %(institute)s:
 
 \"\"\"
+
 %(question)s
+
 \"\"\"
 
 To answer this question go to the following link and provide the answer.
@@ -55,7 +57,8 @@ The CodeCult Platform
                 'backend_url': reverse(
                     "admin:questions_question_change",
                     args=(question_obj.pk,),
-                    subdomain='backend')},
+                    subdomain='backend',
+                    scheme=request.scheme)},
             settings.DEFAULT_FROM_EMAIL,
             settings.MODERATOR_EMAILS,
             fail_silently=True)
