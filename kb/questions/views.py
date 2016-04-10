@@ -35,9 +35,9 @@ Dear moderator,
 The following question was asked on the Codecult platform by %(user)s of
 %(institute)s:
 
----
+\"\"\"
 %(question)s
----
+\"\"\"
 
 To answer this question go to the following link and provide the answer.
 %(backend_url)s
