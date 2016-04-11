@@ -78,14 +78,16 @@ class CodeRepetition(Parser):
         if self.occurences == [] or self.occurences[0] == node:
             self.occurences.append(node)
         else:
-            if len(self.occurences) >= self.min_count:
-                self.state.append(self.occurences[:])
+            self._check_occ() 
             self.occurences = [node]
 
     def exit(self):
-        if len(self.occurences) >= self.min_count:
-            self.state.append(self.occurences[:])
+        self._check_occ() 
         self.occurences = []
+    
+    def _check_occ(self):
+        if len(self.occurences) >= self.min_count:
+            self.state.append(self.occurences)
 
 class Dialect(object):
     starting_blocks = ['whenGreenFlag', 'whenKeyPressed', 'whenClicked',
