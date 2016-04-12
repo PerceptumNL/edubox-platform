@@ -49,7 +49,8 @@ def get_skills(request):
     group = request.GET.get('group')
     if group is not None:
         group = get_object_or_404(Group, pk=group)
-        if not request.user.profile.is_teacher(group):
+        if not (request.user.is_superuser or
+                request.user.profile.is_teacher(group)):
             return HttpResponse(status=403)
 
         group_skill_export = []
