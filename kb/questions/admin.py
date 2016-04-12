@@ -7,9 +7,9 @@ class QuestionAdmin(SummernoteModelAdmin):
     list_display = ('user', 'short_question', 'location', 'final_answer')
     list_filter = ('final_answer',)
     readonly_fields = ('full_user_description', 'question', 'answered',
-                       'full_location')
-    fields = ('answered', 'full_user_description', 'full_location', 'question',
-              'answer', 'final_answer')
+                       'full_location', 'full_browser_location')
+    fields = ('answered', 'full_user_description', 'full_location',
+              'full_browser_location', 'question', 'answer', 'final_answer')
 
     def full_location(self, instance):
         from django.conf import settings
@@ -17,6 +17,15 @@ class QuestionAdmin(SummernoteModelAdmin):
                 'domain': settings.FRONTEND_URL,
                 'location': instance.location }
     full_location.allow_tags = True
+
+    def full_browser_location(self, instance):
+        from django.conf import settings
+        if instance.browser_location:
+            return "<a href='%(location)s'>%(location)s</a>" % {
+                    'location': instance.browser_location }
+        else:
+            return "Browser was not used during this question."
+    full_browser_location.allow_tags = True
 
     def full_user_description(self, instance):
         return "%(full_name)s of %(institute)s (%(username)s)" % {

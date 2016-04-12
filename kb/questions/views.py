@@ -17,12 +17,16 @@ def ask_question(request):
     except (ValueError, TypeError):
         return HttpResponse('Unsupported data type', status=400)
 
-    if not ('question' in payload and 'location' in payload):
+    if not ('question' in payload and 'location' in payload
+            and 'browser' in payload):
         return HttpResponse('Missing parameters', status=400)
+
+    payload['browser'] = payload['browser'] or ""
 
     from .models import Question
     question_obj = Question.objects.create(user=request.user.profile,
                                            question=payload['question'],
+                                           browser_location=payload['browser'],
                                            location=payload['location'])
 
     # Notify moderators that a question was asked.

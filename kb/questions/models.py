@@ -3,6 +3,7 @@ from django.db import models
 class Question(models.Model):
     user = models.ForeignKey('kb.UserProfile')
     question = models.TextField()
+    browser_location = models.CharField(max_length=2000, default='')
     location = models.CharField(max_length=2000)
     answer = models.TextField()
     final_answer = models.BooleanField(default=False)
