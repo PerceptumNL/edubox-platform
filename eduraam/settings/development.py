@@ -15,7 +15,8 @@ SITE_ID = 1
 CORS_ORIGIN_WHITELIST = ('platform.codecult.local:9000', 'codecult.local:9000')
 CORS_ALLOW_CREDENTIALS = True
 
-LOGIN_REDIRECT_URL = "http://platform.codecult.local:9000"
+FRONTEND_URL = "http://platform.codecult.local:9000"
+LOGIN_REDIRECT_URL = FRONTEND_URL
 ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
 
 ROUTER_PROTOCOL = 'http'
