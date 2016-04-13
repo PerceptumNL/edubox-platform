@@ -2,10 +2,39 @@ from django.contrib import admin
 from django_summernote.admin import SummernoteModelAdmin
 from .models import Question
 
+class InstituteFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = 'institute'
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'institute'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        from kb.groups.models import Institute
+        return Institute.objects.all().values_list('pk','title')
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value():
+            return queryset.filter(user__institute__pk=self.value())
+
+
 class QuestionAdmin(SummernoteModelAdmin):
     model = Question
     list_display = ('user', 'short_question', 'location', 'datetime', 'final_answer')
-    list_filter = ('final_answer',)
+    list_filter = ('final_answer', InstituteFilter)
 
     def full_location(self, instance):
         from django.conf import settings
