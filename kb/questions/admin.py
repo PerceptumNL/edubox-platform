@@ -4,12 +4,8 @@ from .models import Question
 
 class QuestionAdmin(SummernoteModelAdmin):
     model = Question
-    list_display = ('user', 'short_question', 'location', 'final_answer')
+    list_display = ('user', 'short_question', 'location', 'datetime', 'final_answer')
     list_filter = ('final_answer',)
-    readonly_fields = ('full_user_description', 'question', 'answered',
-                       'full_location', 'full_browser_location')
-    fields = ('answered', 'full_user_description', 'full_location',
-              'full_browser_location', 'question', 'answer', 'final_answer')
 
     def full_location(self, instance):
         from django.conf import settings
@@ -33,10 +29,22 @@ class QuestionAdmin(SummernoteModelAdmin):
                 'institute': instance.user.institute,
                 'username': instance.user.user.username }
 
-    def get_readonly_fields(self, request, obj):
-        fields = super().get_readonly_fields(request, obj)
-        if obj.final_answer:
-            fields += ('answer',)
+    def get_fields(self, request, obj=None):
+        if obj is None:
+            return ('user', 'datetime', 'location', 'browser_location',
+                    'question')
+        else:
+            return  ('answered', 'full_user_description', 'datetime',
+                     'full_location', 'full_browser_location', 'question',
+                     'answer', 'final_answer')
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = ('answered',)
+        if obj is not None:
+            fields += ('full_user_description', 'question', 'datetime',
+                      'full_location', 'full_browser_location')
+            if obj.final_answer:
+                fields += ('answer',)
         return fields
 
     def short_question(self, instance):

@@ -1,13 +1,18 @@
 from django.db import models
+from django.utils import timezone
 
 class Question(models.Model):
     user = models.ForeignKey('kb.UserProfile')
     question = models.TextField()
-    browser_location = models.CharField(max_length=2000, default='')
+    browser_location = models.CharField(max_length=2000, default='', blank=True)
     location = models.CharField(max_length=2000)
     answer = models.TextField()
     final_answer = models.BooleanField(default=False)
     answered = models.BooleanField(default=False)
+    datetime = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ('-datetime',)
 
     def __str__(self):
         return self.question[:20]
