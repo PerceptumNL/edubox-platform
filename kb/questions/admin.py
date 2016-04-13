@@ -33,8 +33,17 @@ class InstituteFilter(admin.SimpleListFilter):
 
 class QuestionAdmin(SummernoteModelAdmin):
     model = Question
-    list_display = ('user', 'short_question', 'location', 'datetime', 'final_answer')
+    search_fields = (
+        'user__user__username',
+        'user__user__email',
+        'user__alias',
+        'user__user__last_name',
+        'user__user__first_name',
+        'user__institute__title')
+    list_display = ('short_question', 'full_user_description', 'location',
+                    'datetime', 'final_answer')
     list_filter = ('final_answer', InstituteFilter)
+    list_display_links = ('short_question',)
 
     def full_location(self, instance):
         from django.conf import settings
@@ -57,6 +66,13 @@ class QuestionAdmin(SummernoteModelAdmin):
                 'full_name': instance.user.full_name,
                 'institute': instance.user.institute,
                 'username': instance.user.user.username }
+    full_user_description.short_description = "User"
+
+    def short_question(self, instance):
+        if len(instance.question) > 50:
+            return instance.question[:50]+"..."
+        else:
+            return instance.question
 
     def get_fields(self, request, obj=None):
         if obj is None:
@@ -75,11 +91,5 @@ class QuestionAdmin(SummernoteModelAdmin):
             if obj.final_answer:
                 fields += ('answer',)
         return fields
-
-    def short_question(self, instance):
-        if len(instance.question) > 30:
-            return instance.question[:30]+"..."
-        else:
-            return instance.question
 
 admin.site.register(Question, QuestionAdmin)
