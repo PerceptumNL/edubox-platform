@@ -41,9 +41,7 @@ def get_user_info(request):
             show_group = True
 
         if show_group:
-            members = Membership.objects.filter(group=group).exclude(
-                user=request.user.profile)
-
+            members = Membership.objects.filter(group=group)
             return JsonResponse({'info': {
                 member.user.user.pk: _get_user_info_dict(member.user.user) for
                     member in members }})
