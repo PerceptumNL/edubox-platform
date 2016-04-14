@@ -1,26 +1,57 @@
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
 from allauth.account.views import PasswordChangeView
 
 from kb.helpers import unpack_token
 from kb.apps.models import App
 
+def _get_user_info_dict(user):
+    name = user.profile.full_name.strip()
+    if not name and user.profile.alias:
+        name = user.profile.alias.split('@')[0]
+    elif not name:
+        name = user.username.split('@')[0]
+
+    from django.utils import timezone
+    local_tz = timezone.get_current_timezone()
+
+    return {'name': name,
+            'last_login': user.last_login.astimezone(local_tz).strftime(
+                "%d-%m-%Y %H:%M") if user.last_login else None,
+            'isTeacher': user.profile.is_teacher()}
+
 def get_user_info(request):
     if not request.user.is_authenticated():
         return HttpResponse(status=401)
 
-    name = request.user.profile.full_name.strip()
-    if not name and request.user.profile.alias:
-        name = request.user.profile.alias.split('@')[0]
-    elif not name:
-        name = request.user.username.split('@')[0]
+    group_id = request.GET.get('group')
+    if group_id is not None:
+        from kb.groups.models import Group, Membership
+        group = get_object_or_404(Group, pk=int(group_id))
+        if not request.user.is_superuser:
+            try:
+                membership = Membership.objects.get(
+                    user=request.user.profile, group=group)
+            except Membership.DoesNotExist:
+                return HttpResponse(status=403);
+            else:
+                show_group = (membership.role.role == 'Teacher')
+        else:
+            show_group = True
 
-    return JsonResponse({
-        'info': {
-            'name': name,
-            'isTeacher': request.user.profile.is_teacher()
-        }
-    })
+        if show_group:
+            members = Membership.objects.filter(group=group).exclude(
+                user=request.user.profile)
+
+            return JsonResponse({'info': {
+                member.user.user.pk: _get_user_info_dict(member.user.user) for
+                    member in members }})
+        else:
+            return HttpResponse(status=403);
+    else:
+        return JsonResponse({
+            'info': _get_user_info_dict(request.user) })
 
 def login_user_into_app(request):
     if not request.user.is_authenticated():
