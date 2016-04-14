@@ -49,6 +49,7 @@ def list_all(request):
                 app.pk).decode('utf-8')
             login_url = "%s?token=%s" % (login_base, token)
         else:
+            token = None
             login_url = None
 
         challenges.append({
@@ -56,6 +57,7 @@ def list_all(request):
             'label': challenge.label,
             'url': route_links_in_text(request, challenge.url, group),
             'login': login_url,
+            'token': token,
             'details': "%s/?group=%s" % (
                 reverse("collections_challenge_detail", args=(challenge.pk,),
                         subdomain="api",scheme=request.scheme),
