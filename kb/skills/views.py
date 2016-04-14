@@ -54,7 +54,8 @@ def get_skills(request):
             return HttpResponse(status=403)
 
         group_skill_export = []
-        for member in Membership.objects.filter(group=group):
+        for member in Membership.objects.filter(group=group).order_by(
+                'role__role', 'user__user__last_name'):
             group_skill_export.append({
                 'id': member.user.user.pk,
                 'role': member.role.role,
