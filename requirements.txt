@@ -11,7 +11,7 @@ django-appconf==1.0.1
 django-compressor==1.5
 django-cors-headers==1.1.0
 django-jsonfield==0.9.16
-django-subdomains==2.0.4
+-e git+https://github.com/tkaemming/django-subdomains.git@db7f08db7586ba7b4f713aebb83daf2621edde6b#egg=django_subdomains-master
 django-summernote==0.8.3
 django-toolbelt==0.0.1
 djangorestframework==3.3.2
