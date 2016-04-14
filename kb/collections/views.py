@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from kb.helpers import create_token
 from .models import LearningUnit, Challenge
 from kb.groups.models import Group
-from launch.helpers import route_links_in_text
+from launch.helpers import route_links_in_text, get_app_by_url
 
 from .events import * # TODO: Find a better place for loading this.
 
@@ -41,10 +41,21 @@ def list_all(request):
     challenges = []
     # TODO: Actually make this list group dependant.
     for challenge in Challenge.objects.all():
+        app = get_app_by_url(challenge.url)
+        if app is not None:
+            token = create_token(
+                request.user.pk,
+                group.pk,
+                app.pk).decode('utf-8')
+            login_url = "%s?token=%s" % (login_base, token)
+        else:
+            login_url = None
+
         challenges.append({
             'id': challenge.pk,
             'label': challenge.label,
             'url': route_links_in_text(request, challenge.url, group),
+            'login': login_url,
             'details': "%s/?group=%s" % (
                 reverse("collections_challenge_detail", args=(challenge.pk,),
                         subdomain="api",scheme=request.scheme),

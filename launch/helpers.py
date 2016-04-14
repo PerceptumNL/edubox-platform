@@ -1,5 +1,20 @@
 import re
 
+def get_app_by_url(url, group=None, apps=None):
+    if apps is None:
+        if group is None:
+            from kb.apps.models import App
+            apps = App.objects.all()
+        else:
+            apps = group.apps.all()
+
+    for app in apps:
+        if re.match(app.identical_urls, url):
+            break
+    else:
+        return None
+    return app
+
 def get_routed_url(request, url, domain=None):
     from urllib.parse import urlsplit, urlunsplit
     from binascii import b2a_hex
@@ -30,11 +45,9 @@ def route_links_in_text(request, text, group, apps=None):
     apps = apps or group.apps.all()
     links = re.findall(rgx, text)
     for link in links:
-        for app in apps:
-            if re.match(app.identical_urls, link):
-                break
-        else:
-            break
+        app = get_app_by_url(link, apps=apps)
+        if app is None:
+           continue
 
         token = create_token(
             request.user.pk,
