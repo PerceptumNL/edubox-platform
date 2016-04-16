@@ -51,5 +51,3 @@ ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
 
 ROUTER_PROTOCOL = os.environ.get('ROUTER_PROTOCOL', None)
 ROUTER_DOMAIN = 'codecult.nl'
-
-locale.setlocale(locale.LC_ALL, 'nl_NL.utf8')

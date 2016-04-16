@@ -249,7 +249,10 @@ REST_FRAMEWORK = {
 
 LANGUAGE_CODE = 'nl-NL'
 import locale
-locale.setlocale(locale.LC_ALL, 'nl_NL')
+try:
+    locale.setlocale(locale.LC_ALL, 'nl_NL.utf8')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, 'nl_NL')
 
 from django.utils.translation import ugettext_lazy as _
 LANGUAGES = [
