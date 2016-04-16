@@ -18,7 +18,7 @@ def _get_user_info_dict(user):
 
     return {'name': name,
             'last_login': user.last_login.astimezone(local_tz).strftime(
-                "%d-%m-%Y %H:%M") if user.last_login else '-',
+                "%d %B %H:%M") if user.last_login else '-',
             'isTeacher': user.profile.is_teacher()}
 
 def get_user_info(request):

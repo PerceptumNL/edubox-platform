@@ -66,6 +66,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'kb.middleware.ContextTokenProcessingMiddleware',
     'subdomains.middleware.SubdomainURLRoutingMiddleware',
@@ -247,6 +248,14 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
 LANGUAGE_CODE = 'nl-NL'
+import locale
+locale.setlocale(locale.LC_ALL, 'nl_NL')
+
+from django.utils.translation import ugettext_lazy as _
+LANGUAGES = [
+    ('en-US', _('English')),
+    ('nl-NL', _('Dutch')),
+]
 
 TIME_ZONE = 'Europe/Amsterdam'
 
