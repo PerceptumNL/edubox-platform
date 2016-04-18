@@ -4,16 +4,20 @@ from django.dispatch import receiver
 from django.dispatch import Signal
 from kb.events.models import CompiledEvent
 
+from codelib.dialects.codeorg.parser import CodeOrgDialect
+from codelib.dialects.js.parser import JavaScriptDialect
+from codelib.dialects.scratch.parser import ScratchDialect
+
 code_parsed = Signal(providing_args=["user", "code", "code_type"])
 
 @receiver(post_save, sender=CompiledEvent)
 def handle_code_compilation(sender, instance, **kwargs):
     if instance.code_type == "codeorg-blockly":
-        from connectors.codeorg.parser import codeorg_parse
-        code = codeorg_parse(instance.code)
+        code = CodeOrgDialect(instance.code)
     elif instance.code_type == "javascript":
-        from codelib.dialects.js import Dialect
-        code = Dialect(instance.code)
+        code = JavaScriptDialect(instance.code)
+    elif instance.code_type == "scratch":
+        code = ScratchDialect(instance.code)
     else:
         code = None
 

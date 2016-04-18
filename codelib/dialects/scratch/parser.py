@@ -1,5 +1,7 @@
 import json
 
+from codelib.dialects import Dialect
+
 class Node(object):
     control_blocks = ['doIf', 'doIfElse', 'doUntil', 'doRepeat', 'doForever']
 
@@ -48,6 +50,7 @@ class StartNode(Node):
 
 class Parser(object):
     def __init__(self):
+        self.done = False
         self.state = []
     
     def enter(self, node_type, node):
@@ -60,6 +63,7 @@ class Parser(object):
         pass
 
     def result(self):
+        self.done = True
         return self.state
 
 class ParserList(Parser):
@@ -92,7 +96,33 @@ class GetControlNode(Parser):
    
 class HasControlNode(GetControlNode):
     def result(self):
-        return len(self.state) > 0
+        return len(super().result()) > 0
+
+class GetSequenceCounts(Parser):
+    def __init__(self):
+        super().__init__()
+        self.count = 0
+        self.depth = 0
+    
+    def enter(self, node_type, node):
+        depth += 1
+    
+    def node(self, node):
+        self.count += 1
+
+    def exit(self):
+        depth -= 1
+        if depth == 0:
+            self.state.append(self.count)
+            self.count = 0
+
+class HasSequenceLength(GetSequenceCounts):
+    def __init__(self, min_length):
+        super().__init__()
+        self.min_length = min_length
+    
+    def result(self):
+        return max(super().result()) >= self.min_length
 
 class CodeRepetition(Parser):
     def __init__(self, min_count):
@@ -115,31 +145,53 @@ class CodeRepetition(Parser):
         if len(self.occurences) >= self.min_count:
             self.state.append(self.occurences)
 
-class Dialect(object):
+class ScratchDialect(Dialect):
     starting_blocks = ['whenGreenFlag', 'whenKeyPressed', 'whenClicked',
         'whenSceneStarts', 'whenSensorGreaterThan', 'whenIReceive', 
         'whenCloned', 'procDef']
 
-    parser_def = {
-        'has_if': HasControlNode('If'),
-        'has_ifelse': HasControlNode('Else'),
-        'has_loop': HasControlNode('Forever'),
-        'has_while': HasControlNode('Until'),
-        'get_if': GetControlNode('If'),
-        'repeats': CodeRepetition(3)
-    }
-
     def __init__(self, code):
         self.code = json.loads(code)['children']
+
+        self.parser_def = {
+            'has_seq': HasSequenceLength(2),
+            'has_if': HasControlNode('If'),
+            'has_ifelse': HasControlNode('Else'),
+            'has_for': HasControlNode('Repeat'),
+            'has_while': HasControlNode('Until'),
+            'has_loop': HasControlNode('Forever'),
+            'get_if': GetControlNode('If'),
+            'repeats': CodeRepetition(3)
+        }
+
+        self.parse('has_seq', 'has_if', 'has_ifelse', 'has_for', 'has_while')
     
+
     def parse(self, *parsers):
-        parser_list = ParserList([self.parser_def[parser] for parser in parsers])
+        parser_list = ParserList([self.parser_def[parser] for parser in 
+            parsers if not parser.done])
+        
+        if len(parser_list) > 0:
+            for sprite in self.code:
+                for elem in sprite.get('scripts', []):
+                    line = elem[2]
+                    if line[0][0] in self.starting_blocks:
+                        StartNode(line[0], line[1:]).walk(parser_list)
+        
+        return [self.parser_def[parser].result() for parser in parsers]
 
-        for sprite in self.code:
-            for elem in sprite.get('scripts', []):
-                line = elem[2]
-                if line[0][0] in self.starting_blocks:
-                    StartNode(line[0], line[1:]).walk(parser_list)
+    def has_seq(self):
+        return self.parse('has_seq')[0]
 
-        return parser_list.result()
+    def has_if(self):
+        return self.parse('has_if')[0]
+
+    def has_ifelse(self):
+        return self.parse('has_ifelse')[0]
     
+    def has_for(self):
+        return self.parse('has_for')[0]
+    
+    def has_while(self):
+        return self.parse('has_while')[0]
+

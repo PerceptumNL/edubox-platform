@@ -4,6 +4,8 @@ from .ECMAScriptLexer import ECMAScriptLexer
 from .ECMAScriptParser import ECMAScriptParser
 from .ECMAScriptListener import ECMAScriptListener
 
+from codelib.dialects import Dialect
+
 class ScriptListener(ECMAScriptListener):
 
     dialect = None
@@ -59,7 +61,7 @@ class ScriptListener(ECMAScriptListener):
             bool(ctx.Else())
         )
 
-class Dialect(object):
+class JavaScriptDialect(Dialect):
     statements = None
     """
     A dictionary of statement types, each holding a list of tuples describing
@@ -71,9 +73,9 @@ class Dialect(object):
      while - While loop (conditional string,)
      if - If (conditional string, has_else)
     """
-    lines = 0
 
     def __init__(self, filename, *args, **kwargs):
+        self.lines = 0
         self.statements = { 'function': [],
                             'for': [],
                             'while': [],
@@ -107,3 +109,18 @@ class Dialect(object):
         listener = ScriptListener(self)
         walker = ParseTreeWalker()
         walker.walk(listener, parser.program())
+
+    def has_seq(self):
+        return self.lines > 1
+    
+    def has_if(self):
+        return len(self.get('if')) > 0
+    
+    def has_ifelse(self):
+        return len(self.get('if', lambda x: x[1])) > 0
+    
+    def has_for(self):
+        return len(self.get('for')) > 0
+    
+    def has_while(self):
+        return len(self.get('while')) > 0

@@ -51,12 +51,8 @@ class CodeSkill(Skill):
 
     @classmethod
     def register_signals(cls):
-        from connectors.signals import parsed_submission
-        from codelib import Root
         from codelib.signals import code_parsed
-        from codelib.dialects import js
-        parsed_submission.connect(cls.extract_from_code, sender=Root)
-        #code_parsed.connect(cls.extract_from_code, sender=js.Dialect)
+        code_parsed.connect(cls.extract_from_code)
 
 
 class SequenceSkill(CodeSkill):
@@ -69,7 +65,7 @@ class SequenceSkill(CodeSkill):
     @classmethod
     def is_skill_in_code(cls, code):
         """Whether the submitted code exhibits this skill."""
-        return code.node_count() > 1
+        return code.has_seq()
 
 
 class IfSkill(CodeSkill):
@@ -82,8 +78,7 @@ class IfSkill(CodeSkill):
     @classmethod
     def is_skill_in_code(cls, code):
         """Whether the submitted code exhibits this skill."""
-        from codelib import IfElse
-        return code.contains(IfElse)
+        return code.has_if()
 
 
 class IfElseSkill(CodeSkill):
@@ -96,9 +91,7 @@ class IfElseSkill(CodeSkill):
     @classmethod
     def is_skill_in_code(cls, code):
         """Whether the submitted code exhibits this skill."""
-        from codelib import IfElse
-        return any(map(lambda s: s.else_block, code.find(IfElse)))
-
+        return code.has_ifelse()
 
 class ForSkill(CodeSkill):
     identification = 'code_skill_for'
@@ -110,9 +103,7 @@ class ForSkill(CodeSkill):
     @classmethod
     def is_skill_in_code(cls, code):
         """Whether the submitted code exhibits this skill."""
-        from codelib import For
-        return code.contains(For)
-
+        return code.has_for()
 
 class WhileSkill(CodeSkill):
     identification = 'code_skill_while'
@@ -124,5 +115,4 @@ class WhileSkill(CodeSkill):
     @classmethod
     def is_skill_in_code(cls, code):
         """Whether the submitted code exhibits this skill."""
-        from codelib import While
-        return code.contains(While)
+        return code.has_while()
