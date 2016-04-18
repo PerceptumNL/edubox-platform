@@ -1,6 +1,4 @@
 import json
-import unicodedata
-import requests
 
 class Node(object):
     control_blocks = ['doIf', 'doIfElse', 'doUntil', 'doRepeat', 'doForever']
@@ -145,9 +143,3 @@ class Dialect(object):
 
         return parser_list.result()
     
-
-d = Dialect(requests.get('https://cdn.projects.scratch.mit.edu/internalapi/project/104917701/get/411829921a3ecc03c0c685738c184fe9').text)
-
-for res in d.parse('get_if', 'has_while', 'repeats'):
-    print(res)
-
