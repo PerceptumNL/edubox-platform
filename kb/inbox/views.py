@@ -16,8 +16,8 @@ def message_list(request):
         message_list.append({
             'id': message.pk,
             'title': message.title,
-            'datetime': message.datetime.astimezone(local_tz).strftime(
-                "%d-%m-%Y %H:%M"),
+            'date': message.datetime.astimezone(local_tz).strftime(
+                "%d %B"),
             'summary': message.body[:250]})
 
     return JsonResponse({'messages': message_list})
