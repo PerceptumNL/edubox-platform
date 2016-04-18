@@ -4,10 +4,11 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 
 from kb.helpers import create_token
-from .models import LearningUnit, Challenge
 from kb.groups.models import Group
-from launch.helpers import route_links_in_text, get_app_by_url
+from kb.events.models import GenericEvent
+from launch.helpers import route_links_in_text, get_app_by_url, get_routed_app_url
 
+from .models import LearningUnit, Challenge
 from .events import * # TODO: Find a better place for loading this.
 
 def list_all(request):
@@ -121,6 +122,68 @@ def list_challenges(request):
             })
 
     return JsonResponse({'challenges': challenges})
+
+def unit_detail(request, unit_id):
+    """Return unit info and activities."""
+    if not request.user.is_authenticated():
+        return HttpResponse(status=401)
+
+    group_id = request.GET.get('group', None)
+    if group_id is None:
+        return HttpResponse(status=400)
+
+    group = get_object_or_404(Group, pk=int(group_id))
+    unit = get_object_or_404(LearningUnit, pk=int(unit_id))
+
+    url_from_activity = (lambda a, g, r: "%s?token=%s" % (
+        get_routed_app_url(r, a.app, a.url),
+        create_token(r.user.pk, g.pk, a.app.pk).decode('utf-8')))
+
+    next_activity = unit.get_next_activity_for_user(request.user)
+    if next_activity is not None:
+        token = create_token(
+            request.user.pk,
+            group.pk,
+            next_activity.app.pk).decode('utf-8')
+        login_base = reverse('app_login', subdomain='accounts',
+                scheme=request.scheme)
+        login_url = "%s?token=%s" % (login_base, token)
+    else:
+        login_url = None
+
+    fn_cutoff_protocol = lambda u: u.replace('https:','').replace('http:','')
+
+    activities = unit.activities.all()
+    completed_activities = unit.activities.filter(
+        completed_by=request.user.profile)
+    progress = {}
+    for activity in completed_activities:
+        progress[fn_cutoff_protocol(activity.url)] = 'completed'
+    activity_urls = []
+    for activity in activities:
+        if fn_cutoff_protocol(activity.url) not in progress:
+            activity_urls.append(fn_cutoff_protocol(activity.url))
+
+    activity_events = GenericEvent.objects.filter(obj__in=activity_urls,
+            user=request.user)
+    for activity_event in activity_events:
+        progress[activity_event.obj] = 'pending'
+
+    return JsonResponse({
+            'id': unit.pk,
+            'completed': not bool(next_activity),
+            'label': unit.label,
+            'login': login_url,
+            'launch': url_from_activity(next_activity, group, request) if \
+                    next_activity else None,
+            'token': token,
+            'activities': [{
+                'id': activity.id,
+                'state': progress.get(fn_cutoff_protocol(activity.url),
+                    'unstarted'),
+                'launch': url_from_activity(activity, group, request),
+                'label': activity.label} for activity in activities]
+    })
 
 def challenge_detail(request, challenge_id):
     if not request.user.is_authenticated():
