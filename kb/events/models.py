@@ -67,12 +67,12 @@ class Event(models.Model):
                     "DATETIME_FORMAT"),
                 }
 
-    def create(app, group, user, verb, obj, result=None, timestamp=None):    
+    def create(app, group, user, verb, obj, result=None, timestamp=None):
         try:
             _verb = Verb.objects.get(iri=verb)
             kwargs = {'user': User.objects.get(pk=user),
                       'verb': verb,
-                      'obj': obj,
+                      'obj': obj.replace('https:','').replace('http:',''),
                       'group': Group.objects.get(pk=group),
                       'app': App.objects.get(pk=app)
                       }
