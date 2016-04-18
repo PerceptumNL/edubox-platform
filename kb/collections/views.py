@@ -173,6 +173,7 @@ def unit_detail(request, unit_id):
             'id': unit.pk,
             'completed': not bool(next_activity),
             'label': unit.label,
+            'description': unit.description,
             'login': login_url,
             'launch': url_from_activity(next_activity, group, request) if \
                     next_activity else None,
