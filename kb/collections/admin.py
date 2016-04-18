@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import LearningUnit, Activity, ActivityCompletion
+from django_summernote.admin import SummernoteModelAdmin
+from .models import LearningUnit, Activity, ActivityCompletion, Challenge
+
+class ChallengeAdmin(SummernoteModelAdmin):
+    model = Challenge
 
 class ActivityCompletionAdmin(admin.ModelAdmin):
     list_display = ('user', 'user_full_name',
@@ -20,5 +24,6 @@ class ActivityCompletionAdmin(admin.ModelAdmin):
         return instance.user.institute.title
 
 admin.site.register(LearningUnit)
+admin.site.register(Challenge, ChallengeAdmin)
 admin.site.register(Activity)
 admin.site.register(ActivityCompletion, ActivityCompletionAdmin)

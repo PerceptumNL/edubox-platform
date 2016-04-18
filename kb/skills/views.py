@@ -49,11 +49,13 @@ def get_skills(request):
     group = request.GET.get('group')
     if group is not None:
         group = get_object_or_404(Group, pk=group)
-        if not request.user.profile.is_teacher(group):
+        if not (request.user.is_superuser or
+                request.user.profile.is_teacher(group)):
             return HttpResponse(status=403)
 
         group_skill_export = []
-        for member in Membership.objects.filter(group=group):
+        for member in Membership.objects.filter(group=group).order_by(
+                'role__role', 'user__user__last_name'):
             group_skill_export.append({
                 'id': member.user.user.pk,
                 'role': member.role.role,

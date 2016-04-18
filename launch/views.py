@@ -4,23 +4,7 @@ from django.conf import settings
 
 from kb.groups.models import Group
 from kb.helpers import create_token
-
-def get_routed_app_url(request, app, url='/'):
-    from urllib.parse import urlsplit, urlunsplit
-    from binascii import b2a_hex
-    from subdomains.utils import get_domain
-
-    parts = urlsplit(url)
-    domain = parts.netloc or urlsplit('http://'+app.root).netloc
-    hashed_domain = "%s.%s" % (
-        b2a_hex(bytes(domain, "utf-8")).decode("utf-8"), settings.ROUTER_DOMAIN)
-
-    return urlunsplit((
-        settings.ROUTER_PROTOCOL or parts.scheme or request.scheme,
-        hashed_domain,
-        parts.path,
-        parts.query,
-        parts.fragment))
+from .helpers import get_routed_app_url
 
 def launch_app(request, group_id, app_id):
     if not request.user.is_authenticated():

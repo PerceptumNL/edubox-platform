@@ -18,6 +18,7 @@ class Activity(models.Model):
 
 class LearningUnit(models.Model):
     label = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default='')
     activities = models.ManyToManyField(Activity, through='LearningUnitItem')
     order = models.PositiveSmallIntegerField(default=0)
     #TODO dependencies = models.ManyToManyField(Badge)
@@ -37,6 +38,12 @@ class LearningUnitItem(models.Model):
 
     class Meta:
         ordering = ('order',)
+
+
+class Challenge(models.Model):
+    label = models.CharField(max_length=255)
+    body = models.TextField()
+    url = models.URLField(max_length=255)
 
 
 class Collection(models.Model):

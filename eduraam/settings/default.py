@@ -42,13 +42,16 @@ INSTALLED_APPS = [
     'corsheaders',
     'kb.events',
     'kb.apps',
+    'kb.inbox',
     'kb.collections',
     'kb.groups',
     'kb.lvs',
     'kb.settings',
     'kb.permissions',
     'kb.badges',
+    'kb.questions',
     'kb.skills.apps.SkillsConfig',
+    'kb.releases',
     'kb',
     'launch',
     'accounts',
@@ -58,10 +61,12 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.openid',
     'connectors.apps.ConnectorsConfig',
+    'django_summernote',
 ]
 
 MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'kb.middleware.ContextTokenProcessingMiddleware',
     'subdomains.middleware.SubdomainURLRoutingMiddleware',
@@ -212,6 +217,11 @@ AUTHENTICATION_BACKENDS = [
 ACCOUNT_ADAPTER = "accounts.adapter.EduraamAccountAdapter"
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Codecult] "
+
+DEFAULT_FROM_EMAIL = "info@codecult.nl"
+MODERATOR_EMAILS = ["moderator@codecult.nl"]
 
 STATICFILES_FINDERS = [
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -237,9 +247,20 @@ REST_FRAMEWORK = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'nl-NL'
+import locale
+try:
+    locale.setlocale(locale.LC_ALL, 'nl_NL.utf8')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, 'nl_NL')
 
-TIME_ZONE = 'UTC'
+from django.utils.translation import ugettext_lazy as _
+LANGUAGES = [
+    ('en-US', _('English')),
+    ('nl-NL', _('Dutch')),
+]
+
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 

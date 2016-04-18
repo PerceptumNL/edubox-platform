@@ -21,6 +21,7 @@ from kb.apps.views import app_list
 
 urlpatterns = [
     url(r'^$', RedirectView.as_view(url="/admin"), name='redirect_to_admin'),
+    url(r'^summernote/', include('django_summernote.urls')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^accounts/', include('accounts.urls')),
     url(r'^api/', include('kb.urls')),

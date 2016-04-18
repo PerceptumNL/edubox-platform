@@ -61,7 +61,7 @@ def group_details(request, group_id):
         return HttpResponse(status=403);
 
     # TODO: Use permissions linked to the Role to determine access
-    if membership.role.role == "Teacher":
+    if request.user.is_superuser or membership.role.role == "Teacher":
         members = Membership.objects.filter(group=group).exclude(
             user=request.user.profile)
     else:
