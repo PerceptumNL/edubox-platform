@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         ('groups', '0009_auto_20160302_1651'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('apps', '0006_auto_20160306_1245'),
-        ('events', '0002_submittedevent'),
+        ('events', '0003_auto_20160418_1641'),
     ]
 
     operations = [
