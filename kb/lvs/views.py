@@ -27,7 +27,8 @@ def upload_edexml(request):
                 if settings.DEBUG:
                     raise e
                 return render(request, 'done.html', {
-                    'error': "An error occured while importing: '%s'" % (e,)})
+                    'error': "An error occured while importing: %s - '%s'" % 
+                        (type(e), e)})
             else:
                 response = HttpResponse(content_type='text/csv')
                 response['Content-Disposition'] = \

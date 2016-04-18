@@ -31,6 +31,8 @@ class Group(models.Model):
     tags = models.ManyToManyField('Tag', blank=True)
     imported = models.BooleanField(default=False)
 
+    inactive = models.BooleanField(default=False)
+
     class Meta:
         app_label = "groups"
 

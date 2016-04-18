@@ -77,8 +77,8 @@ class Event(models.Model):
                       'group': Group.objects.get(pk=group),
                       'app': App.objects.get(pk=app)
                       }
-        except (ObjectDoesNotExist, ValueError):
-            raise AttributeError()
+        except (ObjectDoesNotExist, ValueError) as err:
+            raise AttributeError(str(err))
 
         if timestamp:
             kwargs.update({'timestamp': timestamp})
