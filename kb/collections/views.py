@@ -135,9 +135,8 @@ def unit_detail(request, unit_id):
     group = get_object_or_404(Group, pk=int(group_id))
     unit = get_object_or_404(LearningUnit, pk=int(unit_id))
 
-    url_from_activity = (lambda a, g, r: "%s?token=%s" % (
-        get_routed_app_url(r, a.app, a.url),
-        create_token(r.user.pk, g.pk, a.app.pk).decode('utf-8')))
+    url_from_activity = (lambda a, r, t: "%s?token=%s" % (
+        get_routed_app_url(r, a.app, a.url), t))
 
     next_activity = unit.get_next_activity_for_user(request.user)
     if next_activity is not None:
@@ -175,14 +174,24 @@ def unit_detail(request, unit_id):
             'label': unit.label,
             'description': unit.description,
             'login': login_url,
-            'launch': url_from_activity(next_activity, group, request) if \
+            'launch': url_from_activity(next_activity, request, token) if \
                     next_activity else None,
             'token': token,
             'activities': [{
                 'id': activity.id,
                 'state': progress.get(fn_cutoff_protocol(activity.url),
                     'unstarted'),
-                'launch': url_from_activity(activity, group, request),
+                'token': create_token(
+                    request.user.pk,
+                    group.pk,
+                    activity.app.pk).decode('utf-8'),
+                'launch': url_from_activity(
+                    activity,
+                    request,
+                    create_token(
+                        request.user.pk,
+                        group.pk,
+                        activity.app.pk).decode('utf-8')),
                 'label': activity.label} for activity in activities]
     })
 
