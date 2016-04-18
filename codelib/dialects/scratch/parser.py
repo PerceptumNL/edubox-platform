@@ -122,7 +122,7 @@ class Dialect(object):
 
     parser_def = {
         'has_if': HasControlNode('If'),
-        'has_if': HasControlNode('Else'),
+        'has_ifelse': HasControlNode('Else'),
         'has_loop': HasControlNode('Forever'),
         'has_while': HasControlNode('Until'),
         'get_if': GetControlNode('If'),
