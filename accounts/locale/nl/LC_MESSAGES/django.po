@@ -52,7 +52,7 @@ msgstr ""
 
 #: templates/account/login.html:13 templates/account/login.html.py:46
 msgid "Log In"
-msgstr "Log in"
+msgstr "Inloggen"
 
 #: templates/account/login.html:25
 msgid "Username"
@@ -68,11 +68,11 @@ msgstr "Ik ben mijn wachtwoord vergeten"
 
 #: templates/account/login.html:60
 msgid "Log in with Google"
-msgstr "Log in met Google"
+msgstr "Inloggen met Google"
 
 #: templates/account/logout.html:13 templates/account/logout.html.py:23
 msgid "Log Out"
-msgstr "Log uit"
+msgstr "Uitloggen"
 
 #: templates/account/password_change.html:15
 #: templates/account/password_reset_from_key.html:15
