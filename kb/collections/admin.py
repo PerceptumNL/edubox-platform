@@ -6,7 +6,7 @@ class ChallengeAdmin(SummernoteModelAdmin):
     model = Challenge
 
 class ActivityCompletionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'user_full_name',
+    list_display = ('user', 'user_full_name', 'score',
                     'activity', 'datetime', 'institute')
     list_filter = ('user__institute',)
     search_fields = (

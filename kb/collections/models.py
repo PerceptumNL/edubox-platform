@@ -70,6 +70,7 @@ class ActivityCompletion(models.Model):
     activity = models.ForeignKey(Activity)
     user = models.ForeignKey(UserProfile)
     datetime = models.DateTimeField(auto_now_add=True)
+    score = models.FloatField()
 
     def __str__(self):
         return "%s completed %s" % (self.user, self.activity)

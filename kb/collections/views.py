@@ -8,7 +8,7 @@ from kb.groups.models import Group
 from kb.events.models import GenericEvent
 from launch.helpers import route_links_in_text, get_app_by_url, get_routed_app_url
 
-from .models import LearningUnit, Challenge
+from .models import LearningUnit, Challenge, ActivityCompletion
 from .events import * # TODO: Find a better place for loading this.
 
 def list_all(request):
@@ -153,11 +153,12 @@ def unit_detail(request, unit_id):
     fn_cutoff_protocol = lambda u: u.replace('https:','').replace('http:','')
 
     activities = unit.activities.all()
-    completed_activities = unit.activities.filter(
-        completed_by=request.user.profile)
+    activity_completions = ActivityCompletion.objects.filter(
+        user=request.user.profile)
     progress = {}
-    for activity in completed_activities:
-        progress[fn_cutoff_protocol(activity.url)] = 'completed'
+    for completion in activity_completions:
+        progress[fn_cutoff_protocol(completion.activity.url)] = (
+            'perfect' if completion.score == 100.0 else 'completed')
     activity_urls = []
     for activity in activities:
         if fn_cutoff_protocol(activity.url) not in progress:
