@@ -86,6 +86,7 @@ class Event(models.Model):
         subclass = ContentType.objects.get(app_label='events',
                 model=_verb.event_class.lower())
         instance = subclass.model_class().create(kwargs, result)
+        import q; q.d()
 
         #If creation of the instance with these kwargs failed
         if instance == None:
@@ -121,9 +122,11 @@ class ReadEvent(Event):
 
 class RatedEvent(Event):
     rating = models.IntegerField()
+    min_rating = models.IntegerField(default=0)
+    max_rating = models.IntegerField(default=5)
 
     def __str__(self):
-        return super(RatedEvent, self).__str__() + self.rating
+        return super(RatedEvent, self).__str__() + str(self.rating)
 
     def describe(self):
         """Return a dictionary-like object with key properties."""
@@ -134,8 +137,13 @@ class RatedEvent(Event):
         return desc
 
     def create(kwargs, res):
+        import q; q.d();
         try:
-            return RatedEvent.objects.create(rating=int(res), **kwargs)
+            return RatedEvent.objects.create(
+                rating=int(res['rating']),
+                min_rating=int(res['min_rating']),
+                max_rating=int(res['max_rating']),
+                **kwargs)
         except ValueError:
             return None
 
