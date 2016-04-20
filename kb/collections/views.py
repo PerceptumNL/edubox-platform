@@ -85,6 +85,8 @@ def list_units(request):
     # TODO: Actually make this list group dependant.
     for unit in LearningUnit.objects.order_by('order').all():
         activity = unit.get_next_activity_for_user(request.user)
+        if activity is None:
+            activity = unit.activities.first()
         token = create_token(
             request.user.pk,
             group.pk,
