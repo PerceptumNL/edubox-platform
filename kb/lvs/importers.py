@@ -71,6 +71,8 @@ class EdeXmlImporter(object):
 
         institute_group, created = Group.objects.get_or_create(
             title=self.institute.title, institute=self.institute, imported=True)
+        institute_group.inactive = False;
+        institute_group.save();
 
         groups = defaultdict(list)
         group = namedtuple('Group', ('key', 'year'))
@@ -89,19 +91,19 @@ class EdeXmlImporter(object):
                     self.groups[g.key] = self._create_group(
                         name, meta_group, g.year)
 
-    def _create_group(self, name, parent, year=None): 
+    def _create_group(self, name, parent, year=None):
         title = name
         # Do not add year annotation to single-year or meta groups
         if parent.title != self.institute.title:
             title +=' - ' + year
-        
+
         group, created = Group.objects.get_or_create(
             title=title, parent=parent, institute=self.institute, imported=True)
-        
+
         if created and year != None:
             t, c = Tag.objects.get_or_create(label='Jaargroep '+year)
             group.tags.add(t)
-      
+
         # Reactivate groups that already existed
         group.inactive = False
         group.save()
@@ -238,11 +240,11 @@ class EdeXmlImporter(object):
             # Only use the first part of last names
             if ind == len(args)-1:
                 arg = arg.split(' ')[0]
-            
+
             for char in string.punctuation:
                 arg = arg.replace(char, '')
             arg = arg.replace(' ', '.')
-            
+
             if ind != 0 and arg != '':
                 res += '.'
             res += arg.lower()
