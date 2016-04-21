@@ -16,7 +16,8 @@ def release_list(request):
             'minor': release.minor,
             'patch': release.patch,
             'delivered': release.delivered,
-            'scheduled': release.scheduled.strftime("%d-%m-%Y"),
+            'scheduled': (release.scheduled.strftime("%d-%m-%Y") if
+                release.scheduled else None),
             'description': release.description or None,
             'items': [{ 'type': item.get_item_type_display(),
                         'description': item.description }
