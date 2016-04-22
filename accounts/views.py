@@ -48,6 +48,13 @@ def get_user_info(request):
         else:
             return HttpResponse(status=403);
     else:
+        user_agent = request.META.get('HTTP_USER_AGENT')
+        if user_agent is not None and \
+                request.user.profile.last_known_user_agent != user_agent:
+            request.user.profile.last_known_user_agent = user_agent;
+            request.user.profile.save()
+
+
         return JsonResponse({
             'info': _get_user_info_dict(request.user) })
 

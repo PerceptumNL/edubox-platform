@@ -23,9 +23,12 @@ def ask_question(request):
 
     payload['browser'] = payload['browser'] or ""
 
+    payload['user_agent'] = request.META.get('HTTP_USER_AGENT', 'unknown')
+
     from .models import Question
     question_obj = Question.objects.create(user=request.user.profile,
                                            question=payload['question'],
+                                           user_agent=payload['user_agent'],
                                            browser_location=payload['browser'],
                                            location=payload['location'])
 

@@ -17,7 +17,7 @@ class UserProfile(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
 
     #Member specifies the role the user has in the group
-    groups = models.ManyToManyField(Group, through=Membership, 
+    groups = models.ManyToManyField(Group, through=Membership,
             through_fields=('user', 'group'), related_name='users')
     institute = models.ForeignKey(Institute, related_name='users')
 
@@ -38,13 +38,15 @@ class UserProfile(models.Model):
             through=UserDefault, through_fields=('user', 'settingVal'),
             related_name='user_defaults')
 
+    last_known_user_agent = models.CharField(max_length=255, default='unknown')
+
     class Meta:
         app_label = "kb"
 
     @property
     def username(self):
         return self.user.username
-    
+
     @property
     def first_name(self):
         return self.user.first_name
@@ -52,7 +54,7 @@ class UserProfile(models.Model):
     @property
     def last_name(self):
         return self.user.last_name
-    
+
     @property
     def email(self):
         return self.user.email

@@ -6,6 +6,7 @@ class Question(models.Model):
     question = models.TextField()
     browser_location = models.CharField(max_length=2000, default='', blank=True)
     location = models.CharField(max_length=2000)
+    user_agent = models.CharField(max_length=255, default='unknown')
     answer = models.TextField()
     final_answer = models.BooleanField(default=False)
     answered = models.BooleanField(default=False)
