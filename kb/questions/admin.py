@@ -80,14 +80,14 @@ class QuestionAdmin(SummernoteModelAdmin):
                     'question')
         else:
             return  ('answered', 'full_user_description', 'datetime',
-                     'full_location', 'full_browser_location', 'question',
-                     'answer', 'final_answer')
+                     'user_agent', 'full_location', 'full_browser_location',
+                     'question', 'answer', 'final_answer')
 
     def get_readonly_fields(self, request, obj=None):
         fields = ('answered',)
         if obj is not None:
             fields += ('full_user_description', 'question', 'datetime',
-                      'full_location', 'full_browser_location')
+                      'full_location', 'full_browser_location', 'user_agent')
             if obj.final_answer:
                 fields += ('answer',)
         return fields
