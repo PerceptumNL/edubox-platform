@@ -86,7 +86,6 @@ class Event(models.Model):
         subclass = ContentType.objects.get(app_label='events',
                 model=_verb.event_class.lower())
         instance = subclass.model_class().create(kwargs, result)
-        import q; q.d()
 
         #If creation of the instance with these kwargs failed
         if instance == None:
@@ -137,7 +136,6 @@ class RatedEvent(Event):
         return desc
 
     def create(kwargs, res):
-        import q; q.d();
         try:
             return RatedEvent.objects.create(
                 rating=int(res['rating']),
