@@ -154,7 +154,7 @@ def unit_detail(request, unit_id):
 
     fn_cutoff_protocol = lambda u: u.replace('https:','').replace('http:','')
 
-    activities = unit.activities.all()
+    activities = unit.activities.all().order_by('learningunititem__order')
     activity_completions = ActivityCompletion.objects.filter(
         user=request.user.profile)
     progress = {}
