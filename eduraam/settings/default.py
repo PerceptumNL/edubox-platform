@@ -207,6 +207,7 @@ LOG_CODES = {
     510: "Cannot extract %(field)s from HTML document",
     511: "Unknown login parameter %(param)s:%(value)s",
     512: "Login called with invalid credentials object",
+    513: "Cannot extract %(var)s from JSON document",
 }
 SHOW_LOG_CODE_DESCRIPTION = os.getenv('SHOW_LOG_CODE_DESCRIPTION', True)
 

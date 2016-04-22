@@ -126,6 +126,11 @@ class BaseConnector():
             cls.fetch_and_parse_document(token, url), field_name)
 
     @classmethod
+    def get_regex_match_from_url(cls, token, url, regex):
+        response = requests.get(cls.route_url(url), params={'token':token})
+        return re.match(regex, contents, re.DOTALL)
+
+    @classmethod
     def form_post(cls, token, url, payload, custom_headers={}):
         from urllib.parse import urlsplit
         urlparts = urlsplit(url)
