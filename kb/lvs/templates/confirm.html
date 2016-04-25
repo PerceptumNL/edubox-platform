@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block body %}
+    Enter the password to be used for the newly created accounts.
+    If left blank, passwords will be generated.
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <br>Upon submit the following new accounts will be created:
+
+        <h3>Teachers</h3>
+        <table>
+            {% for k, v in teachers %}
+                <tr>
+                    <td>{{ k }}</td>
+                    <td>{{ v }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        
+        <h3>Students</h3>
+        <table>
+            {% for k, v in students %}
+                <tr>
+                    <td>{{ k }}</td>
+                    <td>{{ v }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        
+        {% for k, v in groups.items %}
+            <h3>{{ v.0 }}</h3>
+           
+            <h5>Teachers</h5>
+            <ul>
+                {% for e in v.1 %}
+                    <li>{{ e }}</li>
+                {% endfor %}
+            </ul>
+            
+            <h5>Students</h5>
+            <ul>
+                {% for e in v.2 %}
+                    <li>{{ e }}</li>
+                {% endfor %}
+            </ul>
+
+        {% endfor %}
+        
+        <input type="submit" value="Submit">
+    </form>
+{% endblock %}

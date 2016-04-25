@@ -8,7 +8,7 @@ class EdeXmlForm(forms.Form):
 
 class InstituteForm(forms.Form):
     institute = forms.ModelChoiceField(queryset=Institute.objects.all())
-    first_name = forms.ChoiceField(choices=[
+    email_generation = forms.ChoiceField(choices=[
         ('none', 'Do not generate'),
         ('name', 'Name'),
         ('letter', 'First letter'),
@@ -20,6 +20,13 @@ class EmailForm(forms.Form):
     name = forms.CharField(required=False)
     email = forms.CharField(required=False)
 
+class GroupForm(forms.Form):
+    group = forms.CharField(required=False)
+    create = forms.ChoiceField(choices=[
+        ('no', 'Leave group as is'),
+        ('import', 'Import from EdeXML')],
+        widget=forms.RadioSelect())
+
 class CodecultStudentForm(forms.Form):
     group = forms.ModelChoiceField(queryset=
         Group.objects.filter(institute__title='CodeCult'))
@@ -28,3 +35,6 @@ class CodecultStudentForm(forms.Form):
     last_name = forms.CharField()
     password = forms.CharField(required=False)
     email = forms.CharField(required=False)
+
+class PasswordForm(forms.Form):
+    password = forms.CharField(required=False)

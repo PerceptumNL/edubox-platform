@@ -29,13 +29,13 @@ def generate_email(node, form, domain):
     if first == '':
         first = _tag_string(node.voornamen).lower()
 
-    if form['first_name'] == 'none':
+    if form['email_generation'] == 'none':
         return email
-    elif form['first_name'] == 'name':
+    elif form['email_generation'] == 'name':
         email += first
-    elif form['first_name'] == 'letter':
+    elif form['email_generation'] == 'letter':
         email += first[0]
-    elif form['first_name'] == 'initials':
+    elif form['email_generation'] == 'initials':
         email += _tag_string(node.voorletters).lower()
     email += form['separator']
 
