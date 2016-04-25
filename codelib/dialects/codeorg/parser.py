@@ -1,30 +1,30 @@
 """Module containing parsers for code.org submissions."""
 from bs4 import BeautifulSoup
+from urllib import parse
+
 from codelib import Root, Statement, While, For, IfElse
-
 from codelib.dialects import Dialect
-
 
 class CodeOrgDialect(Dialect):
    
     def __init__(self, code):
-        soup = BeautifulSoup(code, 'xml')
+        soup = BeautifulSoup(parse.unquote(code), 'xml')
         self.code = codeorg(soup.xml.contents[0])
 
     def has_seq(self):
-        return code.node_count() > 1
+        return self.code.node_count() > 1
 
     def has_if(self):
-        return code.contains(IfElse)
+        return self.code.contains(IfElse)
 
     def has_ifelse(self):
-        return any(map(lambda s: s.else_block, code.find(IfElse)))
+        return any(map(lambda s: s.else_block, self.code.find(IfElse)))
     
     def has_for(self):
-        return code.contains(For)
+        return self.code.contains(For)
     
     def has_while(self):
-        return code.contains(While)
+        return self.code.contains(While)
 
 def codeorg(node):
     """Parse BS4 node containing code submission."""
