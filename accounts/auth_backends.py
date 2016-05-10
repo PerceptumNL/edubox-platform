@@ -13,7 +13,7 @@ class ExtendedAuthenticationBackend(AuthenticationBackend):
 
         alias = credentials.get('email', credentials.get('username'))
         if alias:
-            for profile in UserProfile.objects.filter(alias=alias):
+            for profile in UserProfile.objects.filter(alias__iexact=alias):
                 if profile.user.check_password(credentials["password"]):
                     return profile.user
         return None
