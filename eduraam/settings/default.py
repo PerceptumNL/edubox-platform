@@ -82,7 +82,8 @@ MIDDLEWARE_CLASSES = [
 
 CONNECTORS = {
     'codeorg': 'connectors.codeorg.Connector',
-    'scratch': 'connectors.scratch.Connector'
+    'scratch': 'connectors.scratch.Connector',
+    'trello': 'connectors.trello.Connector'
 }
 
 SCRATCH_SIGNUP_EMAIL = "butler.melvin+scratch@perceptum.nl"
