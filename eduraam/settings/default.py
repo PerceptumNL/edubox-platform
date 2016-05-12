@@ -86,6 +86,8 @@ CONNECTORS = {
     'trello': 'connectors.trello.Connector'
 }
 
+FAKE_EMAIL_BASE = "butler.melvin+%s@perceptum.nl"
+
 SCRATCH_SIGNUP_EMAIL = "butler.melvin+scratch@perceptum.nl"
 SCRATCH_SIGNUP_COUNTRY = "Netherlands"
 
@@ -191,6 +193,7 @@ LOG_CODES = {
     114: "Already logged in with %(token)s",
 
     201: "Signals registered",
+    211: "Using generated email: %(email)",
 
     302: "Token doesn't match current user",
 

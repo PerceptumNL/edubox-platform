@@ -69,6 +69,13 @@ class UserProfile(models.Model):
         full += ' '+self.last_name
         return full
 
+    def fake_email(token=None):
+        from django.conf import settings
+        if token is None or not isinstance(token, str):
+            return settings.FAKE_EMAIL_BASE % ( self.pk, )
+        else:
+            return settings.FAKE_EMAIL_BASE % ( token, )
+
     def is_teacher(self, group=None):
         if group:
             return Membership.objects.filter(

@@ -117,14 +117,20 @@ class Connector(BaseConnector):
             cls.debug(411, user=user)
             return False
 
+        if user.email:
+            email = user.email
+        else:
+            email = user.profile.fake_email(token)
+            cls.debug(211, email=email)
+
         credentials = AppAccount.generate(
             app=App.objects.get(pk=unpacked['app']),
             user=user)
-        credentials.username = user.email
+        credentials.username = email
 
         payload = {
             "fullName": user.profile.full_name,
-            "email": user.email,
+            "email": email,
             "locale": "nl",
             "password": credentials.password,
             "source": "web",
