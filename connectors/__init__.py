@@ -1,4 +1,5 @@
 import sys
+import re
 import requests
 from binascii import b2a_hex
 import debugutil
@@ -128,7 +129,7 @@ class BaseConnector():
     @classmethod
     def get_regex_match_from_url(cls, token, url, regex):
         response = requests.get(cls.route_url(url), params={'token':token})
-        return re.match(regex, contents, re.DOTALL)
+        return re.match(regex, response.text, re.DOTALL)
 
     @classmethod
     def form_post(cls, token, url, payload, custom_headers={}):
