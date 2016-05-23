@@ -4,6 +4,7 @@ DEBUG = bool(int(os.environ.get('DEBUG_FLAG', '0')))
 
 ADMINS = (
     ('Sander', 'sander@perceptum.nl'),
+    ('Tim', 'tim.doolan@perceptum.nl'),
 )
 
 # Parse database configuration from $DATABASE_URL
