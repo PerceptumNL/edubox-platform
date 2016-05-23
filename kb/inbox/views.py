@@ -18,6 +18,6 @@ def message_list(request):
             'title': message.title,
             'date': message.datetime.astimezone(local_tz).strftime(
                 "%d %B"),
-            'summary': message.body[:250]})
+            'summary': message.body})
 
     return JsonResponse({'messages': message_list})
